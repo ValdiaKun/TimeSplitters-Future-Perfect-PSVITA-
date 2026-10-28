@@ -150,3 +150,38 @@ generated flag/FP edge fixtures and real TLS/thread entry contracts.
 User-supplied US XBE verification must precede any retail generation:
 SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`,
 title ID `45410066`. Do not add executable bytes to synthetic fixtures.
+
+
+## Split-safe scalar access foundation (2026-10-29)
+
+The 64 MiB primary RAM and 28 mirrors, separate contiguous/kernel-data
+backing, tiled alias, and MMIO/flash/kernel-thunk classification were already
+implemented and validated before this change. This iteration adds explicit
+`tsfp_guest_load_{u16,u32,u64,s16,s32,s64,f32,f64}` and corresponding
+`tsfp_guest_store_*` functions to `guest/memory.{h,c}`.
+
+These helpers use the existing *whole-range prevalidated* byte-transfer
+engine. Valid scalar accesses straddling a physical 64 MiB RAM wrap split
+across the same RAM backing without touching unmapped host memory. The
+host PC mapped oracle checks 64-bit scalar accesses on either side of
+each of the 28 low view transitions against its unchanged shared-mapping
+`MEM64` lvalue. Signed integer and floating-point values are copied as bits:
+NaN payloads and negative zero are preserved; no floating-point conversion,
+precision or rounding changes are permitted here. Rejected final-view,
+MMIO, flash, kernel-thunk and 32-bit-wrap accesses fault before mutation.
+
+The full PC oracle/portable host/ASan+UBSan/ARMv7 QEMU test matrix and
+VitaSDK cross-build passed in GitHub Actions
+[40722808711](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40722808711)
+at commit `f778686d`, with the separate host input workflow
+[40722808716](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40722808716)
+also passing. These are **source/host/ARM CPU/cross-build** results,
+not tests on Vita hardware or proof of gameplay.
+
+**Remaining integration gap:** the pinned recompiler's generated
+`MEM16/32/64/MEMF/MEMD` expressions are still lvalues supplied by
+`patches/arm-guest-memory.patch`; they deliberately fault for split spans.
+The new accessors are available for future *source-generator* load/store
+lowering but are not yet substituted into all generated guest instructions.
+Do not claim that generated scalar wrap accesses are solved. LOCK/atomic
+operations, guest exception delivery and full runtime mapping remain open.
