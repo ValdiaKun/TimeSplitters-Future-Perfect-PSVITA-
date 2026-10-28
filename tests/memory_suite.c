@@ -44,6 +44,91 @@ static void classify(uint32_t address, TsfpGuestRegion region, uint32_t offset, 
     TsfpGuestSpan span = tsfp_guest_classify(address);
     assert(span.region == region && span.offset == offset && span.available == available);
 }
+/* Portable split-safe scalar accessors are checked against native PC MMAP
+ * aliases when compiled as the pristine oracle. All test data is synthetic. */
+static void rejected_scalar_store(void *context) {
+    tsfp_guest_store_u32(*(const uint32_t *)context, UINT32_C(0x13572468));
+}
+static void rejected_scalar_load(void *context) {
+    (void)tsfp_guest_load_u64(*(const uint32_t *)context);
+}
+static void test_scalar_wraps(void) {
+    for (unsigned view = 0; view + 1 < TSFP_XBOX_RAM_VIEWS; ++view) {
+        const uint32_t end = (view + 1u) * TSFP_XBOX_RAM_SIZE;
+        for (unsigned left = 1; left < sizeof(uint64_t); ++left) {
+            const uint32_t address = end - left;
+            const uint64_t value = UINT64_C(0xfedcba9876543210) ^
+                                   ((uint64_t)view << 8) ^ (uint64_t)left;
+            unsigned char bytes[8];
+            tsfp_guest_store_u64(address, value);
+            assert(tsfp_guest_load_u64(address) == value);
+            tsfp_guest_read(address, bytes, sizeof(bytes));
+            for (unsigned i = 0; i < sizeof(bytes); ++i)
+                assert(bytes[i] == (unsigned char)(value >> (8u * i)));
+#ifdef TSFP_PC_MAPPED_ORACLE
+            /* The unchanged PC header reads the next shared view directly. */
+            assert(MEM64(address) == value);
+            MEM64(address) = value ^ UINT64_C(0x55aa55aa55aa55aa);
+            assert(tsfp_guest_load_u64(address) ==
+                   (value ^ UINT64_C(0x55aa55aa55aa55aa)));
+#endif
+        }
+        tsfp_guest_store_u16(end - 1u, UINT16_C(0xa123));
+        assert(tsfp_guest_load_u16(end - 1u) == UINT16_C(0xa123));
+        tsfp_guest_store_u32(end - 3u, UINT32_C(0x81234567));
+        assert(tsfp_guest_load_u32(end - 3u) == UINT32_C(0x81234567));
+        tsfp_guest_store_s16(end - 1u, -1234);
+        assert(tsfp_guest_load_s16(end - 1u) == -1234);
+        tsfp_guest_store_s32(end - 3u, -1234567);
+        assert(tsfp_guest_load_s32(end - 3u) == -1234567);
+        tsfp_guest_store_s64(end - 7u, -INT64_C(0x123456789abcdef));
+        assert(tsfp_guest_load_s64(end - 7u) == -INT64_C(0x123456789abcdef));
+        /* Inspect raw float bits: NaN payload and signed zero must survive. */
+        const uint32_t float_bits = UINT32_C(0x7fc12345);
+        const uint64_t double_bits = UINT64_C(0x8000000000000000);
+        float float_value, float_result;
+        double double_value, double_result;
+        uint32_t float_after;
+        uint64_t double_after;
+        memcpy(&float_value, &float_bits, sizeof(float_value));
+        memcpy(&double_value, &double_bits, sizeof(double_value));
+        tsfp_guest_store_f32(end - 2u, float_value);
+        float_result = tsfp_guest_load_f32(end - 2u);
+        memcpy(&float_after, &float_result, sizeof(float_after));
+        assert(float_after == float_bits);
+        tsfp_guest_store_f64(end - 5u, double_value);
+        double_result = tsfp_guest_load_f64(end - 5u);
+        memcpy(&double_after, &double_result, sizeof(double_after));
+        assert(double_after == double_bits);
+    }
+    /* The final RAM alias has no next mapped guest view. Fault before write. */
+    const uint32_t final = TSFP_XBOX_RAM_SIZE * TSFP_XBOX_RAM_VIEWS - 1u;
+    tsfp_guest_store_u16(final - 1u, UINT16_C(0x7777));
+    unsigned char previous[2];
+    tsfp_guest_read(final - 1u, previous, sizeof(previous));
+    test_expect_fault(rejected_scalar_store, (void *)&final, final, 4);
+    unsigned char after[2];
+    tsfp_guest_read(final - 1u, after, sizeof(after));
+    assert(memcmp(after, previous, sizeof(previous)) == 0);
+
+    /* 32-bit VA rollover, MMIO, and unbacked windows never alias RAM. */
+    static const uint32_t invalid[] = {
+        UINT32_C(0xffffffff), UINT32_C(0xfd000000),
+        UINT32_C(0xfe000000), UINT32_C(0xfe800000),
+        UINT32_C(0xff000000), UINT32_C(0x83fffffe),
+        UINT32_C(0xf3fffffe)
+    };
+    for (unsigned i = 0; i < sizeof(invalid)/sizeof(invalid[0]); ++i) {
+        uint32_t address = invalid[i];
+        test_expect_fault(rejected_scalar_store, &address, address, 4);
+        test_expect_fault(rejected_scalar_load, &address, address, 8);
+    }
+    /* Kernel-data changes classification but not contiguous backing. */
+    tsfp_guest_store_u64(UINT32_C(0x8000fffd), UINT64_C(0xf0e1d2c3b4a59687));
+    assert(tsfp_guest_load_u64(UINT32_C(0xf000fffd)) ==
+           UINT64_C(0xf0e1d2c3b4a59687));
+}
+
 void test_memory_map(void) {
     void *ram, *contiguous;
 #ifdef TSFP_PC_MAPPED_ORACLE
@@ -98,6 +183,7 @@ void test_memory_map(void) {
     assert(MEM32(0x20000) == 0x11111111);
     translated_copy(0x80010000, 0xf0010004, 0x44444444);
     assert(MEM32(0x80010004) == 0x44444445 && MEM32(0x10000) == 0);
+    test_scalar_wraps();
     /* Byte transfers support RAM wrap; pointer lvalues must reject it on ARM. */
     static const unsigned char pattern[] = {1, 2, 3, 4, 5, 6, 7, 8};
     unsigned char actual[sizeof(pattern)] = {0};
