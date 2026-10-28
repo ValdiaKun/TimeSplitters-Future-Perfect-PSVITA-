@@ -90,7 +90,8 @@ menu, diagnostic or synthetic CPU test as proof of gameplay.
   oracle, portable host, ASan/UBSan and Cortex-A9 ARMv7 QEMU. VitaSDK Release
   cross-build of both VPKs passes. Code commit `c3da8a1` passed CPU/ARM/Vita CI
   `40727117655` and input CI `40727117635`. Follow-up store-path assertions
-  also pass locally.
+  also pass locally and in CPU/Vita CI `40727763246` at `bc7aa80`
+  (input CI `40727763221` passed too).
 - Current old paragraphs describing pointer-only generated scalar lowering are
   historical; see the new contract section in GUEST_RUNTIME.md.
 - No supported US XBE or physical Vita is available. Retail generation, full

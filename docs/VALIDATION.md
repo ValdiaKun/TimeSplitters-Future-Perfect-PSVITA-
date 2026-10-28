@@ -195,3 +195,11 @@ source. The complete local PC/portable/sanitizer/ARM matrix and Vita cross-build
 passed again with those assertions. The existing valid-wrap negative test was
 replaced by positive generated wrap tests; invalid/MMIO/final-view rejection
 assertions remain enabled.
+
+Follow-up code/test commit `bc7aa804297bd8f987e8f7454776a60fdc6fc49b`
+passed [CPU/ARM + Vita CI 40727763246](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40727763246)
+(`cpu` and `vita` both successful), plus
+[host input CI 40727763221](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40727763221).
+The working tree was clean after push; PR #1 remained draft/open and remote
+main remained `0322acbea29bffccc267f0e48893795a9f420efa`. No game binaries,
+VPKs, retail data, user settings or saves were committed or published.
