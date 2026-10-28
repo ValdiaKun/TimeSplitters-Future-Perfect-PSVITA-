@@ -46,9 +46,11 @@ if(TSFP_BUILD_GUEST_TESTS)
     add_executable(tsfp_guest_test
         "${TSFP_ROOT}/tests/guest_harness.c"
         "${TSFP_ROOT}/guest/memory.c"
+        "${TSFP_ROOT}/guest/address_space.c"
+        "${TSFP_ROOT}/tests/memory_suite.c"
         "${TSFP_ROOT}/build/guest/fixtures.c")
     target_include_directories(tsfp_guest_test PRIVATE
-        "${TSFP_ROOT}/guest" "${TSFP_ROOT}/build/guest/include")
+        "${TSFP_ROOT}/guest" "${TSFP_ROOT}/tests" "${TSFP_ROOT}/build/guest/include")
     target_compile_definitions(tsfp_guest_test PRIVATE TSFP_PORTABLE_GUEST_MEMORY TSFP_REQUIRE_ARMV7)
     target_compile_options(tsfp_guest_test PRIVATE -O2 -Wall -Wextra -Werror
         -Wno-unused-label -Wno-unused-variable -Wno-unused-but-set-variable

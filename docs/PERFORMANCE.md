@@ -30,3 +30,8 @@ metrics explicitly instead of substituting host timing or other ports' numbers.
 The synthetic harness currently records reproducibility and pass/fail, not CPU
 microbenchmark timings. Add bounded call/memory/dispatch benchmarks after the
 full memory contract is established and validate costs on a real ARM/Vita host.
+
+The memory tests now request two 64 MiB backings and a 160 MiB newlib heap in
+the synthetic Vita VPK. These are configured sizes, not measured peak RAM or
+proof of on-device allocation success. No speed claim follows from replacing
+virtual aliases with checked software translation.

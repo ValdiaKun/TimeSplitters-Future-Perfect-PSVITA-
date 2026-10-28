@@ -17,6 +17,7 @@ FIXTURES = {
     0x10600: ('fixture_sse', '0f10010f58c00f1102c3'),
     0x10700: ('fixture_x87', 'dd01d9fcdd1ac3'),
     0x10800: ('fixture_div', '8b44240431d2f7f1c3'),
+    0x10900: ('fixture_memory', '8b0183c0018902c3'),
 }
 
 def main():
@@ -49,6 +50,24 @@ def main():
             raise RuntimeError(f'Untranslated fixture: {info["name"]}: {translator.lifter.unimplemented}')
         chunks.append(body)
     (out / 'fixtures.c').write_text('\n'.join(chunks))
+    import re
+    kernel = (runtime / 'src/kernel/kernel.h').read_text()
+    layout = (runtime / 'src/kernel/xbox_memory_layout.h').read_text()
+    checks = {
+        'RAM_MIRRORS': (layout, r'#define XBOX_NUM_MIRRORS\s+(28)\b'),
+        'CONTIG_BASE': (kernel, r'#define XBOX_CONTIG_BASE\s+(0x80000000)u'),
+        'CONTIG_MIB': (kernel, r'#define XBOX_CONTIG_SIZE\s+\((64)u \* 1024u \* 1024u\)'),
+        'TILED_BASE': (layout, r'#define XBOX_TILED_BASE\s+(0xF0000000)u'),
+    }
+    contract = []
+    for name, (source, pattern) in checks.items():
+        match = re.search(pattern, source)
+        if not match:
+            raise RuntimeError(f'Pinned PC mapping contract changed: {name}')
+        contract.append(f'#define PC_{name} {match[1]}u\n')
+    (include / 'pc_memory_contract.h').write_text(''.join(contract))
+    (out / 'pristine').mkdir(exist_ok=True)
+    (out / 'pristine/pc_memory_contract.h').write_text(''.join(contract))
     original = (runtime / 'templates/runtime/recomp_types.h').read_text()
     (include / 'recomp_types.h').write_text(original)
     (include / 'recomp_icall_feedback.h').write_bytes((runtime / 'src/kernel/recomp_icall_feedback.h').read_bytes())

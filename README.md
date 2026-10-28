@@ -6,7 +6,7 @@ Experimental, independent **PS Vita homebrew porting project** for *TimeSplitter
 
 ## Project approach
 
-The existing [TimeSplitters PC project](https://github.com/ValdiaKun/timesplitters-future-perfect-pc) provides the x86-to-C recompilation, Xbox guest runtime and common gameplay/rendering policies. This **separate repository** owns Vita-specific development, validation, and documentation. The PC source is pinned as `external/pc`; its translator now generates asset-free ARM guest tests. The PC project remains authoritative for shared behavior. Retail title/runtime integration remains incomplete.
+The existing [TimeSplitters PC project](https://github.com/ValdiaKun/timesplitters-future-perfect-pc) provides the x86-to-C recompilation, Xbox guest runtime and common gameplay/rendering policies. This **separate repository** owns Vita-specific development, validation, and documentation. The PC source is pinned as `external/pc`; its translator generates asset-free ARM guest tests, including 64 MiB RAM-view and contiguous/tiled-memory checks. The PC project remains authoritative for shared behavior. Retail title/runtime integration remains incomplete.
 
 Research references:
 - [Halo CE Vita](https://github.com/BirchWoodGod/halo-ce-vita) — Xbox rendering and native ARM integration; its code is GPL-3.0-licensed.

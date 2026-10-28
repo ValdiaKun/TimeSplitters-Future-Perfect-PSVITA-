@@ -5,6 +5,11 @@
 #endif
 #include "recomp_types.h"
 #include "memory.h"
+#include "memory_test_support.h"
+#ifdef __vita__
+/* Two 64 MiB test backings plus allocator/thread overhead; device use unverified. */
+unsigned int _newlib_heap_size_user = 160u * 1024u * 1024u;
+#endif
 #include <assert.h>
 #include <setjmp.h>
 #include <stdio.h>
@@ -34,6 +39,7 @@ static uint32_t shared_counter __attribute__((aligned(4)));
 
 void fixture_add(void); void fixture_carry(void); void fixture_callee(void);
 void fixture_call(void); void fixture_indirect(void); void fixture_unaligned(void);
+void test_memory_map(void);
 void fixture_sse(void); void fixture_x87(void); void fixture_div(void);
 _Noreturn void tsfp_guest_memory_fault(uint32_t address, size_t width) {
     fault_address = address; fault_width = width;
@@ -54,6 +60,28 @@ recomp_func_t recomp_lookup_kernel(uint32_t address) { (void)address; return NUL
 void recomp_icall_fail_log(uint32_t address) { (void)address; ++unresolved; }
 void recomp_icall_not_code_log(uint32_t address, uint32_t stack) {
     (void)address; (void)stack; ++unresolved;
+}
+void test_expect_fault(void (*operation)(void *), void *context,
+                       uint32_t address, size_t width) {
+    expected_fault = 1;
+    if (!setjmp(fault_jump)) {
+        operation(context);
+        assert(!"invalid memory operation accepted");
+    }
+    assert(fault_address == address && fault_width == width);
+    expected_fault = 0;
+}
+typedef struct TestAccess { uint32_t address; size_t width; int write; } TestAccess;
+static void invalid_access(void *context) {
+    TestAccess *access = context;
+    unsigned char buffer[8] = {0};
+    assert(access->width <= sizeof(buffer));
+    if (access->write) tsfp_guest_write(access->address, buffer, access->width);
+    else (void)tsfp_guest_pointer(access->address, access->width);
+}
+void test_expect_memory_fault(uint32_t address, size_t width, int write) {
+    TestAccess access = {address, width, write};
+    test_expect_fault(invalid_access, &access, address, width);
 }
 static void enter(void) {
     g_esp = 0x1f000;
@@ -86,7 +114,7 @@ int main(void) {
     enter(); fixture_indirect();
     assert(g_eax == 48 && g_esp == 0x1f000 && g_icall_count == 1);
     /* Match upstream missing-target behavior, but count the unresolved event. */
-    enter(); { uint32_t eax = 77; RECOMP_ICALL(0x10900); assert(eax == 0); }
+    enter(); { uint32_t eax = 77; RECOMP_ICALL(0x10f00); assert(eax == 0); }
     assert(unresolved == 1 && g_esp == 0x1f000);
 #ifdef TSFP_PORTABLE_GUEST_MEMORY
     enter(); MEM32(0x18001) = 0x12345678; fixture_unaligned();
@@ -152,6 +180,7 @@ int main(void) {
     for (unsigned i = 0; i < 10000; ++i) RECOMP_ATOMIC_ADD32(&shared_counter, 1);
     assert(pthread_join(thread, NULL) == 0 && g_eax == 0xabcdef01);
     assert(shared_counter == 20000);
-    puts("guest-fixtures-v1: add=0 carry=1 call=48 indirect=48 sse=1,3,5,7 x87=2,2,3,2 div=3r1 faults=pass atomic=pass tls=pass");
+    test_memory_map();
+    puts("guest-fixtures-v2: add=0 carry=1 call=48 indirect=48 sse=1,3,5,7 x87=2,2,3,2 div=3r1 faults=pass atomic=pass tls=pass memory-map=pass");
     return 0;
 }

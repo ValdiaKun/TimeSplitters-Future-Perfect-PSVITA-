@@ -62,3 +62,9 @@ The diagnostic emits bounded transition/error events to stderr with process
 timestamps; on-device capture/visibility is unverified. No log or save directory
 is created or overwritten. Package URLs are recorded with exact hashes; an
 upstream replacement fails checksum verification rather than silently upgrading.
+
+The guest-test VPK now includes RAM alias tests with two 64 MiB backings. Its
+160 MiB newlib heap is a configured test budget; actual allocation, Vita TLS
+and execution remain unverified. Generated scalar accesses crossing RAM wrap
+still fault safely pending split-safe lowering; this is not full guest memory
+or title initialization support.

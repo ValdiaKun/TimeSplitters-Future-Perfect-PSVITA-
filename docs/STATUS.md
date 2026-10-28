@@ -10,7 +10,11 @@ campaign execution. Physical Vita behavior is unverified.**
 - Pinned PC submodule/source manifest, offline runtime reconstruction and full
   authoritative patch application, reproducible ARM header adaptation.
 - Checked unaligned little-endian guest memory prototype and deterministic
-  generation of nine synthetic x86 functions using the real PC translator.
+  generation of ten synthetic x86 functions using the real PC translator.
+- Explicit 64 MiB RAM/28 mirror address views, independent optional contiguous
+  backing, tiled alias and kernel-data/MMIO/flash/invalid classification.
+  Checked byte transfers support RAM wrap; unsupported device accesses fault.
+  Linux shared-map PC-header oracle tests translated accesses across all views.
 - PC baseline/portable/sanitizer and ARMv7 QEMU comparison runner with command
   and provenance reports. TLS isolation, concurrent aligned atomics, call stack,
   SSE/x87 and fault subset assertions. Exhaustive controller-axis and individual
@@ -25,15 +29,15 @@ campaign execution. Physical Vita behavior is unverified.**
 
 See [VALIDATION.md](VALIDATION.md) for commands, tool versions, failures resolved
 and exact scope. Local host, sanitizer and ARMv7 QEMU checks passed; both VPKs
-cross-built. GitHub Actions CPU/Vita run `40718220983` and host input run `40718220954` passed at code commit `caff85b`; see the linked validation record. VPK creation
+cross-built. The expanded memory suite passed locally on the PC shared-map oracle, portable host, ASan/UBSan and ARMv7 QEMU; refreshed remote CI is pending push. Previous GitHub Actions CPU/Vita run `40718220983` and host input run `40718220954` passed at code commit `caff85b`; see the linked validation record. VPK creation
 is not on-device execution. No hardware behavior or FPS result is confirmed.
 
 ## Partial and blocked
 
 - A: reproducible cross-build and deterministic host tests implemented. Vita
   installation, display, input, lifecycle and diagnostic log delivery await hardware.
-- B: narrow synthetic CPU subset passes ARM32 execution under QEMU; the real
-  title memory layout, aliases, all flags/FP modes, exception delivery, real guest
+- B: narrow synthetic CPU subset passes ARM32 execution under QEMU; generated scalar RAM-wrap loads/stores, complete
+  title layout/services, all flags/FP modes, exception delivery, real guest
   threads and full dispatch are incomplete. Acceptance is not complete.
 - C: reviewed direct GXM versus vitaGL references; production backend undecided.
   No GPU benchmark/device, scene capture or working game renderer exists.
@@ -45,8 +49,8 @@ is not on-device execution. No hardware behavior or FPS result is confirmed.
 
 Start with `python3 tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc` in a
 checkout with the pinned submodule initialized. Read [GUEST_RUNTIME.md](GUEST_RUNTIME.md).
-The next code task is tested 64 MiB backing/alias/MMIO classification without
-kernel plugins, then generated flag/FP edge coverage. On physical Vita, separately
+The next code task is split-safe generated scalar load/store lowering at RAM-wrap
+boundaries, compared against the PC shared-map oracle, then flag/FP edge coverage. On physical Vita, separately
 validate bootstrap installation, both sticks/buttons and Select+Start exit;
 collect synthetic guest test results before connecting title boot. Never mark a
 menu, diagnostic or synthetic CPU test as proof of gameplay.

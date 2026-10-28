@@ -36,16 +36,16 @@ def main():
     try:
         run([sys.executable, 'tools/generate_fixtures.py'])
         report['generated_sha256'] = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in [out / 'fixtures.c', out / 'include/recomp_types.h']}
+            for p in [out / 'fixtures.c', out / 'include/recomp_types.h', out / 'include/pc_memory_contract.h']}
         base = ['-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-Wno-unused-label',
                 '-Wno-unused-variable', '-Wno-unused-but-set-variable', '-fno-strict-aliasing',
-                '-ffp-contract=off', '-Iguest']
-        sources = ['tests/guest_harness.c', 'guest/memory.c', 'build/guest/fixtures.c', '-lm', '-pthread']
+                '-ffp-contract=off', '-Iguest', '-Itests']
+        sources = ['tests/guest_harness.c', 'guest/memory.c', 'guest/address_space.c', 'tests/memory_suite.c', 'tests/pc_memory_oracle.c', 'build/guest/fixtures.c', '-lm', '-pthread']
         host_cc = shlex.split(os.environ.get('CC', 'cc'))
         run(host_cc + ['--version'])
         transcripts = {}
         for mode in ('pristine', 'portable', 'sanitized'):
-            includes = ['-Ibuild/guest/pristine'] if mode == 'pristine' else ['-Ibuild/guest/include', '-DTSFP_PORTABLE_GUEST_MEMORY']
+            includes = ['-Ibuild/guest/pristine', '-DTSFP_PC_MAPPED_ORACLE'] if mode == 'pristine' else ['-Ibuild/guest/include', '-DTSFP_PORTABLE_GUEST_MEMORY']
             sanitizers = ['-fsanitize=undefined,address', '-fno-sanitize-recover=all'] if mode == 'sanitized' else []
             target = f'build/guest/host-{mode}'
             run(host_cc + base + includes + sanitizers + sources + ['-o', target])

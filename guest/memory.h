@@ -3,7 +3,8 @@
 #define TSFP_GUEST_MEMORY_H
 #include <stddef.h>
 #include <stdint.h>
-/* Fixture address space only. No MMIO, mirroring or retail memory layout yet. */
+#include "address_space.h"
+/* Retained bounded fixture mode; replaces any previous Xbox binding. */
 void tsfp_guest_bind(void *storage, size_t size, uint32_t base);
 void *tsfp_guest_pointer(uint32_t address, size_t width);
 /* Override in the platform adapter; must not return. */

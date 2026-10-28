@@ -93,3 +93,31 @@ Physical boot/display/input/exit, on-device stderr delivery, Vita TLS/newlib
 behavior, GPU rendering and timing, game boot/menu/gameplay/audio/save/load,
 CPU/GPU clocks and performance measurements. Linux ARM QEMU does not test Vita
 kernel calls, scheduling, GPU, memory availability or real-time performance.
+
+## RAM-view and MMIO-classification extension
+
+The expanded runner generates ten synthetic functions. The additional translated
+load/add/store fixture executes through all 29 low RAM views and the separate
+contiguous/tiled windows. PC baseline uses the original runtime header with Linux
+shared-view mappings; portable, sanitizer and ARM runs use software translation.
+The Linux oracle checks mapping policy, not the Windows kernel initialization.
+The same documented `tools/test_guest.py --arm-cc ...` command passed locally
+with this transcript:
+
+```
+guest-fixtures-v2: add=0 carry=1 call=48 indirect=48 sse=1,3,5,7 x87=2,2,3,2 div=3r1 faults=pass atomic=pass tls=pass memory-map=pass
+```
+
+Coverage includes each classification endpoint; low/contiguous independence;
+tiled/kernel-page aliasing; byte transfers across RAM wrap; failed range checks
+preserving destinations; rejected overlapping/undersized bindings preserving
+prior mappings; optional absent contiguous storage; unbind; translated MMIO and
+pointer-wrap faults. Scalar pointer lowering remains incomplete at valid RAM
+wraps and is explicitly tested to fault safely, not silently corrupt memory.
+The test VPK has a configured 160 MiB heap for the two 64 MiB backings; no real
+Vita allocation or performance measurements are available.
+
+Local strict host controller tests, Python syntax checks and Release Vita
+cross-build passed. No new source dependency pin changed. New remote CI results
+will be recorded after the implementation push; earlier CI links above refer
+to the earlier foundation.

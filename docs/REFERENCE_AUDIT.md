@@ -15,3 +15,15 @@ Before distributing a game runtime, inventory actual linked components, supply
 corresponding source/build instructions and all applicable notices. Reference
 licenses do not grant rights to retail Xbox content. This audit does not approve
 uninspected third-party files for copying.
+
+## Memory-policy follow-up
+
+At the same PC pin, inspected prepared `src/kernel/xbox_memory_layout.c`
+(contiguous allocation, 28-mirror loop, tiled mapping),
+`src/kernel/xbox_memory_layout.h` (mirror/tiled constants) and
+`src/kernel/kernel.h` (contiguous window). The PC policy uses a distinct
+contiguous backing and maps tiled storage to it, rather than to low RAM.
+`tests/pc_memory_oracle.c` independently implements equivalent Linux shared
+views for the synthetic oracle, using checked generated PC constants. No PC
+mapping implementation was copied or edited. MMIO/flash remain unimplemented;
+classification does not reproduce their PC emulation or hardware registers.
