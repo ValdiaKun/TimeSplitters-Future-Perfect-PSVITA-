@@ -48,6 +48,8 @@ if(TSFP_BUILD_GUEST_TESTS)
         "${TSFP_ROOT}/guest/memory.c"
         "${TSFP_ROOT}/guest/address_space.c"
         "${TSFP_ROOT}/tests/memory_suite.c"
+        "${TSFP_ROOT}/tests/generated_memory_suite.c"
+        "${TSFP_ROOT}/tests/mmx_state.c"
         "${TSFP_ROOT}/build/guest/fixtures.c")
     target_include_directories(tsfp_guest_test PRIVATE
         "${TSFP_ROOT}/guest" "${TSFP_ROOT}/tests" "${TSFP_ROOT}/build/guest/include")

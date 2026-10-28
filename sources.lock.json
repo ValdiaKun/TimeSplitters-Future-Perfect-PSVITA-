@@ -58,5 +58,10 @@
         "sha256": "f39cea16c176f93dc744597113f093db0d48adf23dd25a14ee0d2ec47df17fa6"
       }
     ]
+  },
+  "generator": {
+    "pycparser": "2.23",
+    "license": "BSD-3-Clause",
+    "purpose": "AST-based typed guest memory lowering"
   }
 }

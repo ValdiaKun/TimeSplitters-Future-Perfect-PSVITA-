@@ -17,3 +17,8 @@ is included. See docs/REFERENCE_AUDIT.md for revisions, paths and constraints.
 
 Original Xbox executables, data, music, graphics and mechanically translated
 retail game logic are not licensed by this notice and must not be committed.
+
+AST source emission uses pycparser 2.23 as a host build dependency (BSD license,
+Copyright Eli Bendersky). Its notice is LICENSES/pycparser-BSD.txt.
+No parser code is linked into Vita executables. No additional reference-project
+implementation was copied for memory lowering.

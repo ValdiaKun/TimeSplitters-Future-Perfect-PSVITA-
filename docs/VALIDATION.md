@@ -155,3 +155,35 @@ guest-test VPKs only; no physical console installed them. The generated
 recompiler `MEM*` lvalues have not been switched to these scalar helpers.
 No game boot, gameplay, GPU render, FPS or Vita heap availability was
 measured. Do not infer performance gains from accessors or CI completion.
+
+## Generated memory integration — 2026-10-29
+
+Local environment remains Debian x86_64/GCC 14.2.0, ARM Linux GCC 14.2.0,
+QEMU 10.0.13 Cortex-A9, VitaSDK GCC 15.2.0 and the same PC/runtime source pins.
+New host-only parser dependency: pycparser 2.23, recorded in sources.lock.json
+and CI with its BSD notice. The existing documented ARM runner and Release Vita
+build commands pass. The runner now also executes seven source-pass regressions
+and compares distinct unlowered PC versus lowered portable outputs for 35 x86
+fixtures. The v3 transcripts match, ending `memory-map=pass`.
+
+During development, the new MOVSD payload test failed against pinned PC output:
+it stored `xmm0.f[0]` to a double destination. The emission adapter now copies
+integer lanes for scalar SSE moves, preserving the original bits. A generated
+RMW SETO test initially failed translation because the pinned compiler could not
+form ADD overflow; the adapter now derives ADD/SUB overflow from captured result
+and source snapshots. Both repairs are applied to the baseline and portable
+emission, with explicit expected values. The first helper-header build also
+caught an MMX type guard mismatch; MMX helpers are now conditional on the actual
+runtime type and a real MMX fixture is compiled and executed.
+
+Executed: `tools/test_guest.py --arm-cc ... --qemu ...`, Python syntax checks,
+strict C11 controller tests, `guest_codegen.py --help`, and CMake Release Vita
+cross-build. No warnings/checks were disabled to fix these failures. Unlowered
+PC tests use the original memory header but the documented emission repairs;
+this does not establish correctness of untouched historical generated code.
+
+Coverage and remaining instruction limits are in GUEST_RUNTIME.md. Unsupported
+input is rejected before code generation. A supported retail executable and
+its analysis metadata are absent, so successful full-title generation/boot is
+unavailable. Physical Vita tests and all performance measurements are unavailable.
+Remote CI links will be recorded after the implementation push.

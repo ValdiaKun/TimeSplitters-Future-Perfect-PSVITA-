@@ -27,3 +27,14 @@ contiguous backing and maps tiled storage to it, rather than to low RAM.
 views for the synthetic oracle, using checked generated PC constants. No PC
 mapping implementation was copied or edited. MMIO/flash remain unimplemented;
 classification does not reproduce their PC emulation or hardware registers.
+
+## Generated-memory source adapter
+
+Inspected the pinned PC `tools/compiler/translation_operands.py`,
+`translation_moves.py`, `translation_integer.py`, prepared
+`tools/recomp/{lifter,translator,__main__}.py` and runtime
+`templates/runtime/recomp_types.h` for scalar lvalues, atomic pointer arguments,
+SSE/MMX helpers and stack commit ordering. New process-local source adapters are
+GPL-3.0-only and leave that dependency unchanged. The AST parser is pycparser
+2.23 (BSD; notice in LICENSES/pycparser-BSD.txt), a host build dependency only.
+No new Halo/THUG/MH3 code is used; their previously recorded audit remains valid.

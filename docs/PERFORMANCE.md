@@ -35,3 +35,7 @@ The memory tests now request two 64 MiB backings and a 160 MiB newlib heap in
 the synthetic Vita VPK. These are configured sizes, not measured peak RAM or
 proof of on-device allocation success. No speed claim follows from replacing
 virtual aliases with checked software translation.
+
+Generated scalar emission now calls checked accessors; source-pass tests and
+QEMU establish correctness in the tested subset only. No CPU-overhead or frame
+rate gain has been measured, and no checks were removed as a speed optimization.

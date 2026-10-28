@@ -18,37 +18,64 @@ FIXTURES = {
     0x10700: ('fixture_x87', 'dd01d9fcdd1ac3'),
     0x10800: ('fixture_div', '8b44240431d2f7f1c3'),
     0x10900: ('fixture_memory', '8b0183c0018902c3'),
+    0x10a00: ('fixture_u16', '0fb701668902c3'),
+    0x10b00: ('fixture_s16', '0fbf01668902c3'),
+    0x10c00: ('fixture_f32', 'f30f1001f30f1102c3'),
+    0x10d00: ('fixture_f64', 'f20f1001f20f1102c3'),
+    0x10e00: ('fixture_i64', 'df29df3ac3'),
+    0x11000: ('fixture_rmw', '8301010f92c00f94c30f90c20f98c6c3'),
+    0x11100: ('fixture_rmw16', '668301010f92c00f94c30f90c20f98c6c3'),
+    0x11200: ('fixture_not', 'f711c3'),
+    0x11300: ('fixture_xchg', '8701c3'),
+    0x11400: ('fixture_indirect_mem', 'ff11c3'),
+    0x11500: ('fixture_address', '8b4401088902c3'),
+    0x11600: ('fixture_push', 'ff31c3'),
+    0x11700: ('fixture_pop', '58c3'),
+    0x11800: ('fixture_atomic', 'f00fc101c3'),
+    0x11900: ('fixture_mmx', '0f6f010f7f02c3'),
+    0x11a00: ('fixture_half', '0f12010f1302c3'),
+    0x11b00: ('fixture_s32', 'db01db1ac3'),
+    0x11c00: ('fixture_push16', '66ff31c3'),
+    0x11d00: ('fixture_pop_mem', '8f02c3'),
+    0x11e00: ('fixture_pop16_mem', '668f02c3'),
+    0x11f00: ('fixture_pop_esp_mem', '8f0424c3'),
+    0x12000: ('fixture_sub', '8329010f92c00f94c30f90c20f98c6c3'),
+    0x12100: ('fixture_rmw8', '8001010f92c00f94c30f90c20f98c6c3'),
+    0x12200: ('fixture_ss_register', 'f30f10c1c3'),
+    0x12300: ('fixture_sd_register', 'f20f10c1c3'),
+
 }
 
 def main():
     runtime = prepare()
-    sys.path.insert(0, str(runtime))
-    from tools.recomp.translator import FunctionTranslator
-    from tools.recomp import config
+    from guest_codegen import configure
+    FunctionTranslator, config, original_translate = configure(runtime)
     out = ROOT / 'build/guest'
     include = out / 'include'
     include.mkdir(parents=True, exist_ok=True)
-    config._install([config.Section('.text', 0x10000, 0x1000, 0, 0x1000, True),
-                     config.Section('.data', 0x18000, 0x8000, 0x1000, 0x8000, False)],
+    config._install([config.Section('.text', 0x10000, 0x4000, 0, 0x4000, True),
+                     config.Section('.data', 0x18000, 0x8000, 0x4000, 0x8000, False)],
                     0x10000, 0, 'asset-free-vita-fixtures')
-    image = bytearray(0x9000)
+    image = bytearray(0xc000)
     db = {}
     for va, (name, hex_bytes) in FIXTURES.items():
         code = bytes.fromhex(hex_bytes)
         image[va - 0x10000:va - 0x10000 + len(code)] = code
         db[va] = dict(name=name, end=va + len(code), size=len(code), _addr=va)
     translator = FunctionTranslator(bytes(image), db, seh_prolog=[], seh_epilog=[])
-    chunks = ['#include "recomp_types.h"\n']
+    chunks = ['#define RECOMP_GENERATED_CODE\n#include "recomp_types.h"\n#include "lowered_memory.h"\n']
     # Same global-register aliases supplied by upstream batch translation.
     chunks += [f'#define {reg} g_{reg}\n' for reg in
                ('eax', 'ebx', 'ecx', 'edx', 'esi', 'edi', 'esp',
                 *(f'xmm{i}' for i in range(8)))]
     chunks += [f'void {item[0]}(void);\n' for item in FIXTURES.values()]
+    baseline_chunks = list(chunks)
     for va, info in db.items():
         body = translator.translate_function(va, info)
         if not body or translator.lifter.unimplemented:
             raise RuntimeError(f'Untranslated fixture: {info["name"]}: {translator.lifter.unimplemented}')
         chunks.append(body)
+        baseline_chunks.append(original_translate(translator, va, info))
     (out / 'fixtures.c').write_text('\n'.join(chunks))
     import re
     kernel = (runtime / 'src/kernel/kernel.h').read_text()
@@ -67,6 +94,7 @@ def main():
         contract.append(f'#define PC_{name} {match[1]}u\n')
     (include / 'pc_memory_contract.h').write_text(''.join(contract))
     (out / 'pristine').mkdir(exist_ok=True)
+    (out / 'pristine/fixtures.c').write_text('\n'.join(baseline_chunks))
     (out / 'pristine/pc_memory_contract.h').write_text(''.join(contract))
     original = (runtime / 'templates/runtime/recomp_types.h').read_text()
     (include / 'recomp_types.h').write_text(original)

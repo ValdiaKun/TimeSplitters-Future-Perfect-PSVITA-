@@ -11,8 +11,13 @@ void *tsfp_guest_pointer(uint32_t address, size_t width);
  * little-endian bit patterns across a 64 MiB RAM mirror boundary, unlike a
  * borrowed lvalue pointer. Accesses are validated in full before mutation.
  * These are non-atomic; LOCK operations need separate implementation.
- * Generator integration is a later task; existing MEM macros still use
- * tsfp_guest_pointer and deliberately fault on split spans. */
+ * tools/guest_codegen.py connects generated memory expressions to these
+ * helpers. Raw MEM lvalues remain available for bounded native adapters. */
+void *tsfp_guest_atomic_pointer(uint32_t address);
+uint8_t tsfp_guest_load_u8(uint32_t address);
+int8_t tsfp_guest_load_s8(uint32_t address);
+void tsfp_guest_store_u8(uint32_t address, uint8_t value);
+void tsfp_guest_store_s8(uint32_t address, int8_t value);
 uint16_t tsfp_guest_load_u16(uint32_t address);
 uint32_t tsfp_guest_load_u32(uint32_t address);
 uint64_t tsfp_guest_load_u64(uint32_t address);

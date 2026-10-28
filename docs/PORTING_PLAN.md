@@ -2,7 +2,7 @@
 
 **Project:** `ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-`  
 **Source upstream:** [TimeSplitters PC](https://github.com/ValdiaKun/timesplitters-future-perfect-pc)  
-**State:** native diagnostic and synthetic guest test VPKs cross-build; ten PC-translated synthetic x86 functions execute on ARMv7 under QEMU. **No retail game runtime, renderer or gameplay. Hardware unverified.** See [STATUS.md](STATUS.md) and [VALIDATION.md](VALIDATION.md).
+**State:** native diagnostic and synthetic guest test VPKs cross-build; 35 PC-translated synthetic x86 functions execute on ARMv7 under QEMU. **No retail game runtime, renderer or gameplay. Hardware unverified.** See [STATUS.md](STATUS.md) and [VALIDATION.md](VALIDATION.md).
 
 ## Reference projects and applicability
 
@@ -37,7 +37,7 @@ See [MH3's optimization index](https://github.com/Grarak/mh3-wii/blob/main/docs/
 ### M1 — ARMv7 compatibility harness
 - [x] Identify and pin PC upstream commit and generated-code/build requirements (`sources.lock.json`, `external/pc`).
 - [ ] Build *asset-free* CPU fixtures on ARMv7; check size/alignment, little-endian layout, x87/SSE lowering, flags, exceptions, atomics and guest pointer validity.
-- [x] Prototype 64 MiB RAM views and separate contiguous/tiled backings without booting game; stack/TLS/atomics have synthetic coverage. Generated scalar RAM-wrap lowering and real guest thread entry remain open.
+- [x] Prototype 64 MiB RAM views and separate contiguous/tiled backings without booting game; stack/TLS/atomics have synthetic coverage. Generated scalar RAM-wrap lowering has synthetic coverage; bulk pointer escapes and real guest thread entry remain open.
 - [ ] Execute tests on an actual Vita or ARMv7 equivalent; don't treat host x86 test results as ARM validation.
 
 ### M2 — system services and title boot
@@ -84,8 +84,7 @@ This bootstrap **does not run the game**. The final port cannot be declared runn
 The older M0–M4 labels above remain roadmap groups. Milestone A's cross-build
 and deterministic input gates pass; hardware platform validation remains open.
 Milestone B has a passing ARMv7 synthetic subset, not full runtime acceptance.
-RAM views and MMIO classification now have host/ARM coverage. Generated scalar
-RAM-wrap accesses, device behavior, complete flags/FP behavior, exception
+RAM views and MMIO classification now have host/ARM coverage. REP/string pointer escapes, device behavior, complete flags/FP behavior, exception
 delivery, title thread entry and retail dispatch coverage remain open. The
 renderer (C) requires device comparison of libgxm/vitaGL triangle, textures,
 blend/depth and render-target tests before selecting a production backend.
@@ -94,3 +93,9 @@ Boot/services (D) and optimization (E) require verified user files and hardware.
 Reviewed reference revisions and licensing constraints are in
 [REFERENCE_AUDIT.md](REFERENCE_AUDIT.md). No baseline depends on kubridge,
 CapUnlocker, clock changes or an on-device shader compiler.
+
+Generated scalar integration now uses the real PC translator with a typed AST
+emission adapter; tests cover 35 synthetic functions on the host/ARM matrix.
+Bulk/string pointer escapes, complete instruction/flags/FP/exception coverage,
+kernel services and title entry remain open. Retail source generation and all
+hardware gates still require their explicit prerequisites.

@@ -2,6 +2,7 @@
 #include "memory.h"
 #include <limits.h>
 #include <string.h>
+_Static_assert(sizeof(float) == 4 && sizeof(double) == 8, "guest requires IEEE storage widths");
 _Static_assert(CHAR_BIT == 8 && sizeof(uint32_t) == 4, "guest requires 8-bit bytes and 32-bit words");
 #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
 #error Guest adapter requires a little-endian target
@@ -125,6 +126,8 @@ void tsfp_guest_write(uint32_t address, const void *source, size_t width) {
         tsfp_guest_write(address, &value, sizeof(value));                        \
     }
 
+TSFP_DEFINE_SCALAR_ACCESS(u8, uint8_t)
+TSFP_DEFINE_SCALAR_ACCESS(s8, int8_t)
 TSFP_DEFINE_SCALAR_ACCESS(u16, uint16_t)
 TSFP_DEFINE_SCALAR_ACCESS(u32, uint32_t)
 TSFP_DEFINE_SCALAR_ACCESS(u64, uint64_t)
@@ -135,3 +138,10 @@ TSFP_DEFINE_SCALAR_ACCESS(f32, float)
 TSFP_DEFINE_SCALAR_ACCESS(f64, double)
 #undef TSFP_DEFINE_SCALAR_ACCESS
 
+
+void *tsfp_guest_atomic_pointer(uint32_t address) {
+    void *pointer = tsfp_guest_pointer(address, sizeof(uint32_t));
+    if ((address & 3u) || ((uintptr_t)pointer & 3u))
+        tsfp_guest_memory_fault(address, sizeof(uint32_t));
+    return pointer;
+}

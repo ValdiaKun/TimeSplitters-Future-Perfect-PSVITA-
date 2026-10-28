@@ -46,7 +46,7 @@ an existing unrecognized SDK directory is preserved and rejected.
 
 ```sh
 git submodule update --init external/pc
-python3 -m pip install capstone==5.0.9 cmake==4.4.4 ninja==1.13.2
+python3 -m pip install capstone==5.0.9 pycparser==2.23 cmake==4.4.4 ninja==1.13.2
 python3 tools/fetch_vitasdk.py
 python3 tools/generate_fixtures.py
 export VITASDK="$PWD/.cache/toolchains/vitasdk"

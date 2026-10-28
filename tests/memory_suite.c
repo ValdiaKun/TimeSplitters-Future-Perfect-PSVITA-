@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 void fixture_memory(void);
+void test_generated_memory(void);
 typedef struct InvalidBind { void *ram; size_t ram_size; void *contiguous; size_t contiguous_size; } InvalidBind;
 static void invalid_bind(void *context) {
     InvalidBind *bind = context;
@@ -184,6 +185,7 @@ void test_memory_map(void) {
     translated_copy(0x80010000, 0xf0010004, 0x44444444);
     assert(MEM32(0x80010004) == 0x44444445 && MEM32(0x10000) == 0);
     test_scalar_wraps();
+    test_generated_memory();
     /* Byte transfers support RAM wrap; pointer lvalues must reject it on ARM. */
     static const unsigned char pattern[] = {1, 2, 3, 4, 5, 6, 7, 8};
     unsigned char actual[sizeof(pattern)] = {0};
@@ -241,7 +243,7 @@ void test_memory_map(void) {
     /* Real translated instructions must fault, not silently fold MMIO to RAM. */
     MEM32(0x20100) = 0xdeadbeef;
     uint32_t translated_denied[] = {0xfd000000, 0xfe000000, 0xfe800000,
-                                   0xff000000, 0x03fffffe, 0x73fffffe};
+                                   0xff000000, 0x74000000, 0x73fffffe};
     for (unsigned i = 0; i < sizeof(translated_denied) / sizeof(translated_denied[0]); ++i) {
         test_expect_fault(denied_translated_read, &translated_denied[i], translated_denied[i], 4);
         assert(MEM32(0x20100) == 0xdeadbeef);

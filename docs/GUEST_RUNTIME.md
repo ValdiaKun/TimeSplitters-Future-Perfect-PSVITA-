@@ -8,7 +8,7 @@ execute any retail game function. Generated C remains ignored under `build/`.
 
 ```
 git submodule update --init external/pc
-python3 -m pip install capstone==5.0.9
+python3 -m pip install capstone==5.0.9 pycparser==2.23
 python3 tools/test_guest.py
 python3 tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc --qemu qemu-arm
 ```
@@ -47,12 +47,12 @@ upstream. Never edit `build/guest/fixtures.c` or any generated game translation.
 The full pinned PC source is retained as one submodule rather than inventing a
 fragile partial engine copy. No SDL, renderer, retail assets or Xbox kernel are
 needed for the tested CPU subset. PC dependencies not exercised here remain at
-their authoritative pins in `external/pc/requirements.txt`; only the three host
-build tools actually used here are installed for Vita cross-build CI.
+their authoritative pins in `external/pc/requirements.txt`; only the required host
+build/decoder/parser tools are installed for Vita cross-build CI.
 
 ## Tested contracts and limits
 
-Ten authored byte sequences cover guest stack arguments and ret, carry, a
+35 authored byte sequences cover guest stack arguments and ret, carry, a
 callee saving EBX, a direct call with the exact guest return VA, an indirect
 lookup, unaligned integer memory, SSE load/add/store, x87 rounding and integer
 division; a register-addressed load/add/store fixture exercises all RAM views and contiguous/tiled aliases. Assertions independently check expected results; pristine PC and
@@ -141,15 +141,15 @@ hardware-unverified.
 
 ## Next implementation
 
-Replace pointer-only scalar memory lowering with explicit load/store helpers
-that can split valid RAM-wrap accesses while preserving operand evaluation,
-fault ordering, endian/FP bit patterns and the original PC oracle results.
-Include generated unaligned loads/stores ending at each RAM-view boundary;
-retain faults for final-view, MMIO and 32-bit-rollover crossings. Then expand
-generated flag/FP edge fixtures and real TLS/thread entry contracts.
-User-supplied US XBE verification must precede any retail generation:
+Audit remaining generated pointer escapes (especially REP/string bulk transfers)
+and add explicit guest-to-guest memory adapters with PC-oracle tests, then extend
+XADD/CMPXCHG EFLAGS and exception/thread entry coverage. Do not relax the emission
+pass's fail-closed checks to get a retail translation through. Full runtime,
+instruction coverage and guest exception recovery remain incomplete.
+
+User-supplied US XBE verification must precede retail generation:
 SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`,
-title ID `45410066`. Do not add executable bytes to synthetic fixtures.
+title ID `45410066`. No supported executable is available in this session.
 
 
 ## Split-safe scalar access foundation (2026-10-29)
@@ -185,3 +185,67 @@ The new accessors are available for future *source-generator* load/store
 lowering but are not yet substituted into all generated guest instructions.
 Do not claim that generated scalar wrap accesses are solved. LOCK/atomic
 operations, guest exception delivery and full runtime mapping remain open.
+
+## Generated memory emission integration (2026-10-29)
+
+`tools/guest_codegen.py:configure` installs a process-local adapter around the
+**real** pinned `FunctionTranslator.translate_function`, also used by the upstream
+batch recompiler. `tools/generate_fixtures.py` uses this same route. The PC checkout,
+pristine runtime snapshot and retail generated C are never edited. The adapter
+injects `guest/lowered_memory.h` and parses emitted function bodies with pinned
+BSD-licensed pycparser 2.23. Directives are preserved explicitly; unknown syntax,
+unbounded `XBOX_PTR` escapes, unrecognized borrowed lvalues and hidden memory in
+opaque preprocessor macros fail generation.
+
+AST context distinguishes reads from assignments, compound assignments, prefix/
+postfix updates, stack operations and atomic pointer arguments. Scalar stores use
+GNU statement expressions to capture address/value once and preserve expression
+results; fresh temporary names avoid collisions. Width/sign/FP type chooses the
+existing typed accessor. PUSH commits ESP after a validated store; memory POP
+samples the source and computes ESP-relative destinations using the post-pop
+address, but commits ESP only after the destination store succeeds. Locked 32-bit
+operations keep upstream atomic primitives and require a complete aligned span;
+unaligned or split atomics fault explicitly rather than becoming ordinary stores.
+
+MMX qword, SSE scalar, half-register and full 128-bit memory transfers are routed
+to whole-range accessors. This prevents partial vector writes. MOVSS/MOVSD move
+raw lanes, including NaN payloads and negative zero, without float conversion.
+Regression tests exposed two pinned emission defects: MOVSD stores used `.f[0]`
+instead of the double/bit lane, and ADD/SUB overflow conditions were unavailable
+for SETO. Narrow source-emission adapters correct these; their opcode-level
+expected results are independently asserted. Word PUSH and memory POP fault
+ordering is also adapted. No unsafe FP options are enabled.
+
+The mapped-PC baseline uses **unlowered function bodies** and the original PC
+runtime memory header, with the same narrowly scoped SSE/overflow/stack emission
+repairs. Portable/sanitized/ARM builds use separately generated lowered bodies.
+Consequently this is not a claim that the untouched pinned PC compiler already
+handled those cases. Linux shared mappings remain the memory-policy oracle;
+actual Windows kernel initialization and physical Xbox faults are not executed.
+
+35 authored x86 fixtures now cover MOV/MOVZX/MOVSX, signed x87 integer transfers,
+bit-exact SSE/MMX moves, RMW ADD/NOT/XCHG, carry/zero/sign/overflow consumers,
+indirect memory calls, effective-address rollover, PUSH/POP and aligned XADD.
+All 28 RAM transitions are exercised; vector splits, invalid destinations,
+nonmutating failed stores and architectural cells on fault are asserted.
+Seven additional source-pass tests cover compound expressions, single evaluation,
+temporary hygiene, macro/string preservation, rejected pointer escapes and input
+hash rejection. This is tested instruction coverage, not complete x86/SEH/FP or
+atomic EFLAGS validation. x87 still uses the inherited binary64 stack, so integer
+fixtures use exactly representable values; no 80-bit precision claim is made.
+
+For the guarded actual recompiler entry (requires matching PC analysis metadata):
+
+```sh
+python3 tools/guest_codegen.py --help
+python3 tools/guest_codegen.py /local/user/default.xbe --destination build/guest-retail --all
+```
+
+The CLI checks the supported executable hash before preparation, forces output
+under this checkout's ignored build directory, keeps single-function generated
+stdout there, and prepares the patched runtime header. Its help and unsupported
+input rejection are tested; **supported retail generation is unavailable and
+untested without user files**. Compiling generated code requires `-Iguest`,
+`TSFP_PORTABLE_GUEST_MEMORY`, and the memory/runtime adapters; this is not a full
+title build or loader. `build/guest/report.json` fingerprints original/lowered
+outputs, adapter sources and the source/dependency manifest.

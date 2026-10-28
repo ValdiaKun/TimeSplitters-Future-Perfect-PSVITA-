@@ -18,7 +18,7 @@ unsigned int _newlib_heap_size_user = 160u * 1024u * 1024u;
 
 ptrdiff_t g_xbox_mem_offset;
 int g_force_return;
-uint32_t g_xbox_code_lo = 0x10000, g_xbox_code_hi = 0x11000;
+uint32_t g_xbox_code_lo = 0x10000, g_xbox_code_hi = 0x14000;
 RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi;
 RECOMP_TLS uint32_t g_ebp, g_seh_ebp, g_fs_base;
 RECOMP_TLS double g_fp_stack[8];
@@ -181,6 +181,6 @@ int main(void) {
     assert(pthread_join(thread, NULL) == 0 && g_eax == 0xabcdef01);
     assert(shared_counter == 20000);
     test_memory_map();
-    puts("guest-fixtures-v2: add=0 carry=1 call=48 indirect=48 sse=1,3,5,7 x87=2,2,3,2 div=3r1 faults=pass atomic=pass tls=pass memory-map=pass");
+    puts("guest-fixtures-v3: add=0 carry=1 call=48 indirect=48 sse=1,3,5,7 x87=2,2,3,2 div=3r1 faults=pass atomic=pass tls=pass memory-map=pass");
     return 0;
 }

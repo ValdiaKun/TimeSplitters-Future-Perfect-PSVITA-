@@ -10,7 +10,7 @@ campaign execution. Physical Vita behavior is unverified.**
 - Pinned PC submodule/source manifest, offline runtime reconstruction and full
   authoritative patch application, reproducible ARM header adaptation.
 - Checked unaligned little-endian guest memory prototype and deterministic
-  generation of ten synthetic x86 functions using the real PC translator.
+  generation of 35 synthetic x86 functions using the real PC translator.
 - Explicit 64 MiB RAM/28 mirror address views, independent optional contiguous
   backing, tiled alias and kernel-data/MMIO/flash/invalid classification.
   Checked byte transfers support RAM wrap; unsupported device accesses fault.
@@ -39,7 +39,7 @@ is not on-device execution. No hardware behavior or FPS result is confirmed.
 
 - A: reproducible cross-build and deterministic host tests implemented. Vita
   installation, display, input, lifecycle and diagnostic log delivery await hardware.
-- B: narrow synthetic CPU subset passes ARM32 execution under QEMU; generated scalar RAM-wrap loads/stores, complete
+- B: narrow synthetic CPU subset passes ARM32 execution under QEMU; complete generated instruction/flag/exception coverage and
   title layout/services, all flags/FP modes, exception delivery, real guest
   threads and full dispatch are incomplete. Acceptance is not complete.
 - C: reviewed direct GXM versus vitaGL references; production backend undecided.
@@ -52,10 +52,9 @@ is not on-device execution. No hardware behavior or FPS result is confirmed.
 
 Start with `python3 tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc` in a
 checkout with the pinned submodule initialized. Read [GUEST_RUNTIME.md](GUEST_RUNTIME.md).
-The new split-safe scalar load/store *accessors* are tested against the PC
-shared-map oracle. The next code task is wiring them into the source generator
-for actual translated load/store expressions at RAM-wrap boundaries, then
-adding generated boundary fixtures and expanding flag/FP edge coverage. On physical Vita, separately
+Generated scalar load/store lowering now passes the documented synthetic matrix.
+Next: explicit REP/string pointer-escape lowering, then atomic EFLAGS and
+exception/thread entry coverage. On physical Vita, separately
 validate bootstrap installation, both sticks/buttons and Select+Start exit;
 collect synthetic guest test results before connecting title boot. Never mark a
 menu, diagnostic or synthetic CPU test as proof of gameplay.
@@ -78,3 +77,21 @@ menu, diagnostic or synthetic CPU test as proof of gameplay.
   No physical Vita, retail title, GPU or FPS validation was performed.
 - Existing translated `MEM*` lvalues still fault on valid wrapped scalars.
   Generator lowering is the next correctness gate.
+
+## 2026-10-29: generated scalar integration
+
+- Real PC FunctionTranslator emission is adapted through `tools/guest_codegen.py`
+  and `tools/guest_lowering.py`; typed AST handling replaces raw lvalue use in
+  separately generated portable function bodies. Existing helpers are reused.
+- Added MMX/SSE whole-range memory adapters, atomic alignment/span checks and
+  tested PUSH/POP commit ordering. Source adapters repair pinned MOVSD lane
+  stores and ADD/SUB overflow consumers; the PC source pin is unchanged.
+- 35 translated fixtures and seven source-pass tests pass locally with PC mapped
+  oracle, portable host, ASan/UBSan and Cortex-A9 ARMv7 QEMU. VitaSDK Release
+  cross-build of both VPKs passes. New remote CI is pending push.
+- Current old paragraphs describing pointer-only generated scalar lowering are
+  historical; see the new contract section in GUEST_RUNTIME.md.
+- No supported US XBE or physical Vita is available. Retail generation, full
+  runtime/gameplay, GPU/device services, heap availability and FPS remain unverified.
+- Next: lower REP/string native pointer escapes with explicit guest memory
+  semantics and oracle tests; keep unknown escapes fatal at generation time.
