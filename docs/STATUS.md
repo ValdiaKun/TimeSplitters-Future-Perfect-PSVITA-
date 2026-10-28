@@ -29,7 +29,10 @@ campaign execution. Physical Vita behavior is unverified.**
 
 See [VALIDATION.md](VALIDATION.md) for commands, tool versions, failures resolved
 and exact scope. Local host, sanitizer and ARMv7 QEMU checks passed; both VPKs
-cross-built. The expanded memory suite passed locally on the PC shared-map oracle, portable host, ASan/UBSan and ARMv7 QEMU; refreshed remote CI is pending push. Previous GitHub Actions CPU/Vita run `40718220983` and host input run `40718220954` passed at code commit `caff85b`; see the linked validation record. VPK creation
+cross-built. The expanded memory suite passed locally on the PC shared-map oracle,
+portable host, ASan/UBSan and ARMv7 QEMU. GitHub Actions CPU/Vita run
+`40721699619` and host input run `40721699935` passed at code commit `9a48db1`.
+See the linked validation record for earlier evidence and scope. VPK creation
 is not on-device execution. No hardware behavior or FPS result is confirmed.
 
 ## Partial and blocked

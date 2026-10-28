@@ -118,6 +118,10 @@ The test VPK has a configured 160 MiB heap for the two 64 MiB backings; no real
 Vita allocation or performance measurements are available.
 
 Local strict host controller tests, Python syntax checks and Release Vita
-cross-build passed. No new source dependency pin changed. New remote CI results
-will be recorded after the implementation push; earlier CI links above refer
-to the earlier foundation.
+cross-build passed. No new source dependency pin changed. Code commit `9a48db1da90aa4ad8d57000c8dea832da3ae55f2` passed:
+
+- [CPU/ARM and Vita cross-build, PR run 40721699619](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40721699619).
+- [Host input, PR run 40721699935](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40721699935).
+
+Remote main remained `0322acbea29bffccc267f0e48893795a9f420efa` and PR #1
+remained open/draft. Earlier CI links above refer to the earlier foundation.
