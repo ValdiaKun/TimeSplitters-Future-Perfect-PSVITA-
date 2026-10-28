@@ -1,6 +1,6 @@
 # Validation record — 2026-10-28
 
-Host: Debian 13 x86_64, GCC 14.2.0, Python 3.12.12. PC pin `759f7a0`;
+Host: Debian 13 x86_64, GCC 14.2.0, Python 3.12.14. PC pin `759f7a0`;
 runtime `d90c929`; Capstone 5.0.9; CMake 4.4.4; Ninja 1.13.2.
 VitaSDK snapshot `sdk-snapshot-20261015.850.1`, GCC 15.2.0; archive and package
 SHA-256s in `sources.lock.json`. SDK hash also matched its published SHA256SUMS.
@@ -50,6 +50,17 @@ TLS isolation and concurrent atomic assertions execute; no game assets are read.
 Full commands/output and generated fingerprints are in ignored
 `build/guest/report.json`; CI uploads that CPU report. The original controller
 workflow also passed remotely at `c787e0f`, run `40715066565`.
+
+Code commit `caff85b825d8340bf696ea52a255b5820af4cbbd` passed GitHub Actions:
+
+- PR CPU and Vita cross-build: [40718220983](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40718220983), both jobs successful.
+- Push CPU and Vita cross-build: [40718211500](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40718211500), both jobs successful.
+- PR host input: [40718220954](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40718220954), successful.
+
+Remote `main` remained `0322acbea29bffccc267f0e48893795a9f420efa`; PR #1
+remained open and draft. No merge, force push, release or binary publication.
+Release guest ELF inspection also retained `__assert_func`, confirming the
+acceptance assertions were compiled in despite `NDEBUG` from Release flags.
 
 Both `build/vita-locked/tsfp-vita-bootstrap.vpk` and `tsfp-guest-test.vpk` were
 created. Inspection confirmed `sce_sys/param.sfo` and `eboot.bin` in each archive;

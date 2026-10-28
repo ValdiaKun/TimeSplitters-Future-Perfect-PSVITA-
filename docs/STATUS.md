@@ -25,7 +25,7 @@ campaign execution. Physical Vita behavior is unverified.**
 
 See [VALIDATION.md](VALIDATION.md) for commands, tool versions, failures resolved
 and exact scope. Local host, sanitizer and ARMv7 QEMU checks passed; both VPKs
-cross-built. Remote CI results are recorded in the PR after push. VPK creation
+cross-built. GitHub Actions CPU/Vita run `40718220983` and host input run `40718220954` passed at code commit `caff85b`; see the linked validation record. VPK creation
 is not on-device execution. No hardware behavior or FPS result is confirmed.
 
 ## Partial and blocked
