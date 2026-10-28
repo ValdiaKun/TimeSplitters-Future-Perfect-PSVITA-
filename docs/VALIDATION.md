@@ -125,3 +125,33 @@ cross-build passed. No new source dependency pin changed. Code commit `9a48db1da
 
 Remote main remained `0322acbea29bffccc267f0e48893795a9f420efa` and PR #1
 remained open/draft. Earlier CI links above refer to the earlier foundation.
+
+
+## 2026-10-29: typed scalar accesses across 64 MiB RAM aliases
+
+**Changed:** `guest/memory.{h,c}`, `tests/memory_suite.c`.
+The prior 64 MiB RAM/28-mirror/contiguous/tiled/MMIO map is preserved.
+
+The existing `tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc`
+workflow compares identical transcripts from the pinned PC mapped oracle,
+portable host implementation, AddressSanitizer/UndefinedBehaviorSanitizer,
+and ARMv7 Cortex-A9 userspace under QEMU. Tests now additionally verify
+all 28 adjacent low-view boundaries at every 64-bit split position,
+native PC oracle cross-view writes and reads, unsigned and signed
+16/32/64-bit accesses, preserved NaN payload and negative-zero bits,
+valid contiguous-to-kernel-data boundaries, and rejected MMIO/flash/
+unbacked and final-view accesses without partial mutation.
+
+**GitHub Actions evidence (code commit `f778686d95db23509a8b5d7a72c26b752a4dd8cc`):**
+
+- [CPU + Vita cross-build run 40722808711](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40722808711):
+  `cpu` **success** and `vita` **success**.
+- [Host input-mapping run 40722808716](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40722808716):
+  **success**.
+
+These are automated Linux runners, not locally executed host tools in this
+conversation. The Vita build job cross-compiles diagnostics and synthetic
+guest-test VPKs only; no physical console installed them. The generated
+recompiler `MEM*` lvalues have not been switched to these scalar helpers.
+No game boot, gameplay, GPU render, FPS or Vita heap availability was
+measured. Do not infer performance gains from accessors or CI completion.
