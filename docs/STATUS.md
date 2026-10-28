@@ -1,4 +1,4 @@
-# Port status — 2026-10-28
+# Port status — 2026-10-29
 
 **Not playable. No retail guest initialization, graphics, menu, audio, saves or
 campaign execution. Physical Vita behavior is unverified.**
@@ -52,8 +52,29 @@ is not on-device execution. No hardware behavior or FPS result is confirmed.
 
 Start with `python3 tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc` in a
 checkout with the pinned submodule initialized. Read [GUEST_RUNTIME.md](GUEST_RUNTIME.md).
-The next code task is split-safe generated scalar load/store lowering at RAM-wrap
-boundaries, compared against the PC shared-map oracle, then flag/FP edge coverage. On physical Vita, separately
+The new split-safe scalar load/store *accessors* are tested against the PC
+shared-map oracle. The next code task is wiring them into the source generator
+for actual translated load/store expressions at RAM-wrap boundaries, then
+adding generated boundary fixtures and expanding flag/FP edge coverage. On physical Vita, separately
 validate bootstrap installation, both sticks/buttons and Select+Start exit;
 collect synthetic guest test results before connecting title boot. Never mark a
 menu, diagnostic or synthetic CPU test as proof of gameplay.
+
+
+## 2026-10-29: scalar boundary access extension
+
+- Existing 64 MiB/28-mirror address space, contiguous/tiled alias and
+  MMIO/device classification remain intact; no submodule/toolchain pins changed.
+- Added typed unsigned/signed integer and floating-point split-safe
+  read/write helpers with whole-range validation and bit-preserving copies.
+- Tests cover 28 RAM-view transitions with all 1–7 byte splits of 64-bit
+  scalars, native mapped-PC oracle writes, smaller signed/unsigned scalars,
+  NaN payload and negative-zero preservation, kernel-data/contiguous
+  cross-classification, final-view rejection and MMIO/flash/invalid failures.
+- [CPU + Vita cross-build 40722808711](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40722808711):
+  **both jobs passed** at `f778686d`. [Host input 40722808716](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40722808716)
+  passed at the same revision.
+- Scope: source, host/sanitizers, ARMv7 QEMU and Vita cross-compilation.
+  No physical Vita, retail title, GPU or FPS validation was performed.
+- Existing translated `MEM*` lvalues still fault on valid wrapped scalars.
+  Generator lowering is the next correctness gate.
