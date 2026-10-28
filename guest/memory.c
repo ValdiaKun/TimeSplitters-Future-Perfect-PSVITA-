@@ -110,3 +110,28 @@ void tsfp_guest_read(uint32_t address, void *destination, size_t width) {
 void tsfp_guest_write(uint32_t address, const void *source, size_t width) {
     transfer(address, (void *)source, width, 1);
 }
+
+/* Scalar loads/stores use the validated two-phase transfer path. memcpy
+ * preserves signed and FP payload bits (including NaNs and negative zero).
+ * On a fast contiguous span the underlying copy is a single memcpy; valid
+ * physical RAM wraps are split only when necessary. No guest lvalue escapes. */
+#define TSFP_DEFINE_SCALAR_ACCESS(suffix, type)                                  \
+    type tsfp_guest_load_##suffix(uint32_t address) {                           \
+        type value;                                                              \
+        tsfp_guest_read(address, &value, sizeof(value));                         \
+        return value;                                                            \
+    }                                                                            \
+    void tsfp_guest_store_##suffix(uint32_t address, type value) {               \
+        tsfp_guest_write(address, &value, sizeof(value));                        \
+    }
+
+TSFP_DEFINE_SCALAR_ACCESS(u16, uint16_t)
+TSFP_DEFINE_SCALAR_ACCESS(u32, uint32_t)
+TSFP_DEFINE_SCALAR_ACCESS(u64, uint64_t)
+TSFP_DEFINE_SCALAR_ACCESS(s16, int16_t)
+TSFP_DEFINE_SCALAR_ACCESS(s32, int32_t)
+TSFP_DEFINE_SCALAR_ACCESS(s64, int64_t)
+TSFP_DEFINE_SCALAR_ACCESS(f32, float)
+TSFP_DEFINE_SCALAR_ACCESS(f64, double)
+#undef TSFP_DEFINE_SCALAR_ACCESS
+
