@@ -7,6 +7,29 @@
 /* Retained bounded fixture mode; replaces any previous Xbox binding. */
 void tsfp_guest_bind(void *storage, size_t size, uint32_t base);
 void *tsfp_guest_pointer(uint32_t address, size_t width);
+/* Split-safe scalar accesses for generated guest loads/stores. These preserve
+ * little-endian bit patterns across a 64 MiB RAM mirror boundary, unlike a
+ * borrowed lvalue pointer. Accesses are validated in full before mutation.
+ * These are non-atomic; LOCK operations need separate implementation.
+ * Generator integration is a later task; existing MEM macros still use
+ * tsfp_guest_pointer and deliberately fault on split spans. */
+uint16_t tsfp_guest_load_u16(uint32_t address);
+uint32_t tsfp_guest_load_u32(uint32_t address);
+uint64_t tsfp_guest_load_u64(uint32_t address);
+int16_t tsfp_guest_load_s16(uint32_t address);
+int32_t tsfp_guest_load_s32(uint32_t address);
+int64_t tsfp_guest_load_s64(uint32_t address);
+float tsfp_guest_load_f32(uint32_t address);
+double tsfp_guest_load_f64(uint32_t address);
+void tsfp_guest_store_u16(uint32_t address, uint16_t value);
+void tsfp_guest_store_u32(uint32_t address, uint32_t value);
+void tsfp_guest_store_u64(uint32_t address, uint64_t value);
+void tsfp_guest_store_s16(uint32_t address, int16_t value);
+void tsfp_guest_store_s32(uint32_t address, int32_t value);
+void tsfp_guest_store_s64(uint32_t address, int64_t value);
+void tsfp_guest_store_f32(uint32_t address, float value);
+void tsfp_guest_store_f64(uint32_t address, double value);
+
 /* Override in the platform adapter; must not return. */
 _Noreturn void tsfp_guest_memory_fault(uint32_t address, size_t width);
 #if !defined(__GNUC__) && !defined(__clang__)
