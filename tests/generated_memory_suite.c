@@ -66,6 +66,19 @@ void test_generated_memory(void) {
             enter(src, dst); tsfp_guest_store_s64(src, -INT64_C(123456789));
             g_fp_top = 0; fixture_i64();
             assert(tsfp_guest_load_s64(dst) == -INT64_C(123456789) && g_fp_top == 0);
+            /* Exercise stores across the wrap from an independent source. */
+            uint32_t safe = edge + 0x30000;
+            enter(safe, edge - split);
+            tsfp_guest_store_u64(safe, UINT64_C(0xfedcba9876543210));
+            tsfp_guest_store_u64(g_edx, 0); fixture_mmx();
+            assert(tsfp_guest_load_u64(g_edx) == UINT64_C(0xfedcba9876543210));
+            enter(safe, edge - split);
+            tsfp_guest_store_u64(safe, UINT64_C(0x7ff8123456789abc));
+            tsfp_guest_store_u64(g_edx, 0); fixture_f64();
+            assert(tsfp_guest_load_u64(g_edx) == UINT64_C(0x7ff8123456789abc));
+            enter(safe, edge - split); tsfp_guest_store_s64(safe, -INT64_C(123456789));
+            tsfp_guest_store_u64(g_edx, 0); g_fp_top = 0; fixture_i64();
+            assert(tsfp_guest_load_s64(g_edx) == -INT64_C(123456789) && g_fp_top == 0);
         }
         for (unsigned split = 1; split < 16; ++split) {
             enter(edge - split, edge + 0x50000);
@@ -156,6 +169,11 @@ void test_generated_memory(void) {
     enter(0x30000, final - 2); tsfp_guest_store_u16(final - 2, 0x5555);
     expect_instruction_fault(fixture_f32, final - 2, 4);
     assert(tsfp_guest_load_u16(final - 2) == 0x5555);
+    enter(0x30000, final - 4); tsfp_guest_store_u32(final - 4, 0x55555555);
+    expect_instruction_fault(fixture_mmx, final - 4, 8);
+    assert(tsfp_guest_load_u32(final - 4) == 0x55555555);
+    enter(0xfd000000, 0x30000); g_fp_top = 0;
+    check_fault(fixture_i64, 0xfd000000, 8); assert(g_fp_top == 0);
     enter(0x30000, final - 8); tsfp_guest_store_u64(final - 8, UINT64_C(0x5555555555555555));
     expect_instruction_fault(fixture_sse, final - 8, 16);
     assert(tsfp_guest_load_u64(final - 8) == UINT64_C(0x5555555555555555));

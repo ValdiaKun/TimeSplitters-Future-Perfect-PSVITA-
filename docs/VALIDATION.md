@@ -186,4 +186,12 @@ Coverage and remaining instruction limits are in GUEST_RUNTIME.md. Unsupported
 input is rejected before code generation. A supported retail executable and
 its analysis metadata are absent, so successful full-title generation/boot is
 unavailable. Physical Vita tests and all performance measurements are unavailable.
-Remote CI links will be recorded after the implementation push.
+Code commit `c3da8a11b365dc28e62d64aac88ad8b45840d915` passed
+[CPU/ARM + Vita CI 40727117655](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40727117655)
+and [host input CI 40727117635](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40727117635).
+A follow-up adds independent-source 64-bit wrapped stores (MMX, MOVSD and x87
+integer stores), failed 64-bit writes and unchanged x87 state on a rejected
+source. The complete local PC/portable/sanitizer/ARM matrix and Vita cross-build
+passed again with those assertions. The existing valid-wrap negative test was
+replaced by positive generated wrap tests; invalid/MMIO/final-view rejection
+assertions remain enabled.
