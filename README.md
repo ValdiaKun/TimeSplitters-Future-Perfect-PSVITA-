@@ -6,7 +6,7 @@ Experimental, independent **PS Vita homebrew porting project** for *TimeSplitter
 
 ## Project approach
 
-The existing [TimeSplitters PC project](https://github.com/ValdiaKun/timesplitters-future-perfect-pc) provides the x86-to-C recompilation, Xbox guest runtime and common gameplay/rendering policies. This **separate repository** owns Vita-specific development, validation, and documentation. Integration with the PC codebase is planned; the PC project remains the authoritative source for shared behavior until actual integration is established.
+The existing [TimeSplitters PC project](https://github.com/ValdiaKun/timesplitters-future-perfect-pc) provides the x86-to-C recompilation, Xbox guest runtime and common gameplay/rendering policies. This **separate repository** owns Vita-specific development, validation, and documentation. The PC source is pinned as `external/pc`; its translator now generates asset-free ARM guest tests. The PC project remains authoritative for shared behavior. Retail title/runtime integration remains incomplete.
 
 Research references:
 - [Halo CE Vita](https://github.com/BirchWoodGod/halo-ce-vita) — Xbox rendering and native ARM integration; its code is GPL-3.0-licensed.
@@ -23,4 +23,6 @@ Research references:
 5. Clearly distinguish an experimental diagnostic VPK from an actual working game port.
 6. Preserve attribution and original licenses; do not copy code from reference repositories without auditing its license and compatibility.
 
-See `docs/PORTING_PLAN.md` on the bootstrap development branch for the initial architecture.
+See [status](docs/STATUS.md), [guest build/test instructions](docs/GUEST_RUNTIME.md), [Vita build instructions](ports/vita/README.md), [validation](docs/VALIDATION.md), and [roadmap](docs/PORTING_PLAN.md). Both diagnostic and synthetic guest VPKs cross-build; ARMv7 fixture execution passes under QEMU. Hardware and gameplay remain unverified.
+
+New guest harness code is GPL-3.0-only; see [NOTICE](NOTICE) and the pinned dependency’s license notices.

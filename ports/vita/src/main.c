@@ -4,10 +4,20 @@
 #include <vita2d.h>
 
 #include "input_map.h"
+#include "diagnostics.h"
 
 static TsfpVitaSample sample_controller(SceCtrlData *pad) {
     TsfpVitaSample sample = {0, 128, 128, 128, 128};
-    if (sceCtrlPeekBufferPositive(0, pad, 1) <= 0) return sample;
+    int result = sceCtrlPeekBufferPositive(0, pad, 1);
+    static int failed;
+    if (result <= 0) {
+        if (!failed) tsfp_diagnostic(sceKernelGetProcessTimeWide(), "error", "controller_sample", result);
+        failed = 1;
+        *pad = (SceCtrlData){0};
+        return sample;
+    }
+    if (failed) tsfp_diagnostic(sceKernelGetProcessTimeWide(), "info", "controller_recovered", result);
+    failed = 0;
 
     sample.lx = pad->lx;
     sample.ly = pad->ly;
@@ -26,11 +36,28 @@ static TsfpVitaSample sample_controller(SceCtrlData *pad) {
 }
 
 int main(void) {
-    if (vita2d_init() < 0) return 1;
+    tsfp_diagnostic(sceKernelGetProcessTimeWide(), "info", "bootstrap_start", 0);
+    int result = vita2d_init();
+    if (result < 0) {
+        tsfp_diagnostic(sceKernelGetProcessTimeWide(), "error", "vita2d_init", result);
+        return 1;
+    }
     vita2d_set_clear_color(RGBA8(13, 20, 33, 255));
     vita2d_set_vblank_wait(1);
     vita2d_pgf *font = vita2d_load_default_pgf();
-    sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
+    if (!font) {
+        tsfp_diagnostic(sceKernelGetProcessTimeWide(), "error", "default_font", -1);
+        vita2d_fini();
+        return 1;
+    }
+    result = sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
+    if (result < 0) {
+        tsfp_diagnostic(sceKernelGetProcessTimeWide(), "error", "controller_mode", result);
+        vita2d_free_pgf(font);
+        vita2d_fini();
+        return 1;
+    }
+    tsfp_diagnostic(sceKernelGetProcessTimeWide(), "info", "diagnostic_ready", 0);
 
     SceCtrlData pad = {0};
     for (;;) {
@@ -73,6 +100,7 @@ int main(void) {
     vita2d_wait_rendering_done();
     if (font) vita2d_free_pgf(font);
     vita2d_fini();
+    tsfp_diagnostic(sceKernelGetProcessTimeWide(), "info", "bootstrap_exit", 0);
     sceKernelExitProcess(0);
     return 0;
 }

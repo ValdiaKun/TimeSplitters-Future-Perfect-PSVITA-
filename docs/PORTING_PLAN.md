@@ -2,7 +2,7 @@
 
 **Project:** `ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-`  
 **Source upstream:** [TimeSplitters PC](https://github.com/ValdiaKun/timesplitters-future-perfect-pc)  
-**State:** only the separate input/graphics diagnostic shell exists. **No native Xbox game runtime integration and no verified game VPK.**
+**State:** native diagnostic and synthetic guest test VPKs cross-build; nine PC-translated synthetic x86 functions execute on ARMv7 under QEMU. **No retail game runtime, renderer or gameplay. Hardware unverified.** See [STATUS.md](STATUS.md) and [VALIDATION.md](VALIDATION.md).
 
 ## Reference projects and applicability
 
@@ -15,7 +15,7 @@
 
 See [MH3's optimization index](https://github.com/Grarak/mh3-wii/blob/main/docs/optimizations/README.md).
 
-**Renderer decision is not made.** THUG and Halo demonstrate vitaGL approaches; MH3 demonstrates direct libgxm with offline shaders. We should benchmark an asset-free subset of TimeSplitters D3D8 operations, including render-target feedback and depth behavior, before committing to vitaGL versus direct libgxm. The earlier bootstrap's vita2d screen is intentionally not the final renderer.
+**Renderer decision is not made.** THUG demonstrates vitaGL; the inspected Halo revision uses direct GXM; MH3 demonstrates direct libgxm with offline shaders. We should benchmark an asset-free subset of TimeSplitters D3D8 operations, including render-target feedback and depth behavior, before committing to vitaGL versus direct libgxm. The earlier bootstrap's vita2d screen is intentionally not the final renderer.
 
 ## Work boundaries
 
@@ -30,12 +30,12 @@ See [MH3's optimization index](https://github.com/Grarak/mh3-wii/blob/main/docs/
 ### M0 — standalone VitaSDK bootstrap (ongoing)
 - [x] Isolated VitaSDK/vita2d diagnostic source, two analog sticks, provisional action flags.
 - [x] Deterministic host tests and CI workflow authored.
-- [ ] CI execution verified.
-- [ ] VitaSDK SELF/VPK build verified.
+- [x] Original input CI execution verified (run `40715066565`); new CI results tracked in PR #1.
+- [x] VitaSDK SELF/VPK cross-build verified for diagnostic and synthetic guest harness.
 - [ ] Physical Vita/PS TV boot, controls, readable UI and clean exit verified.
 
 ### M1 — ARMv7 compatibility harness
-- [ ] Identify and pin PC upstream commit and generated-code/build requirements.
+- [x] Identify and pin PC upstream commit and generated-code/build requirements (`sources.lock.json`, `external/pc`).
 - [ ] Build *asset-free* CPU fixtures on ARMv7; check size/alignment, little-endian layout, x87/SSE lowering, flags, exceptions, atomics and guest pointer validity.
 - [ ] Prototype native guest memory region mapping, stack and threads without booting game.
 - [ ] Execute tests on an actual Vita or ARMv7 equivalent; don't treat host x86 test results as ARM validation.
@@ -78,3 +78,18 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic \
 ```
 
 This bootstrap **does not run the game**. The final port cannot be declared runnable until native ARM guest execution and Xbox graphics/system services have been integrated and tested on hardware.
+
+## Current foundation gates (A/B)
+
+The older M0–M4 labels above remain roadmap groups. Milestone A's cross-build
+and deterministic input gates pass; hardware platform validation remains open.
+Milestone B has a passing ARMv7 synthetic subset, not full runtime acceptance.
+Memory aliases, MMIO classification, complete flags/FP behavior, exception
+delivery, title thread entry and retail dispatch coverage remain open. The
+renderer (C) requires device comparison of libgxm/vitaGL triangle, textures,
+blend/depth and render-target tests before selecting a production backend.
+Boot/services (D) and optimization (E) require verified user files and hardware.
+
+Reviewed reference revisions and licensing constraints are in
+[REFERENCE_AUDIT.md](REFERENCE_AUDIT.md). No baseline depends on kubridge,
+CapUnlocker, clock changes or an on-device shader compiler.

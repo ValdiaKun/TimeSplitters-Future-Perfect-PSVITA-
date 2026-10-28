@@ -1,0 +1,32 @@
+# Performance baseline
+
+No TimeSplitters gameplay performance has been measured. There is no Vita
+hardware, Vita GPU profiler or configured supported Vita emulator in this
+session. QEMU Cortex-A9 CPU test execution is correctness evidence only.
+
+| Metric | Baseline |
+| --- | --- |
+| Displayed FPS / game simulation rate | Unavailable: game not integrated |
+| Frame-time median / p95 / p99 | Unavailable |
+| Guest / render preparation / GPU execution time | Unavailable |
+| Draws / triangles / uploads / shader changes | Unavailable |
+| Peak general / GPU memory | Unavailable |
+| Loading / stalls / audio underruns / input latency | Unavailable |
+| Before/after optimization effect | No measurements; no optimization claim |
+
+Initial target is correct gameplay with consistent 30 FPS; 60 FPS is provisional.
+No clock override, kernel plugin, interpolation or fake-frame path is enabled.
+The bootstrap's vblank wait does not measure or establish game simulation rate.
+
+Future benchmark records must include device model, actual CPU/GPU clocks,
+renderer, internal resolution, compiler/options, commit and dirty state, source
+pins, scene, warmup, duration, sample count and repeated-run distributions.
+Report simulation steps and completed presentations separately; count lost frames
+and dropped samples. Use monotonic CPU timestamps and GPU notifications where
+supported, account for profiler overhead, and preserve the original game clock.
+Use fixed scenes and the same conditions before/after each change. Record missing
+metrics explicitly instead of substituting host timing or other ports' numbers.
+
+The synthetic harness currently records reproducibility and pass/fail, not CPU
+microbenchmark timings. Add bounded call/memory/dispatch benchmarks after the
+full memory contract is established and validate costs on a real ARM/Vita host.

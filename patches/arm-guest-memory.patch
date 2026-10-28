@@ -1,0 +1,32 @@
+--- a/recomp_types.h
++++ b/recomp_types.h
+@@ -490,6 +490,20 @@
+  * uintptr_t cast preserves the overflow bits, landing us 4GB+ past
+  * our mapping and causing access violations.
+  */
++#if defined(TSFP_PORTABLE_GUEST_MEMORY)
++#include "memory.h"
++#define XBOX_PTR(addr) ((uintptr_t)tsfp_guest_pointer((uint32_t)(addr), 1))
++#define MEM8(addr) (*(volatile uint8_t *)tsfp_guest_pointer((uint32_t)(addr), 1))
++#define SMEM8(addr) (*(volatile int8_t *)tsfp_guest_pointer((uint32_t)(addr), 1))
++#define MEM16(addr) TSFP_MEM(TsfpU16, addr)
++#define MEM32(addr) TSFP_MEM(TsfpU32, addr)
++#define MEM64(addr) TSFP_MEM(TsfpU64, addr)
++#define SMEM16(addr) TSFP_MEM(TsfpI16, addr)
++#define SMEM32(addr) TSFP_MEM(TsfpI32, addr)
++#define SMEM64(addr) TSFP_MEM(TsfpI64, addr)
++#define MEMF(addr) TSFP_MEM(TsfpF32, addr)
++#define MEMD(addr) TSFP_MEM(TsfpF64, addr)
++#else
+ #define XBOX_PTR(addr) ((uintptr_t)(uint32_t)(addr) + g_xbox_mem_offset)
+ 
+ /** Read/write N bytes at a flat Xbox memory address. */
+@@ -507,6 +521,8 @@
+ /** Float/double memory access. */
+ #define MEMF(addr)   (*(volatile float    *)XBOX_PTR(addr))
+ #define MEMD(addr)   (*(volatile double   *)XBOX_PTR(addr))
++
++#endif
+ 
+ /* ================================================================
+  * SSE / XMM register state

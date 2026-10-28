@@ -1,0 +1,19 @@
+The guest/ adapter, tests/guest_harness.c, tools/*.py and patches/ added for
+the ARM compatibility harness are licensed under GPL-3.0-only. See their SPDX
+markers and LICENSES/GPL-3.0.txt. This notice does not relicense pre-existing
+bootstrap files, upstream source, generated game code or game-owned content.
+
+The PC dependency is pinned by .gitmodules and sources.lock.json. Its root
+LICENSE/NOTICE and LICENSES/ contain the authoritative GPL, original MIT and
+component LGPL credits. The build uses that dependency in place, preserving
+all notices; no upstream implementation is copied into this source tree.
+The build-local ARM template patch is derived from its recomp_types.h contract
+and is supplied under GPL-3.0-only. Distributing guest test executables requires
+corresponding source including the pinned dependency, local patches and scripts.
+
+Halo CE Vita and MH3 Wii/Vita are GPL-3.0 references; THUG Vita lacks a root
+license grant in the inspected revision. No code from these three references
+is included. See docs/REFERENCE_AUDIT.md for revisions, paths and constraints.
+
+Original Xbox executables, data, music, graphics and mechanically translated
+retail game logic are not licensed by this notice and must not be committed.
