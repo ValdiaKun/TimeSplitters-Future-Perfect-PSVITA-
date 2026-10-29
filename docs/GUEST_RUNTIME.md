@@ -331,3 +331,9 @@ this is not complete EFLAGS flow across arbitrary calls/joins. Two translated
 workers increment through distinct RAM aliases and retain independent TLS cells.
 No production guest scheduler, Xbox exception delivery or title thread entry is
 implemented by these tests. PC/runtime pins and third-party provenance are unchanged.
+
+Native reference caveat: for repeated MOVS between different mapped views, the
+Linux oracle sequences actual single-element x86 instructions. Modern fast REP
+engines produced runner-dependent results with physical synonyms; they are not
+used to define the guest's sequential alias semantics. Ordinary native REP,
+independent byte modeling and actual translated host/ARM checks remain enabled.

@@ -258,3 +258,18 @@ nonmutating invalid/unaligned faults and 2,000 concurrent mirror increments.
 Unsupported operand forms are source-pass rejection tests. The unchanged 1,518
 string scenarios and existing v3 suite pass. VitaSDK Release VPK cross-build
 passes; it supplies compilation evidence only. No on-device results or timings.
+
+### Native REP alias-oracle portability finding
+
+CI `40800163555` failed native-image comparison while the independent PR run
+`40800171408` passed the identical `87f5de8` source. Diagnostic commit `fb86784`
+identified REP MOVSB from `04040040` to physical synonym `00040041`, count 5:
+byte-image offset 130 was `92` rather than sequential-model `85`. These distinct
+virtual mappings physically overlap. Modern native bulk-string execution is not
+used as the sequential-order reference across different mapped views after this
+observed runner dependence. `string_native_oracle.c` explicitly executes actual
+single-element MOVS and commits count between elements for cross-view references;
+ordinary ranges continue to execute actual REP. All generated cross-view cases
+still compare every byte and register against the independent sequential model,
+and retain the pinned PC shared mappings. This is an oracle portability fix,
+not a guest-runtime fast path, disabled assertion or Xbox hardware validation.

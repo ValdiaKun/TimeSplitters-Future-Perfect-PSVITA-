@@ -130,3 +130,9 @@ menu, diagnostic or synthetic CPU test as proof of gameplay.
   unavailable; no gameplay, allocation-capacity or performance claim is made.
 - Next: deterministic exception recovery and real guest thread-entry contracts;
   complete flags across calls/complex joins and x87 precision remain open.
+
+- Follow-up oracle portability finding: GitHub native bulk REP disagreed on
+  physical synonyms on one runner and passed on another. Cross-view MOVS native
+  references now sequence real single elements; ordinary REP remains native.
+  See VALIDATION.md for failing run, addresses and byte evidence. Generated
+  guest behavior and the complete byte-model assertions remain unchanged.

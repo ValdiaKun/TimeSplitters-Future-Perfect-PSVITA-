@@ -41,7 +41,7 @@ static void fault_handler(int signal_number, siginfo_t *info, void *context) {
     else if (repeat == 2) { EXECUTE("repne " base); } \
     else { EXECUTE("repe " base); } \
 } while (0)
-void native_string_oracle(unsigned kind, unsigned width, unsigned repeat, StringState *state) {
+static void native_string_instruction(unsigned kind, unsigned width, unsigned repeat, StringState *state) {
     struct sigaction handler = {0}, old;
     handler.sa_sigaction = fault_handler;
     handler.sa_flags = SA_SIGINFO;
@@ -80,5 +80,26 @@ void native_string_oracle(unsigned kind, unsigned width, unsigned repeat, String
         state->flags = (uint32_t)flags;
     }
     assert(sigaction(SIGSEGV, &old, NULL) == 0);
+}
+/* Modern fast-string engines can copy ahead through distinct virtual aliases
+ * of overlapping physical RAM. CI CPUs disagree on bulk REP results for these
+ * synonyms. Use real single-element MOVS for cross-view references, preserving
+ * guest element order; ordinary ranges still execute native REP. */
+static uint32_t memory_view(uint32_t address) {
+    if (address < 0x74000000u) return address / 0x04000000u;
+    if (address >= 0x80000000u && address < 0x84000000u) return 32;
+    if (address >= 0xf0000000u && address < 0xf4000000u) return 33;
+    return 34;
+}
+void native_string_oracle(unsigned kind, unsigned width, unsigned repeat, StringState *state) {
+    if (kind == 1 && repeat && memory_view(state->source) != memory_view(state->destination)) {
+        while (state->count) {
+            native_string_instruction(kind,width,0,state);
+            if (state->fault) return;
+            --state->count;
+        }
+        return;
+    }
+    native_string_instruction(kind,width,repeat,state);
 }
 #endif
