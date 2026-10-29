@@ -90,6 +90,10 @@ FIXTURES[0x13260] = ('fixture_fault_load', '8b01c3')
 FIXTURES[0x13280] = ('fixture_fault_store', '8902c3')
 FIXTURES[0x132a0] = ('fixture_fault_divide', 'f7f1c3')
 
+# Three real indirect kernel calls through guest import-table addresses in ESI.
+FIXTURES[0x13300] = ('fixture_title_entry', 'ff1689c7648b1d2800000064a1040000008b0868100000006800000900ff56046825000000ff5608c3')
+FIXTURES[0x13340] = ('fixture_kernel_call', 'ff16c3')
+
 
 def main():
     runtime = prepare()
@@ -139,6 +143,14 @@ def main():
     import re
     kernel = (runtime / 'src/kernel/kernel.h').read_text()
     layout = (runtime / 'src/kernel/xbox_memory_layout.h').read_text()
+    bridge = (runtime / 'src/kernel/kernel_bridge.c').read_text()
+    memory_layout = (runtime / 'src/kernel/xbox_memory_layout.c').read_text()
+    for ordinal, size, name in ((104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
+        if not re.search(rf'case {ordinal}: return\s+{size};',bridge) or not re.search(rf'case {ordinal}: return bridge_{name};',bridge):
+            raise RuntimeError(f'Pinned kernel ordinal/ABI changed: {ordinal} {name}')
+    for name,value in (('XBOX_THREAD_OBJ_SIZE','0x200u'),('XBOX_THREAD_ID_OFF','0x12Cu')):
+        if not re.search(rf'#define {name}\s+{value}\b',memory_layout):
+            raise RuntimeError(f'Pinned thread-object layout changed: {name}')
     checks = {
         'RAM_MIRRORS': (layout, r'#define XBOX_NUM_MIRRORS\s+(28)\b'),
         'CONTIG_BASE': (kernel, r'#define XBOX_CONTIG_BASE\s+(0x80000000)u'),

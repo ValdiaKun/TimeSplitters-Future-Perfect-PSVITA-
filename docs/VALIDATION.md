@@ -374,3 +374,44 @@ recorded in `build/guest/report.json`. The full 117-function/1,518-string/294-at
 matrix passes locally on PC, portable, ASan/UBSan and ARMv7 Cortex-A9 QEMU.
 VitaSDK cross-build passes. No dependency/source pins changed. Physical Vita,
 retail boot and performance remain unavailable. Remote trigger results follow.
+
+REP correction `09a1431`: push CI 40804082165 and PR CI 40804088172 both passed
+CPU and Vita jobs on the same revision; input CI 40804088185 passed. Push probe
+reported AMD signature a00f11 with hypervisor bit set and flags 44. The failing
+old run did not record CPUID; its entry-restored flags match Intel's specified
+behavior, but its vendor cannot be established retrospectively from those logs.
+
+## Synthetic thread-object/import entry subset
+
+The same full `tools/test_guest.py --arm-cc ... --qemu ...` command documented
+above now generates 119 functions and passes 13 source-pass tests. Existing native
+probe, 1,518 strings, 294 atomic cases and execution suites pass unchanged.
+New deterministic transcript on mapped PC, portable, ASan/UBSan and ARMv7 QEMU:
+
+```
+kernel-entry-v1: object=pass imports=3 stdcall=pass zero=pass exit=37 unsupported=pass
+```
+
+Actual translated entry calls through repaired guest import slots to current
+thread, zero memory and termination services. Tests assert object identity/TLS,
+unchanged template fields, physical-alias overlap rejection, all zeroed bytes,
+stdcall ESP progression, status 37, unknown ordinal 511 fault, rejected import
+rebinding preserving native metadata, complete argument-frame faults, zero-length
+behavior and no partial destination mutation. Generator checks the pinned PC
+object/ordinal/argument-byte anchors; no retail data or mocked success calls.
+
+One initial test failed because it overwrote a guest thunk with zero to test
+rejection, then expected that zero to dispatch through the previous native table.
+The corrected test verifies the rejected guest input is unchanged, then restores
+the prior slot VA before testing preserved native metadata. No check disabled.
+
+VitaSDK Release diagnostic/guest VPK cross-build, strict input tests, syntax and
+whitespace checks pass. No hardware or performance measurements. Handles/waits,
+full Xbox imports, section loading/permissions, XBE/metadata integration and retail
+entry remain unimplemented. Remote final-revision CI evidence follows.
+
+Additional entry assertions exercise actual translated FS-relative object/TLS
+loads. A cached RtlZeroMemory handler still zeroes memory after another ordinal
+lookup, and explicit reset makes old slot addresses unresolved. Review replaced
+an initial lookup-dependent generic handler with stable per-service/per-slot
+handlers so future call-site caches cannot reroute an import.

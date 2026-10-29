@@ -6,6 +6,7 @@
 #include "recomp_types.h"
 #include "memory.h"
 #include "execution.h"
+#include "kernel.h"
 #include "memory_test_support.h"
 #ifdef __vita__
 /* Two 64 MiB test backings plus allocator/thread overhead; device use unverified. */
@@ -59,7 +60,7 @@ recomp_func_t recomp_lookup(uint32_t address) {
     return address == 0x10200 ? fixture_callee : NULL;
 }
 recomp_func_t recomp_lookup_manual(uint32_t address) { (void)address; return NULL; }
-recomp_func_t recomp_lookup_kernel(uint32_t address) { (void)address; return NULL; }
+recomp_func_t recomp_lookup_kernel(uint32_t address) { return tsfp_kernel_lookup(address); }
 void recomp_icall_fail_log(uint32_t address) {
     if (tsfp_guest_recovery_active()) tsfp_guest_raise(TSFP_FAULT_DISPATCH,address,0,1);
     (void)address; ++unresolved;

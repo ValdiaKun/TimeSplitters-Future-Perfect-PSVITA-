@@ -28,3 +28,10 @@ the supported user-provided executable, matching metadata, game data and Vita.
 Current correctness gate: Intel REP comparison-fault EFLAGS restoration must pass
 push and PR validation before extending this boot path. The native host oracle
 has a separate vendor contract; see VALIDATION.md for the captured regression.
+
+Implemented subset after the CI gate: template-based thread object at fs:[0x28],
+canonical function-slot imports (16-slot bound), current-thread query, zeroing and
+termination. A real translated synthetic entry exercises all three services and
+TLS memory. This does not complete thread objects/handles/waits or a title loader.
+Next concrete gate is bounded image section/permission/import/entry initialization
+with synthetic input; the retail XBE and metadata are still unavailable.

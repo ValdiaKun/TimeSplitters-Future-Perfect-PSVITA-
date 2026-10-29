@@ -282,10 +282,11 @@ undefined on x86 and the adapter explicitly chooses zero; no hardware equality
 claim is made for that undefined bit. Guest thread entry must initialize the
 bridge; this is not a complete cross-call/cross-join EFLAGS implementation.
 
-Native x86_64 fault captures in this environment retained the last completed
-REP comparison's flags; the runtime and byte reference model match that observed
-PC contract. The faulting element changes no flags or pointer/count state.
-This observation is not physical Xbox/Vita exception validation. Native SIGSEGV
+The AMD native host retains the last completed REP comparison flags, but the
+Intel Xbox contract restores instruction-entry flags on a repeated comparison
+fault. The runtime and independent guest model now enforce Intel behavior,
+preserving completed pointer/count progress. Native reference expectations are
+separate and strict by vendor; this is not physical Xbox/Vita validation. Native SIGSEGV
 reports the first inaccessible byte; guest diagnostics report the requested
 logical start and width. Full guest SEH dispatch/resume remains unimplemented.
 
@@ -387,3 +388,43 @@ entry EFLAGS on a fault, retaining successful iteration index/count progression
 Native comparison uses explicit host-vendor expectations, never normalizes actual
 captured flags, and rejects unknown vendors. See VALIDATION.md and the standalone
 `tests/rep_fault_probe.c`; native host behavior is distinct from guest semantics.
+
+## Narrow kernel/thread-object bridge
+
+`guest/kernel.{h,c}` adapts canonical function import slots to the pinned PC
+namespace `FE000000 + slot*4`. Initialization reads up to 16 high-bit ordinal
+markers, validates the entire input, stages slot VAs, then publishes guest/native
+tables. Binding is allowed only with all guest execution stopped. Unknown function
+ordinals have an explicit `TSFP_FAULT_IMPORT` event with ordinal/target, not a
+successful fallback. Data exports, title-specific remaps and production import
+capacity are not implemented. The generator verifies pinned ordinal, argument
+byte-count and object-layout anchors before building tests.
+
+Three adapters exist: KeGetCurrentThread (104), RtlZeroMemory (320), and
+PsTerminateSystemThread (258). Arguments and return slot are read in one checked
+frame before side effects. Successful returning adapters consume return plus
+stdcall argument bytes. Zeroing validates the whole destination before writes,
+uses bounded constant zero chunks, and ignores invalid destinations at zero
+length. Termination captures exit status without returning into guest code;
+platform cleanup must occur after the execution boundary returns.
+
+Thread objects are 0x200 bytes with identity at +0x12c, following pinned
+xbox_AllocThreadTib. Preparation stages a caller-supplied template, patches ID,
+and installs fs:[0x28]. TIB/object physical alias overlap is rejected. The caller
+owns all storage; no arbitrary default object fields or fake handles are invented.
+Current-thread lookup checks mapping and identity against the attached context.
+Object handles, synchronization, allocation ownership and native scheduler remain
+open. Stack bounds still come from explicit thread-entry validation, not invented
+fields inside the Xbox object.
+
+The translated synthetic entry calls all three adapters via guest import slots,
+observes its current object, zeroes guest RAM, and terminates with status 37.
+This is an asset-free runtime integration test, not an XBE parser, section loader
+or retail title entry. Read/write/execute section permissions remain unimplemented.
+
+Supported import handlers are stable function pointers independent of subsequent
+lookups; unsupported slots each have a fail-closed handler carrying their slot's
+ordinal. Cached handlers must be discarded when the quiescent import table is
+replaced/reset. `tsfp_kernel_imports_reset` removes bindings before image teardown.
+The entry fixture also executes actual FS-relative x86 loads of fs:[0x28] and
+fs:[4]/thread data; these pass through the real scalar lowering pipeline.

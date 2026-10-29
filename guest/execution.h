@@ -12,7 +12,7 @@ typedef struct TsfpCpuState {
     int fp_top, fp_cmp;
     uint16_t fp_control, fp_cc;
 } TsfpCpuState;
-enum TsfpFaultKind { TSFP_FAULT_MEMORY=1, TSFP_FAULT_DIVIDE, TSFP_FAULT_DISPATCH, TSFP_THREAD_EXIT };
+enum TsfpFaultKind { TSFP_FAULT_MEMORY=1, TSFP_FAULT_DIVIDE, TSFP_FAULT_DISPATCH, TSFP_THREAD_EXIT, TSFP_FAULT_IMPORT };
 enum TsfpAccess { TSFP_ACCESS_UNKNOWN, TSFP_ACCESS_READ, TSFP_ACCESS_WRITE, TSFP_ACCESS_ATOMIC };
 typedef struct TsfpFault {
     enum TsfpFaultKind kind;

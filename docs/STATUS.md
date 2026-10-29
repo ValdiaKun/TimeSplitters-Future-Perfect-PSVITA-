@@ -176,3 +176,26 @@ Scope remains synthetic execution and cross-compilation; no hardware/game/FPS ev
   were the Xbox contract. No defined flag comparison was weakened. See VALIDATION.
 - Full local host/sanitizer/ARM matrix and Vita cross-build pass. New runtime work
   waits for both push and PR CI on the fix. No game/hardware/performance claim.
+
+REP correction `09a1431`: push CI 40804082165 and PR CI 40804088172 both passed
+CPU and Vita jobs on the same revision; input CI 40804088185 passed. Push probe
+reported AMD signature a00f11 with hypervisor bit set and flags 44. The failing
+old run did not record CPUID; its entry-restored flags match Intel's specified
+behavior, but its vendor cannot be established retrospectively from those logs.
+
+## 2026-10-29: thread-object and import subset
+
+- Added `guest/kernel.{h,c}`, real translated synthetic entry/call functions
+  (119 total), and `tests/kernel_suite.c`.
+- Template-based thread objects expose fs:[0x28] and ID+0x12c. Physical aliases
+  cannot overlap TIB/object storage. Caller retains storage/lifecycle ownership.
+- Three actual kernel adapters: current thread, checked whole-range zeroing and
+  captured termination. Import table setup and stdcall marshaling are bounded;
+  unknown ordinals fault with metadata. Pinned layout/ordinal/ABI anchors checked.
+- Tests cover end-to-end entry/TLS/object/import/memory/exit plus unsupported
+  imports, rejected rebinding, argument faults and nonmutating destination faults.
+- This is partial boot infrastructure: no object handles, wait primitives,
+  production scheduling, image section loader/permissions, full imports or retail
+  entry. No Vita hardware, game data/metadata, GPU test or performance result.
+- Next: bounded section/import initialization with a synthetic image and dispatch
+  entry validation; then adapt the next genuinely required kernel/object service.

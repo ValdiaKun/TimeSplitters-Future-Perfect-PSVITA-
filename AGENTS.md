@@ -14,7 +14,7 @@ Priorities, in strict order:
 4. Memory efficiency, streaming, latency and consistent presentation.
 5. Higher frame rates and graphical features **only if prior gates remain satisfied**.
 
-**Never claim that TimeSplitters is playable or that an FPS target is reached without direct evidence.** Current state at the time of this file: Vita diagnostic and synthetic guest-test VPKs cross-build; 117 synthetic PC-translated x86 functions execute under ARMv7 QEMU; real Xbox title initialization, native game renderer, gameplay and physical Vita execution remain unverified. Re-check `docs/STATUS.md` and the working tree before relying on this snapshot.
+**Never claim that TimeSplitters is playable or that an FPS target is reached without direct evidence.** Current state at the time of this file: Vita diagnostic and synthetic guest-test VPKs cross-build; 119 synthetic PC-translated x86 functions execute under ARMv7 QEMU; real Xbox title initialization, native game renderer, gameplay and physical Vita execution remain unverified. Re-check `docs/STATUS.md` and the working tree before relying on this snapshot.
 
 Proposed performance goals are **stable 30 FPS** (33.33 ms/frame) for correct gameplay and **60 FPS** (16.67 ms/frame) as a stretch goal if measured and correct. They are not forecasts. Preserve original guest interrupt/timing behavior and 60 Hz clock semantics; do not slow the game down to show 30 frames or confuse interpolated/presented frames with simulated frames.
 

@@ -58,3 +58,12 @@ and `src/kernel/xbox_memory_layout.c` (`xbox_AllocThreadTib`). The portable
 execution boundary and bounded TLS preparer are original GPL-3.0-only adapters
 of documented ABI/layout behavior, not copied Win32 scheduling or SEH code.
 No Halo/THUG/MH3 files, new third-party dependencies or source-pin changes.
+
+## Thread object/import subset
+
+Same PC pin: `xbox_memory_layout.c` defines object size 0x200, ID offset 0x12c,
+fs:[0x28] current object and template copy/identity patch. `kernel_bridge.c`
+records canonical ordinals 104/320/258, argument bytes 0/8/4, and per-slot
+FE000000+4*i function targets. New adapters are original GPL-3.0-only code behind
+checked memory and C execution boundaries, not copied Win32 lifecycle code.
+Generator checks these exact anchors. No third-party pin/license changes.

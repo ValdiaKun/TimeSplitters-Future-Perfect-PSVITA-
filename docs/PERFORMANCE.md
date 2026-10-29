@@ -59,3 +59,8 @@ thread throughput is established. No device/frame-time results exist.
 REP comparison-fault correction adds whole-element probes before repeated
 comparisons to restore Intel entry flags before a fault. This is a correctness
 change; overhead is unmeasured. No string fast path or speed claim is introduced.
+
+Kernel subset uses a fixed 16-slot dispatch table, a 512-byte object staging
+buffer and 256-byte constant zero chunks; no per-call heap allocations. Range
+validation and stdcall marshaling are correctness-first. Throughput and device
+memory/performance remain unmeasured; these bounds are not a title capacity claim.
