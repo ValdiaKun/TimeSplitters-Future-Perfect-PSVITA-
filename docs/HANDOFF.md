@@ -61,10 +61,14 @@ probes/RPC/publication/EAX/ESP and fault cleanup. Distinct allocations and mirro
 are tested; server packets still contain no guest output pointers. Do not call
 the storage role predicate as though it retained lifetime.
 
-Next: issue #3, transactional NtAllocateVirtualMemory/NtFreeVirtualMemory in/out
-words in the managed heap. Reuse a durable guard and pins before reading input;
-reject physical overlap and destructive self-referential free/decommit. Keep
-outputs stable through mutation and publication, with no guest accesses under
-ownership locks. Test separate output allocations, races, exhaustion and rollback.
-Then authenticated retail intake/entry trace (issue #4). Physical Vita/retail/
-gameplay/FPS remain unverified; supported original XBE/analysis remain absent.
+VM imports184/199 now reuse a two-reference KernelOutputGuard, pinning both
+words before reads and through stores/EAX/ESP. Independent heap/image and mirror
+locations are supported. Release/decommit of an output owner rejects unchanged;
+relocate result words and retry. This is failure-atomic publication, not a
+concurrent two-word atomic snapshot. Callers synchronize word and target access.
+
+Next: issue #4, authenticated user XBE plus bound analysis intake and actual
+entry tracing. Use a read-only preflight/missing-input manifest; never infer
+retail BSS ownership or reuse another game's metadata. Original files/metadata
+remain absent, physical Vita unavailable and no title/gameplay/FPS verified.
+Managed-pool output pointers and broader VM/services remain unsupported.

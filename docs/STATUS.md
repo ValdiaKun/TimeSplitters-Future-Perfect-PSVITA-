@@ -390,3 +390,13 @@ second-pointer faults, exact/partial alias conflicts, native EAGAIN rollback,
 post-pin fault cleanup and cancellation restoration. All127 fixtures retained.
 VM in/out words remain guarded outside the heap pending issue #3. Retail and
 physical Vita/gameplay/performance gates remain unverified.
+
+## Issue #3: VM heap in/out words
+
+Reused the kernel output guard for both NtAllocate/NtFree words, pinned before
+reads through publication and EAX/ESP. Mixed, separate and mirrored heap/image
+outputs work; destructive self-reference and physical overlap reject unchanged.
+Tests cover zero/recommit semantics, pointer and post-pin faults, quota errors,
+ordinary exhaustion/unsupported flags, retry, and concurrent release/decommit
+of result containers. No new allocator, mapping, buffer or dependency introduced.
+Authentic title boot still requires the supported XBE and bound analysis data.

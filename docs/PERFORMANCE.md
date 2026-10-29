@@ -153,3 +153,8 @@ Issue #2 adds two native token fields and a count to the existing per-native-thr
 CallGuard; it reuses the same64-reference registry and ownership lock. No new
 backing, request allocation or guard engine. Latency/memory effects and Vita FPS
 remain unmeasured; this is a correctness change, not a claimed optimization.
+
+Issue #3 extends the existing kernel output TLS record from one reference to two
+and reuses the bounded64-reference registry. No allocator/backing/rollback-buffer
+duplication. Publication cost and real Vita memory/frame-time effects remain
+unmeasured. No optimization or hardware performance claim.

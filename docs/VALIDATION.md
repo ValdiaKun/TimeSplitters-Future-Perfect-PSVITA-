@@ -907,3 +907,32 @@ ASan/UBSan, Cortex-A9 QEMU and pinned VM differential comparison; both locked
 VitaSDK Release VPKs cross-built. Graphics host/sanitizer/ARM, strict controller,
 Python and whitespace checks passed. Each host mode passed three more full runs.
 Read-only review found no blocking guard/lock/lifetime issue. No device/FPS test.
+
+## Issue #3 validation
+
+Issue #2 commit684cbf58c4be1b92dcd30edba4059633c7f22b51 passed push
+[40974650576](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40974650576)
+and PR[40974655910](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40974655910)
+CPU/Vita/graphics checks; controller40974655891 passed. Issue #2 was updated
+and closed only after these gates, before issue #3 implementation.
+
+New translated VM cases retain127 functions and the seven-row original-source
+differential gate. Output matrices include two heap owners, both mixed directions,
+mirror pointers, same-owner self-commit and rejected self-release/decommit. Actual
+NtFree requests race a paused allocation callback with both result containers
+pinned. Tests retain exact EAX/ESP/flags/FS, byte preservation, quota, malformed
+second pointers, partial/exact aliases, ordinary exhaustion/flag errors, and
+pre-mutation fault cleanup. Reference release and final heap teardown prove no
+leaks; input requests and bindings are caller-synchronized.
+
+The prior test rejecting a heap result pointer now expects CONFLICTING_ADDRESSES:
+the pointer is valid under the new profile but contains an out-of-arena requested
+base. The preserved data check and new successful heap-output cases distinguish
+this intentional supported-behavior change from a weakened assertion. A new test
+initially lacked its status-constant header; added that header, no warning/check
+suppression. Read-only review found no blocking transaction/lifetime issue.
+
+Issue #3 final local results: PC/shared-map, portable, ASan/UBSan, Cortex-A9
+QEMU and original-source VM differential passed with matching transcripts. Both
+locked VitaSDK VPKs cross-built; strict input/Python/whitespace passed. Three
+additional full runs per host mode passed. No existing fixture/check removed.

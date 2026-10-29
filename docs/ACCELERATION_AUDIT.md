@@ -56,3 +56,8 @@ outputs. Thread-create/VM output integration remains separate.
 Issue #2 reuses the existing heap reference registry and thread-service CallGuard,
 keeping pinned PC ordinal255/40-byte ABI and the server-owned creation packet.
 No new external source/dependency or competing execution guard was introduced.
+
+Issue #3 reuses the existing kernel output scope guard, heap pins and original
+xboxrecomp differential trace. No new upstream pin/copy or second VM engine.
+The supported profile is failure-atomic with retained result storage, not an
+atomic two-word read for concurrent consumers. Self-release/decommit stays rejected.

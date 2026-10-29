@@ -8,6 +8,7 @@
 #include "image.h"
 #include "memory.h"
 #include "kernel.h"
+#include "thread_service.h"
 #include "storage.h"
 #include "handles.h"
 #include <assert.h>
@@ -124,6 +125,84 @@ static void test_output_pins(void) {
     assert(!pthread_setcancelstate(old_cancel,NULL));
     puts("heap-outputs-v1: event-create=pass set=pass mirror=pass free-race=pass decommit-race=pass stale=pass quota=64 cleanup=pass");
 }
+static struct { pthread_mutex_t mutex;pthread_cond_t changed;int armed,entered,release; } vm_gate={.mutex=PTHREAD_MUTEX_INITIALIZER,.changed=PTHREAD_COND_INITIALIZER};
+static _Thread_local int fail_vm_after_pins;
+uint32_t __real_tsfp_heap_allocate(uint32_t *,uint32_t *,uint32_t,uint32_t,uint32_t);
+uint32_t __wrap_tsfp_heap_allocate(uint32_t *base,uint32_t *size,uint32_t bits,uint32_t type,uint32_t protect) {
+    assert(!pthread_mutex_lock(&vm_gate.mutex));
+    if(vm_gate.armed) {
+        vm_gate.armed=0;vm_gate.entered=1;assert(!pthread_cond_broadcast(&vm_gate.changed));
+        while(!vm_gate.release) assert(!pthread_cond_wait(&vm_gate.changed,&vm_gate.mutex));
+    }
+    assert(!pthread_mutex_unlock(&vm_gate.mutex));
+    if(fail_vm_after_pins) { fail_vm_after_pins=0;tsfp_guest_raise(TSFP_FAULT_DIVIDE,0x132a0,0,0); }
+    return __real_tsfp_heap_allocate(base,size,bits,type,protect);
+}
+static uint32_t vm_words(int release,uint32_t bp,uint32_t sp,uint32_t base,uint32_t size,uint32_t type) {
+    tsfp_guest_store_u32(bp,base);tsfp_guest_store_u32(sp,size);
+    uint32_t alloc[]={bp,0,sp,type,4},free_args[]={bp,sp,type};TsfpFault fault;
+    uint32_t status=release ? call(1,3,free_args,&fault) : call(0,5,alloc,&fault);
+    assert(status!=UINT32_MAX);return status;
+}
+typedef struct VmCaller { uint32_t bp,sp,target; } VmCaller;
+static void *vm_output_worker(void *context) {
+    VmCaller *p=context;assert(tsfp_guest_thread_enter(700,0x91000,0x1000,0x89100,164));stack_top=0x92000;
+    assert(!vm_words(0,p->bp,p->sp,0,1,0x3000));p->target=tsfp_guest_load_u32(p->bp);
+    assert(tsfp_guest_thread_leave());return NULL;
+}
+static void vm_output_cases(void) {
+    uint32_t container=0,size=4096,other=0;assert(!operation(0,&container,&size,0x3000));
+    size=4096;assert(!operation(0,&other,&size,0x3000));
+    uint32_t bp=container+0x04000000,sp=other;
+    assert(!vm_words(0,bp,sp,0,1,0x2000));uint32_t target=tsfp_guest_load_u32(bp);inaccessible(target);
+    assert(!vm_words(0,bp,sp,target,1,0x1000) && !tsfp_guest_load_u32(target));
+    tsfp_guest_store_u32(target,0x12345678);assert(!vm_words(0,bp,sp,target,1,0x1000) && tsfp_guest_load_u32(target)==0x12345678);
+    assert(!vm_words(1,bp,sp,target+1,1,0x4000));inaccessible(target);
+    assert(!vm_words(0,bp,sp,target,1,0x1000) && !tsfp_guest_load_u32(target));
+    assert(!vm_words(1,bp,sp,target,0,0x8000) && !tsfp_guest_load_u32(bp) && !tsfp_guest_load_u32(sp));
+    /* Mixed heap/image words, then deliberate destructive self-reference. */
+    assert(!vm_words(0,container,0x90104,0,1,0x3000));target=tsfp_guest_load_u32(container);
+    assert(!vm_words(1,container,0x90104,target,0,0x8000));
+    assert(!vm_words(0,0x90100,other,0,1,0x3000));target=tsfp_guest_load_u32(0x90100);
+    assert(!vm_words(1,0x90100,other,target,0,0x8000));
+    assert(vm_words(0,container,other,0,0x40000,0x3000)==0xc0000017u && !tsfp_guest_load_u32(container) && tsfp_guest_load_u32(other)==0x40000);
+    assert(vm_words(0,container,other,0,1,0x3001)==0xc00000bbu && !tsfp_guest_load_u32(container) && tsfp_guest_load_u32(other)==1);
+    assert(vm_words(1,container,container+4,container,0,0x8000)==0xc0000001u);
+    assert(tsfp_guest_load_u32(container)==container && !tsfp_guest_load_u32(container+4));
+    assert(vm_words(1,container,container+4,container,1,0x4000)==0xc0000001u);
+    assert(tsfp_guest_load_u32(container)==container && tsfp_guest_load_u32(container+4)==1);
+    tsfp_guest_store_u32(container+32,0xfeed1234);
+    assert(!vm_words(0,container,container+4,container,1,0x1000) && tsfp_guest_load_u32(container+32)==0xfeed1234);
+    TsfpFault fault;uint32_t args[]={container,0,0x93ffe,0x3000,4};
+    assert(call(0,5,args,&fault)==UINT32_MAX && fault.access==TSFP_ACCESS_WRITE);
+    args[2]=other;fail_vm_after_pins=1;
+    assert(call(0,5,args,&fault)==UINT32_MAX && fault.kind==TSFP_FAULT_DIVIDE && !fail_vm_after_pins);
+    const uint32_t aliases[]={container+0x04000000,container+2};
+    for(unsigned i=0;i<2;++i) {
+        unsigned char before[8],after[8];tsfp_guest_read(container,before,8);args[2]=aliases[i];
+        assert(call(0,5,args,&fault)==TSFP_STATUS_INVALID_PARAMETER);tsfp_guest_read(container,after,8);assert(!memcmp(before,after,8));
+    }
+    uint32_t refs[64];for(unsigned i=0;i<63;++i) assert(!tsfp_heap_pin_output(container,4,&refs[i]));
+    assert(vm_words(0,container,other,0,1,0x3000)==0xc000009au && !tsfp_guest_load_u32(container) && tsfp_guest_load_u32(other)==1);
+    assert(!tsfp_heap_pin_output(container,4,&refs[63]));
+    assert(vm_words(0,container,other,0,1,0x3000)==0xc000009au);
+    for(unsigned i=0;i<64;++i) assert(tsfp_heap_unpin_output(refs[i]));
+    /* Both references are acquired before the allocator can mutate anything. */
+    assert(!pthread_mutex_lock(&vm_gate.mutex));vm_gate.armed=1;vm_gate.entered=vm_gate.release=0;
+    assert(!pthread_mutex_unlock(&vm_gate.mutex));
+    VmCaller caller={bp,sp,0};pthread_t thread;assert(!pthread_create(&thread,NULL,vm_output_worker,&caller));
+    assert(!pthread_mutex_lock(&vm_gate.mutex));struct timespec end;assert(!clock_gettime(CLOCK_REALTIME,&end));end.tv_sec+=5;
+    while(!vm_gate.entered) assert(!pthread_cond_timedwait(&vm_gate.changed,&vm_gate.mutex,&end));
+    assert(!pthread_mutex_unlock(&vm_gate.mutex));
+    uint32_t b=container,s=0;assert(operation(1,&b,&s,0x8000)==0xc0000001u && b==container && !s);
+    b=other;s=1;assert(operation(1,&b,&s,0x4000)==0xc0000001u && b==other && s==1);
+    assert(!pthread_mutex_lock(&vm_gate.mutex));vm_gate.release=1;
+    assert(!pthread_cond_broadcast(&vm_gate.changed) && !pthread_mutex_unlock(&vm_gate.mutex));
+    assert(!pthread_join(thread,NULL));b=caller.target;s=0;assert(!operation(1,&b,&s,0x8000));
+    b=container;s=0;assert(!operation(1,&b,&s,0x8000));b=other;s=0;assert(!operation(1,&b,&s,0x8000));
+    int old;assert(!pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,&old) && old==PTHREAD_CANCEL_ENABLE);assert(!pthread_setcancelstate(old,NULL));
+    puts("vm-outputs-v1: reserve=pass commit=pass free=pass separate=pass mirror=pass self-reject=pass races=pass faults=pass exhaustion=pass");
+}
 void test_heap(void) {
     assert(!tsfp_heap_configured());
     unsigned char *raw=tsfp_guest_pointer(0x100000,0x40000); memset(raw,0x5a,0x40000);
@@ -139,6 +218,7 @@ void test_heap(void) {
     assert(tsfp_guest_thread_enter(41,0x8d000,0x1000,0x89000,164)); stack_top=0x8e000; output=0x90100;
     inaccessible(0x100000); inaccessible(0x04100000);
     trace();
+    vm_output_cases();
     uint32_t b=0,s=3; assert(!operation(0,&b,&s,0x2000) && b==0x100000 && s==4096);
     inaccessible(b); uint32_t reserved=b; s=1; assert(!operation(0,&b,&s,0x1000));
     assert(!tsfp_guest_load_u32(b)); tsfp_guest_store_u32(0x04100000,0x87654321); assert(tsfp_guest_load_u32(b)==0x87654321);
@@ -163,7 +243,7 @@ void test_heap(void) {
     assert(call(0,5,invalid,&fault)==0xc00000bbu); invalid[1]=0; invalid[4]=0x40;
     assert(call(0,5,invalid,&fault)==0xc00000bbu);
     invalid[4]=4; invalid[2]=0x04090100; assert(call(0,5,invalid,&fault)==0xc000000du);
-    invalid[2]=output+4; invalid[0]=0x04100000; assert(call(0,5,invalid,&fault)==0xc000000du);
+    invalid[2]=output+4; invalid[0]=0x04100000; assert(call(0,5,invalid,&fault)==0xc0000018u); /* valid output, invalid requested base */
     invalid[0]=0x93ffe; assert(call(0,5,invalid,&fault)==UINT32_MAX && fault.kind==TSFP_FAULT_MEMORY && fault.access==TSFP_ACCESS_WRITE);
     assert(tsfp_guest_load_u32(reserved)==0x87654321);
     tsfp_guest_store_u32(output,0x110000); invalid[0]=output; invalid[2]=0x93ffe;

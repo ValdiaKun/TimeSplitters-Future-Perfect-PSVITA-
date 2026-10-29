@@ -225,3 +225,8 @@ fault and concurrent free tests. VM in/out words remain a separate guarded profi
 Issue #2 implementation retains heap handle/ID outputs with the existing creation
 service guard. Next gate is issue #3: VM in/out words, pinned reads/publication and
 explicit self-release/decommit rejection. Preserve native resource stack safety.
+
+Issue #3 now retains VM in/out words and rejects destructive self-reference; see
+GUEST_RUNTIME.md support matrix. Next is issue #4 authenticated intake/provenance
+and a genuine title-entry trace. Missing proprietary inputs are an explicit gate,
+not permission to substitute synthetic boot or expand unrelated compatibility.

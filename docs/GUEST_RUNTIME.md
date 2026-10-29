@@ -854,3 +854,32 @@ A second-probe fault, pin exhaustion, invalid request or native create error
 releases every acquired reference without publishing outputs. No second scope
 guard or native creation on a recovery callback stack is introduced. The storage
 output helper is only a role predicate; lifetime is owned by CallGuard.
+
+## VM in/out publication (issue #3)
+
+The existing event guard is now the two-reference KernelOutputGuard for imports
+184/199/189/225. Both VM words are probed, role-checked and pinned before either
+input value is read. Physical overlap rejects before mutation. Native allocation/
+free receives only snapshots; valid output spans and their permissions remain
+stable through stores and EAX/ESP, followed by guard cleanup. No guest access
+occurs under the ownership mutex. Failure-atomic means rejected/faulting probes
+and requests do not mutate allocator state or output words; it does not promise
+an atomic two-word snapshot to unsynchronized readers. Callers must synchronize
+word contents and target lifetime. Stable image bindings remain required.
+
+| Output locations / operation | Supported profile |
+| --- | --- |
+| Two image words; heap/image; image/heap; distinct heap allocations or disjoint words in one allocation | RW-valid, role-allowed, physically disjoint spans retained before reads |
+| Reserve/commit with independent result storage | Existing exact flags, rounding, zeroing and no-clamp rules unchanged |
+| Commit over already-committed output pages in the same reservation | Allowed; recommit preserves those bytes |
+| Release/decommit any reservation containing either output word | Rejected UNSUCCESSFUL unchanged while pinned, including non-overlapping pages of that owner; relocate words and retry |
+| Exact or partial physical output alias | INVALID_PARAMETER unchanged |
+| Invalid/readonly/truncated pointer | Captured guest fault before mutation, with all earlier references cleaned |
+| Reference exhaustion or unsupported modes | Existing explicit error, unchanged outputs/state |
+
+Fault and error cleanup reuse the durable TLS scope guard and cancellation
+deferral. There is no competing guard, native thread frame or rollback buffer.
+Published stores cannot fault under the validated binding/permission/lifetime
+contract. Concurrent guest changes to the words are outside that contract.
+Managed thread-pool/template output roles remain excluded; neither this profile
+nor the allocator is complete Xbox virtual-memory/scheduling support.

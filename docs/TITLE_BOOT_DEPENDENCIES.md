@@ -147,3 +147,9 @@ than removing checks. This is still synthetic boot preparation without retail da
 Thread creation can now publish heap-resident handle/ID words through retained
 CallGuard references. VM in/out words are the next bounded publication dependency
 (issue #3). No retail allocation arena or actual initialization trace is inferred.
+
+VM in/out publication now supports eligible heap words with two retained output
+references. The next critical gate is authentic executable/analysis intake and
+real first-fault tracing (#4). General VM modes, managed-pool output pointers,
+retail memory ownership/layout, full services and native GPU execution remain
+separate dependencies, not implied by passing synthetic publication tests.
