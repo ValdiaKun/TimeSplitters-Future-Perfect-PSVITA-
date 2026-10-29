@@ -7,6 +7,8 @@ import subprocess
 import tempfile
 import sys
 import unittest
+from types import SimpleNamespace
+from tools.string_lowering import decode
 from tools.guest_lowering import lower_function
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,7 +46,7 @@ tsfp_guest_store_u32(0,3); tsfp_guest_store_u32(32,4); emitted(); return 0; }
             (path / 'test.c').write_text(source)
             subprocess.run(shlex.split(os.environ.get('CC','cc')) + ['-std=c11','-Wall','-Wextra','-Werror',
                 '-DTSFP_PORTABLE_GUEST_MEMORY','-Iguest','-Ibuild/guest/include',str(path/'test.c'),
-                'guest/memory.c','guest/address_space.c','-lm','-o',str(path/'test')],cwd=ROOT,check=True)
+                'guest/memory.c','guest/address_space.c','guest/string_ops.c','-lm','-o',str(path/'test')],cwd=ROOT,check=True)
             subprocess.run([str(path/'test')],check=True)
 
     def test_unsupported_executable_rejected(self):
@@ -78,6 +80,25 @@ tsfp_guest_store_u32(0,3); tsfp_guest_store_u32(32,4); emitted(); return 0; }
         self.assertIn('#define VALUE 3',output)
         self.assertIn('"/*string*/"',output)
         self.assertIn('#undef VALUE',output)
+
+class StringDecodingTests(unittest.TestCase):
+    def instruction(self, raw, mnemonic='rep movsb', operands=None):
+        return SimpleNamespace(bytes_hex=raw,mnemonic=mnemonic,operands=operands or [])
+
+    def test_lost_capstone_f2_prefix(self):
+        self.assertEqual(decode(self.instruction('f2a5','movsd')),(1,4,2))
+        self.assertEqual(decode(self.instruction('f366a5','rep movsw')),(1,2,1))
+
+    def test_unsupported_prefixes_fail_closed(self):
+        for raw in ('67f3a4','64f3a4','65f3a4','f0a4','f2f3a4'):
+            with self.subTest(raw=raw), self.assertRaises(ValueError): decode(self.instruction(raw))
+        with self.assertRaises(ValueError): decode(self.instruction('a4'))
+
+    def test_sse_movsd_is_separate(self):
+        self.assertIsNone(decode(self.instruction('f20f10c1','movsd',[SimpleNamespace(reg='xmm0')])))
+
+    def test_single_string_does_not_use_count(self):
+        self.assertEqual(decode(self.instruction('a4','movsb')),(1,1,0))
 
 if __name__ == '__main__':
     unittest.main()

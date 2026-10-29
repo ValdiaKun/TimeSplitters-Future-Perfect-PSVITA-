@@ -141,11 +141,11 @@ hardware-unverified.
 
 ## Next implementation
 
-Audit remaining generated pointer escapes (especially REP/string bulk transfers)
-and add explicit guest-to-guest memory adapters with PC-oracle tests, then extend
-XADD/CMPXCHG EFLAGS and exception/thread entry coverage. Do not relax the emission
-pass's fail-closed checks to get a retail translation through. Full runtime,
-instruction coverage and guest exception recovery remain incomplete.
+Verify and adapt XADD/CMPXCHG EFLAGS, then guest exception/thread entry.
+The REP/string forms documented below now execute through a per-element runtime;
+other unbounded guest-pointer escapes remain fatal at generation time. Full
+instruction coverage, flags provenance at complex joins and actual title startup
+remain separate acceptance gates.
 
 User-supplied US XBE verification must precede retail generation:
 SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`,
@@ -249,3 +249,63 @@ untested without user files**. Compiling generated code requires `-Iguest`,
 `TSFP_PORTABLE_GUEST_MEMORY`, and the memory/runtime adapters; this is not a full
 title build or loader. `build/guest/report.json` fingerprints original/lowered
 outputs, adapter sources and the source/dependency manifest.
+
+## REP/string source integration (2026-10-29)
+
+`tools/string_lowering.py` intercepts real decoded string instructions before the
+scalar AST pass. Each emitted call to `tsfp_guest_string` operates on the live
+per-thread ESI/EDI/ECX/EAX cells. It supports MOVSB/W/D, STOSB/W/D, CMPSB/W/D,
+SCASB/W/D and LODSB/W/D, bare and F3/F2 repeated. SSE MOVSD/CMPSD are kept separate.
+Repetition is decoded from preserved bytes: Capstone 5.0.9 drops F2 from MOVSD's
+mnemonic/prefix metadata. Address-size 16, unsupported segment/LOCK prefixes and
+ambiguous duplicate repetitions fail generation, including at zero count.
+
+No multi-element memcpy/memmove/memset substitution is used. Each MOVS element
+loads the whole source before validating/storing the whole destination; STOS uses
+the accumulator's low element bits. Only after an element succeeds are pointers
+advanced modulo 32 bits and, for repeated forms, ECX decremented. Non-REP forms
+ignore ECX. REP zero count accesses no pointers and preserves arithmetic flags.
+Repeated comparisons stop according to the newly completed comparison, regardless
+of incoming ZF. Forward/backward and physical-alias overlap therefore preserve
+x86 element order even when virtual address ranges appear disjoint. A failed
+split store commits none of that element, but prior elements remain committed.
+`tsfp_guest_range_valid` provides a nonfaulting whole-element probe, using the
+existing binding/classification policy; bindings must remain quiescent/stable.
+
+The TLS `g_tsfp_string_flags` bridge records CF/PF/AF/ZF/SF/OF at operand width,
+preserves other caller bits, and tracks DF alongside `g_df`. CLD/STD update both.
+Generated condition decoding, LAHF and carry consumers use this bridge after a
+comparison. The pinned block's ZF-only seed is replaced with a checked Python
+AST source adapter: incoming CMP/ADD/SUB/TEST/logic snapshots seed full flags.
+Unknown provenance fails generation instead of inventing flags. Logical AF is
+undefined on x86 and the adapter explicitly chooses zero; no hardware equality
+claim is made for that undefined bit. Guest thread entry must initialize the
+bridge; this is not a complete cross-call/cross-join EFLAGS implementation.
+
+Native x86_64 fault captures in this environment retained the last completed
+REP comparison's flags; the runtime and byte reference model match that observed
+PC contract. The faulting element changes no flags or pointer/count state.
+This observation is not physical Xbox/Vita exception validation. Native SIGSEGV
+reports the first inaccessible byte; guest diagnostics report the requested
+logical start and width. Full guest SEH dispatch/resume remains unimplemented.
+
+`tests/string_suite.c` runs 1,518 deterministic data scenarios through actual
+translated functions, plus comparison-consumer cases. The independent model
+uses canonical byte arrays and separate subtraction/flag arithmetic. The PC
+baseline accesses its OS shared mappings per element; additionally
+`tests/string_native_oracle.c` executes real host x86 opcodes and captures
+RSI/RDI/RCX/RAX/EFLAGS on both success and SIGSEGV. Host native reference is
+Linux x86_64 only and is never linked into the Vita binary. Guest 32-bit register
+rollover cases use the byte model, since a native 64-bit pointer does not have
+32-bit rollover semantics. Sanitizer and ARM/Vita targets execute the generated
+portable path. Tests compare bytes, full affected registers, arithmetic/DF bits,
+count, fault progress and logical fault metadata, not just helper return values.
+
+Coverage includes both directions, all 28 RAM transitions, virtual-disjoint
+physical overlap, partial-element overlap, exact overlap, contiguous/tiled
+aliases, early equality/mismatch, zero/huge counts, source/destination/device
+faults, prior-element progress, and failed split writes. Native flag comparisons
+cover AF/PF/SF/OF as well as carry/zero. Generated LAHF/SETO, conditional branches,
+ADC, incoming CMP and CLD/STD consumers verify source-level flag integration.
+The test heap/backing sizes are unchanged; no speed or actual device-allocation
+claim follows from this implementation.

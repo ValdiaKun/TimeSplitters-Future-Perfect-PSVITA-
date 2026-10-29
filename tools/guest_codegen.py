@@ -34,6 +34,9 @@ def configure(runtime):
         install_overflow_conditions(lifter)
         install_scalar_sse_moves(lifter.Lifter)
         install_stack_memory(lifter.Lifter)
+        from string_lowering import install as install_strings
+        from tools.recomp import translator as translator_module
+        install_strings(lifter, translator_module)
         install(FunctionTranslator)
         FunctionTranslator._tsfp_original = original
         FunctionTranslator._tsfp_configured = True

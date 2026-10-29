@@ -10,7 +10,7 @@ campaign execution. Physical Vita behavior is unverified.**
 - Pinned PC submodule/source manifest, offline runtime reconstruction and full
   authoritative patch application, reproducible ARM header adaptation.
 - Checked unaligned little-endian guest memory prototype and deterministic
-  generation of 35 synthetic x86 functions using the real PC translator.
+  generation of 103 synthetic x86 functions using the real PC translator.
 - Explicit 64 MiB RAM/28 mirror address views, independent optional contiguous
   backing, tiled alias and kernel-data/MMIO/flash/invalid classification.
   Checked byte transfers support RAM wrap; unsupported device accesses fault.
@@ -53,8 +53,7 @@ is not on-device execution. No hardware behavior or FPS result is confirmed.
 Start with `python3 tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc` in a
 checkout with the pinned submodule initialized. Read [GUEST_RUNTIME.md](GUEST_RUNTIME.md).
 Generated scalar load/store lowering now passes the documented synthetic matrix.
-Next: explicit REP/string pointer-escape lowering, then atomic EFLAGS and
-exception/thread entry coverage. On physical Vita, separately
+Next: atomic XADD/CMPXCHG EFLAGS and exception/thread entry coverage. On physical Vita, separately
 validate bootstrap installation, both sticks/buttons and Select+Start exit;
 collect synthetic guest test results before connecting title boot. Never mark a
 menu, diagnostic or synthetic CPU test as proof of gameplay.
@@ -98,3 +97,20 @@ menu, diagnostic or synthetic CPU test as proof of gameplay.
   runtime/gameplay, GPU/device services, heap availability and FPS remain unverified.
 - Next: lower REP/string native pointer escapes with explicit guest memory
   semantics and oracle tests; keep unknown escapes fatal at generation time.
+
+## 2026-10-29: REP/string execution
+
+- Added `guest/string_ops.{h,c}` and `tools/string_lowering.py`; MOVS/STOS/CMPS/
+  SCAS/LODS at 8/16/32-bit widths execute one validated element at a time.
+  REP(E)/REPNE, CLD/STD, partial progress, overlap and zero count are tested.
+- The real PC translator now generates 103 asset-free functions. 1,518 data
+  scenarios plus translated LAHF/SETO, Jcc, ADC and incoming-CMP consumers pass
+  locally on mapped PC, portable host, ASan/UBSan and Cortex-A9 QEMU. Linux x86_64
+  also executes actual string opcodes and captures real fault registers/flags.
+- VitaSDK Release diagnostic/guest VPK cross-build and strict input tests pass.
+  Remote CI pending push. No source/dependency pins changed.
+- Known limits: 16-bit address-size and unimplemented segment/duplicate prefixes
+  fail generation; unproven incoming arithmetic flag provenance fails generation.
+  The flags bridge is not complete guest EFLAGS/SEH or thread initialization.
+- No real title files, Vita hardware, GPU tests or measured FPS are available.
+  Next: accurate 32-bit XADD/CMPXCHG flags with native-x86 comparisons.

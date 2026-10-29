@@ -66,6 +66,17 @@ static unsigned char *resolve(uint32_t address, size_t *available) {
         return NULL;
     }
 }
+int tsfp_guest_range_valid(uint32_t address, size_t width) {
+    if (!width || (uint64_t)width > UINT64_C(0x100000000) - address) return 0;
+    while (width) {
+        size_t available = 0;
+        if (!resolve(address, &available) || !available) return 0;
+        size_t chunk = width < available ? width : available;
+        width -= chunk;
+        if (width) address += (uint32_t)chunk;
+    }
+    return 1;
+}
 void *tsfp_guest_pointer(uint32_t address, size_t width) {
     size_t available = 0;
     unsigned char *pointer = resolve(address, &available);

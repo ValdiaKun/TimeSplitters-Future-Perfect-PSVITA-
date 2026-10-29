@@ -39,3 +39,9 @@ virtual aliases with checked software translation.
 Generated scalar emission now calls checked accessors; source-pass tests and
 QEMU establish correctness in the tested subset only. No CPU-overhead or frame
 rate gain has been measured, and no checks were removed as a speed optimization.
+
+REP/string execution currently uses validated per-element accesses. No bulk fast
+path is introduced: virtual-disjoint ranges can physically overlap through RAM
+mirrors, and faults must preserve element progress. The 1,518 string scenarios
+are correctness coverage, not timing measurements. TLS flag and probe overhead
+remain unmeasured on Vita; no FPS or speedup is claimed.

@@ -37,14 +37,14 @@ def main():
         run([sys.executable, 'tools/generate_fixtures.py'])
         run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', 'test_guest_lowering.py'])
         report['generated_sha256'] = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in [out / 'fixtures.c', out / 'include/recomp_types.h', out / 'include/pc_memory_contract.h', out / 'pristine/fixtures.c']}
+            for p in [out / 'fixtures.c', out / 'include/recomp_types.h', out / 'include/pc_memory_contract.h', out / 'pristine/fixtures.c', out / 'string_table.c']}
         report['source_sha256'] = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
             for folder in ('guest', 'tools', 'tests') for p in sorted((ROOT / folder).glob('*'))
             if p.is_file() and p.suffix in ('.c', '.h', '.py')}
         base = ['-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-Wno-unused-label',
                 '-Wno-unused-variable', '-Wno-unused-but-set-variable', '-fno-strict-aliasing',
                 '-ffp-contract=off', '-Iguest', '-Itests']
-        sources = ['tests/guest_harness.c', 'guest/memory.c', 'guest/address_space.c', 'tests/memory_suite.c', 'tests/generated_memory_suite.c', 'tests/mmx_state.c', 'tests/pc_memory_oracle.c', 'build/guest/fixtures.c', '-lm', '-pthread']
+        sources = ['tests/guest_harness.c', 'guest/memory.c', 'guest/address_space.c', 'guest/string_ops.c', 'tests/string_suite.c', 'tests/string_native_oracle.c', 'build/guest/string_table.c', 'tests/memory_suite.c', 'tests/generated_memory_suite.c', 'tests/mmx_state.c', 'tests/pc_memory_oracle.c', 'build/guest/fixtures.c', '-lm', '-pthread']
         host_cc = shlex.split(os.environ.get('CC', 'cc'))
         run(host_cc + ['--version'])
         transcripts = {}

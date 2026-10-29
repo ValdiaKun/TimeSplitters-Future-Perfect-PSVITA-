@@ -6,6 +6,8 @@
 #include "address_space.h"
 /* Retained bounded fixture mode; replaces any previous Xbox binding. */
 void tsfp_guest_bind(void *storage, size_t size, uint32_t base);
+/* Side-effect-free whole-range probe; binding must remain stable during use. */
+int tsfp_guest_range_valid(uint32_t address, size_t width);
 void *tsfp_guest_pointer(uint32_t address, size_t width);
 /* Split-safe scalar accesses for generated guest loads/stores. These preserve
  * little-endian bit patterns across a 64 MiB RAM mirror boundary, unlike a

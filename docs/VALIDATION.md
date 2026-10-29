@@ -203,3 +203,41 @@ passed [CPU/ARM + Vita CI 40727763246](https://github.com/ValdiaKun/TimeSplitter
 The working tree was clean after push; PR #1 remained draft/open and remote
 main remained `0322acbea29bffccc267f0e48893795a9f420efa`. No game binaries,
 VPKs, retail data, user settings or saves were committed or published.
+
+## REP/string milestone — 2026-10-29
+
+Confirmed starting HEAD `4e1d5509b269555b8470cdda661aaf796ad281ff`, clean
+`vita-bootstrap`, open draft PR #1 and green starting CI before edits. PC/runtime,
+Capstone, parser and toolchain pins remain unchanged. The same documented
+`tools/test_guest.py --arm-cc ... --qemu ...` command now generates 103 functions,
+runs 11 source-pass tests and executes 1,518 string data scenarios plus generated
+flag consumers. PC baseline, portable, ASan/UBSan and ARMv7 QEMU transcripts match:
+
+```
+string-fixtures-v1: cases=1518 bytes=pass flags=pass progress=pass faults=pass
+```
+
+The existing v3 guest transcript also passes. Strict host input tests, Python
+syntax, staged whitespace checks and VitaSDK Release cross-build passed locally.
+The native PC string oracle executes actual host opcodes, installs a temporary
+SIGSEGV handler on the single test thread and restores the prior handler. It
+captures hardware registers/flags and compares the committed memory image.
+It is separate from the independent byte reference and generated guest runtime;
+ARM/Vita never execute this host assembly or signal handler.
+
+Failures resolved during implementation:
+
+- F2 MOVSD advanced once rather than repeating: Capstone preserved F2 in raw
+  bytes but dropped it from its mnemonic/prefix metadata. Decode repetition from
+  instruction bytes; all width/prefix combinations remain regression fixtures.
+- A partial REPNE CMPS fault disagreed with an assumed entry-flag restoration.
+  Native SIGSEGV context showed the last completed comparison's flags. Keep that
+  state and the completed register/count/memory progress; do not commit a faulting
+  element. The full oracle matrix now agrees. This is observed PC behavior, not
+  evidence of physical Xbox exception semantics.
+
+No test assertions or warnings were disabled. Physical Vita execution, full
+retail generation, title boot, GPU validation and performance remain unavailable.
+Native x86 reference is Linux x86_64; guest address-register rollover tests use
+explicit byte-model expectations rather than native 64-bit address rollover.
+Remote CI evidence will be appended after the implementation push.

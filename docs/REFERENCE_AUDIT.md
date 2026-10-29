@@ -38,3 +38,14 @@ SSE/MMX helpers and stack commit ordering. New process-local source adapters are
 GPL-3.0-only and leave that dependency unchanged. The AST parser is pycparser
 2.23 (BSD; notice in LICENSES/pycparser-BSD.txt), a host build dependency only.
 No new Halo/THUG/MH3 code is used; their previously recorded audit remains valid.
+
+## String instruction follow-up
+
+At the same PC pin, inspected prepared `tools/recomp/lifter.py` REP/string
+emission, EFLAGS consumers and basic-block flag seeding, `translator.py` flag
+local declarations and preserved decoder instruction bytes. The new source and
+runtime adapters are independently implemented GPL-3.0-only code. The x86 host
+oracle uses authored assembly fixtures and Linux signal context interfaces; no
+retail instructions or foreign port implementation was copied. Existing
+Halo/THUG/MH3 audits and all dependency pins are unchanged. Their bulk-copy or
+threading techniques do not establish Xbox string overlap/fault semantics.

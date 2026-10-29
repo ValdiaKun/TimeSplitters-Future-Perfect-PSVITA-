@@ -46,6 +46,36 @@ FIXTURES = {
 
 }
 
+
+# Mode 0 is unprefixed, mode 1 F3/REP(E), mode 2 F2/REPNE.
+STRING_FIXTURES = {}
+address = 0x12400
+for kind, opcodes in ((1,('a4','66a5','a5')), (2,('aa','66ab','ab')),
+                      (3,('a6','66a7','a7')), (4,('ae','66af','af')),
+                      (5,('ac','66ad','ad'))):
+    for width, opcode in zip((1,2,4),opcodes):
+        for mode, prefix in ((0,''),(1,'f3'),(2,'f2')):
+            name = f'fixture_string_{kind}_{width}_{mode}'
+            FIXTURES[address] = (name, prefix + opcode + 'c3')
+            STRING_FIXTURES[(kind,width,mode)] = name
+            address += 0x20
+# A real incoming CMP followed by a zero-count compare and condition consumers.
+FIXTURES[0x12a00] = ('fixture_string_seed', '39d8f3a69f0f90c2c3')
+STRING_FLAG_FIXTURES = {}
+address = 0x12b00
+for kind, opcodes in ((3,('a6','66a7','a7')), (4,('ae','66af','af'))):
+    for width, opcode in zip((1,2,4),opcodes):
+        for mode, prefix in ((0,''),(1,'f3'),(2,'f2')):
+            name = f'fixture_string_flags_{kind}_{width}_{mode}'
+            FIXTURES[address] = (name,prefix+opcode+'9f0f90c2c3')
+            STRING_FLAG_FIXTURES[(kind,width,mode)] = name
+            address += 0x20
+FIXTURES[0x13000] = ('fixture_string_branch', 'f3a67406bb01000000c3bb02000000c3')
+FIXTURES[0x13020] = ('fixture_string_carry', 'f3a683d300c3')
+FIXTURES[0x13040] = ('fixture_string_cld', 'fcf3a4c3')
+FIXTURES[0x13060] = ('fixture_string_std', 'fdf3a4fcc3')
+
+
 def main():
     runtime = prepare()
     from guest_codegen import configure
@@ -76,6 +106,20 @@ def main():
             raise RuntimeError(f'Untranslated fixture: {info["name"]}: {translator.lifter.unimplemented}')
         chunks.append(body)
         baseline_chunks.append(original_translate(translator, va, info))
+    table = ['#include "recomp_types.h"', 'typedef void (*TsfpStringFixture)(void);']
+    for name in STRING_FIXTURES.values():
+        table.append(f'void {name}(void);')
+    table.append('TsfpStringFixture string_fixture(unsigned kind, unsigned width, unsigned mode) {')
+    for (kind,width,mode), name in STRING_FIXTURES.items():
+        table.append(f'if (kind == {kind} && width == {width} && mode == {mode}) return {name};')
+    table.append('return 0; }')
+    for name in STRING_FLAG_FIXTURES.values():
+        table.append(f'void {name}(void);')
+    table.append('TsfpStringFixture string_flag_fixture(unsigned kind, unsigned width, unsigned mode) {')
+    for (kind,width,mode), name in STRING_FLAG_FIXTURES.items():
+        table.append(f'if (kind == {kind} && width == {width} && mode == {mode}) return {name};')
+    table.append('return 0; }')
+    (out / 'string_table.c').write_text('\n'.join(table))
     (out / 'fixtures.c').write_text('\n'.join(chunks))
     import re
     kernel = (runtime / 'src/kernel/kernel.h').read_text()
