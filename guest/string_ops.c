@@ -1,12 +1,14 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "string_ops.h"
 #include "memory.h"
+#include "execution.h"
 #include <string.h>
 #ifdef TSFP_PC_MAPPED_ORACLE
 /* Successful accesses in the Linux mapped-PC oracle use its real shared views. */
 extern ptrdiff_t g_xbox_mem_offset;
 #endif
 _Thread_local uint32_t g_tsfp_guest_flags = 2u;
+_Thread_local uint32_t g_tsfp_flags_valid = 0x400u;
 #define ARITHMETIC_FLAGS UINT32_C(0x8d5)
 static uint32_t mask_for(unsigned width) {
     if (width != 1 && width != 2 && width != 4) tsfp_guest_memory_fault(0,width);
@@ -45,13 +47,14 @@ uint32_t tsfp_alu_flags(uint32_t value, uint32_t right, unsigned width,
            ((left ^ right ^ value) & 0x10u) |
            ((~(left ^ right) & (left ^ value) & sign) ? 0x800u : 0u);
 }
-static void require_span(uint32_t address, unsigned width) {
+static void require_span(uint32_t address, unsigned width, enum TsfpAccess access) {
+    g_tsfp_access=access;
     if (!tsfp_guest_range_valid(address, width)) {
         tsfp_guest_memory_fault(address, width);
     }
 }
 static uint32_t load_element(uint32_t address, unsigned width) {
-    require_span(address, width);
+    require_span(address, width, TSFP_ACCESS_READ);
 #ifdef TSFP_PC_MAPPED_ORACLE
     uint32_t value = 0;
     memcpy(&value, (const void *)((uintptr_t)address + g_xbox_mem_offset), width);
@@ -63,7 +66,7 @@ static uint32_t load_element(uint32_t address, unsigned width) {
 #endif
 }
 static void store_element(uint32_t address, uint32_t value, unsigned width) {
-    require_span(address, width);
+    require_span(address, width, TSFP_ACCESS_WRITE);
 #ifdef TSFP_PC_MAPPED_ORACLE
     memcpy((void *)((uintptr_t)address + g_xbox_mem_offset), &value, width);
 #else

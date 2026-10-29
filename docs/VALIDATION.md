@@ -277,3 +277,52 @@ not a guest-runtime fast path, disabled assertion or Xbox hardware validation.
 Final implementation `180a0a7`: [CPU/ARM/Vita CI 40800471487](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40800471487)
 passed both jobs; input CI 40800476515 passed. Includes the alias-oracle fix.
 No physical Vita execution or performance measurement was performed.
+
+## Execution/thread foundation — 2026-10-29
+
+Started at clean `273a63f892202b373122464f6ebb9ffb55a91336`, unchanged PC/runtime
+and SDK pins, open draft PR #1, green baseline CI. Re-ran the 111-function baseline
+before editing; all four host/ARM modes passed. New generation emits 117 functions
+and runs 13 source-pass tests. Full command in this environment:
+
+```sh
+LD_LIBRARY_PATH=/workspace/toolchains/arm/usr/lib/x86_64-linux-gnu \
+PATH=/workspace/toolchains/arm/usr/bin:$PATH \
+python3 tools/test_guest.py \
+  --arm-cc '/workspace/toolchains/arm/usr/bin/arm-linux-gnueabihf-gcc --sysroot=/workspace/toolchains/arm' \
+  --qemu /workspace/toolchains/arm/usr/bin/qemu-arm
+VITASDK="$PWD/.cache/toolchains/vitasdk" \
+PATH="$PWD/.cache/toolchains/vitasdk/bin:$PATH" \
+/home/agent/.local/bin/cmake --build build/vita-locked
+```
+
+Mapped-PC header baseline, portable host, ASan/UBSan and Cortex-A9 QEMU passed
+with identical transcripts, including unchanged string/atomic/v3 assertions:
+
+```
+execution-v1: capture=pass divide=pass dispatch=pass nested=pass threads=2 tls=pass call-flags=pass
+```
+
+Coverage: actual translated divide-zero/overflow with unmodified EAX/EDX and
+fault-site capture; portable translated MMIO load/store faults with read/write
+metadata; unresolved and non-code translated indirect calls with pushed return
+address preserved; nested fault followed by captured thread exit; repeated
+translated divide faults (32 per worker), isolated CPU/TLS/FS and boundary state;
+stdcall context arguments and stack return; direct compare/call/MOV/return flag
+preservation. XMM NaN payload bits survive snapshot. Invalid thread/TLS setup
+leaves state/destination unchanged. Native worker creation/join uses existing
+pthread host/Vita test support, not a new Xbox scheduler.
+
+The PC baseline executes the same adapted generated divide/dispatch functions;
+invalid ordinary mapped memory is not recovered through native host signals.
+Those translated memory-fault assertions execute portable/sanitized/ARM paths;
+the existing native string fault reference remains unchanged. Snapshot flags have
+an explicit validity mask; unknown arithmetic/call/join state is not advertised
+as complete EFLAGS. Call coverage is a flag-preserving MOV callee, not arbitrary
+interprocedural flag propagation.
+
+VitaSDK diagnostic and synthetic guest VPK cross-build passed; strict controller
+compile/run, Python syntax and whitespace checks passed. No assertions disabled
+or new warning suppressions. Commands/revisions/hashes remain captured by the
+existing ignored `build/guest/report.json`. No physical Vita, title boot, Xbox SEH,
+GPU benchmark or measured performance. Remote CI evidence follows the push.

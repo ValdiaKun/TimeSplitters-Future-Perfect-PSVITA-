@@ -46,6 +46,8 @@ if(TSFP_BUILD_GUEST_TESTS)
     add_executable(tsfp_guest_test
         "${TSFP_ROOT}/tests/guest_harness.c"
         "${TSFP_ROOT}/guest/memory.c"
+        "${TSFP_ROOT}/guest/execution.c"
+        "${TSFP_ROOT}/tests/execution_suite.c"
         "${TSFP_ROOT}/guest/address_space.c"
         "${TSFP_ROOT}/guest/string_ops.c"
         "${TSFP_ROOT}/tests/string_suite.c"

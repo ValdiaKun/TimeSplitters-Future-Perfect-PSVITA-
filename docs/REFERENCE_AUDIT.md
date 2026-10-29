@@ -49,3 +49,12 @@ oracle uses authored assembly fixtures and Linux signal context interfaces; no
 retail instructions or foreign port implementation was copied. Existing
 Halo/THUG/MH3 audits and all dependency pins are unchanged. Their bulk-copy or
 threading techniques do not establish Xbox string overlap/fault semantics.
+
+## Execution/thread foundation
+
+At the unchanged PC pin, inspected prepared `src/kernel/kernel_bridge.c`
+(`bridge_run_thread_inline`, `bridge_thread_main`, `bridge_PsCreateSystemThreadEx`)
+and `src/kernel/xbox_memory_layout.c` (`xbox_AllocThreadTib`). The portable
+execution boundary and bounded TLS preparer are original GPL-3.0-only adapters
+of documented ABI/layout behavior, not copied Win32 scheduling or SEH code.
+No Halo/THUG/MH3 files, new third-party dependencies or source-pin changes.

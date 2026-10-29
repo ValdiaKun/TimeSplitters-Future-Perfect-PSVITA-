@@ -10,7 +10,7 @@ campaign execution. Physical Vita behavior is unverified.**
 - Pinned PC submodule/source manifest, offline runtime reconstruction and full
   authoritative patch application, reproducible ARM header adaptation.
 - Checked unaligned little-endian guest memory prototype and deterministic
-  generation of 103 synthetic x86 functions using the real PC translator.
+  generation of 117 synthetic x86 functions using the real PC translator.
 - Explicit 64 MiB RAM/28 mirror address views, independent optional contiguous
   backing, tiled alias and kernel-data/MMIO/flash/invalid classification.
   Checked byte transfers support RAM wrap; unsupported device accesses fault.
@@ -53,7 +53,8 @@ is not on-device execution. No hardware behavior or FPS result is confirmed.
 Start with `python3 tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc` in a
 checkout with the pinned submodule initialized. Read [GUEST_RUNTIME.md](GUEST_RUNTIME.md).
 Generated scalar load/store lowering now passes the documented synthetic matrix.
-Next: atomic XADD/CMPXCHG EFLAGS and exception/thread entry coverage. On physical Vita, separately
+Next: thread objects/kernel import boundary and Xbox exception delivery; see
+[TITLE_BOOT_DEPENDENCIES.md](TITLE_BOOT_DEPENDENCIES.md). On physical Vita, separately
 validate bootstrap installation, both sticks/buttons and Select+Start exit;
 collect synthetic guest test results before connecting title boot. Never mark a
 menu, diagnostic or synthetic CPU test as proof of gameplay.
@@ -140,3 +141,22 @@ menu, diagnostic or synthetic CPU test as proof of gameplay.
 Final implementation `180a0a7`: [CPU/ARM/Vita CI 40800471487](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40800471487)
 passed both jobs; input CI 40800476515 passed. Includes the alias-oracle fix.
 No physical Vita execution or performance measurement was performed.
+
+## 2026-10-29: execution boundaries and thread/TLS foundation
+
+- Added `guest/execution.{h,c}` with nested thread-local C-only recovery,
+  CPU/FP/vector snapshots, guest instruction sites, memory access metadata,
+  divide/dispatch/exit classifications and explicit thread attach/detach.
+- Bounded TIB/TLS preparation follows pinned PC layout (own SEH head, copied TLS
+  template, own zeroed thread data). It does not create Xbox thread objects or
+  implement SEH delivery. Native thread creation remains a platform responsibility.
+- Six additional real translated fixtures (117 total), two workers and repeated
+  faults test independent CPU/TLS/recovery, stdcall arguments/return, fault ordering,
+  invalid indirect calls and flag preservation through a MOV-only callee.
+- EFLAGS snapshots include a validity mask: unpublished arithmetic state is
+  explicitly unknown. Arbitrary call/join flags are not solved. Existing legacy
+  oracle behavior remains outside the new execution boundary only in test support.
+- Host PC, portable, sanitizers, Cortex-A9 QEMU and Vita cross-build results are
+  recorded in VALIDATION.md. No hardware, retail boot or performance measurement.
+- The overall exception/thread milestone remains partial. Next: thread-object and
+  kernel-import contracts from the boot dependency map; SEH delivery is separate.

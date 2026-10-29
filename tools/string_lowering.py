@@ -51,6 +51,15 @@ def seed(instruction, setter, operands):
     right = '_fb' if operation != 4 else '0u'
     return [f'g_tsfp_string_flags = tsfp_alu_flags(_fa, {right}, {width}, {operation}, g_tsfp_string_flags);']
 
+def snapshot_seed(instruction, setter, operands):
+    lines = seed(instruction,setter,operands)
+    if setter is not None:
+        # Ordinary lifter temporaries are not yet a complete flags runtime.
+        # Do not expose stale bridge bits as a valid architectural snapshot.
+        valid = bool(lines) or compare_setter(setter) or setter in ('xadd','cmpxchg')
+        lines.append(f'g_tsfp_flags_valid = {0xcd5 if valid else 0x400}u;')
+    return lines
+
 def install(module, translator_module):
     if getattr(module, '_tsfp_strings', False): return
     original = module.Lifter.lift_instruction
@@ -85,7 +94,7 @@ def install(module, translator_module):
         def visit_Assign(self, node):
             if len(node.targets) == 1 and isinstance(node.targets[0],ast.Name) and node.targets[0].id == 'curr':
                 anchors[0] += 1
-                return [node, ast.parse('stmts.extend(_tsfp_seed(curr, last_flag_setter, last_flag_ops))').body[0]]
+                return [node, *ast.parse('stmts.extend(_tsfp_seed(curr, last_flag_setter, last_flag_ops)); stmts.append(f"g_tsfp_guest_pc = 0x{curr.address:x}u;")').body]
             return self.generic_visit(node)
         def visit_If(self,node):
             if any(isinstance(n,ast.Call) and isinstance(n.func,ast.Name) and n.func.id == '_is_rep_compare' for n in ast.walk(node.test)):
@@ -94,7 +103,7 @@ def install(module, translator_module):
             return self.generic_visit(node)
     tree = Adapt().visit(tree)
     if anchors != [1,1]: raise RuntimeError(f'Pinned string flag seed shape changed: {anchors}')
-    env = dict(module.__dict__, _tsfp_seed=seed)
+    env = dict(module.__dict__, _tsfp_seed=snapshot_seed)
     exec(compile(ast.fix_missing_locations(tree), '<tsfp string block adapter>', 'exec'), env)
     module.lift_basic_block = env['lift_basic_block']
     translator_module.lift_basic_block = module.lift_basic_block

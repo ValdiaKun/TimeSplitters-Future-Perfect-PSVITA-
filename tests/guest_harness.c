@@ -5,6 +5,7 @@
 #endif
 #include "recomp_types.h"
 #include "memory.h"
+#include "execution.h"
 #include "memory_test_support.h"
 #ifdef __vita__
 /* Two 64 MiB test backings plus allocator/thread overhead; device use unverified. */
@@ -42,12 +43,14 @@ void fixture_call(void); void fixture_indirect(void); void fixture_unaligned(voi
 void test_memory_map(void);
 void fixture_sse(void); void fixture_x87(void); void fixture_div(void);
 _Noreturn void tsfp_guest_memory_fault(uint32_t address, size_t width) {
+    if (tsfp_guest_recovery_active()) tsfp_guest_raise(TSFP_FAULT_MEMORY,address,width,0);
     fault_address = address; fault_width = width;
     if (expected_fault) longjmp(fault_jump, 1);
     fprintf(stderr, "event=guest_memory_fault address=%08x width=%u\n", address, (unsigned)width);
     abort();
 }
 void tsfp_guest_divide_error(uint32_t site, unsigned reason) {
+    if (tsfp_guest_recovery_active()) tsfp_guest_raise(TSFP_FAULT_DIVIDE,site,0,reason);
     (void)site; divide_reason = reason;
     if (expected_fault) longjmp(fault_jump, 1);
     abort();
@@ -57,8 +60,12 @@ recomp_func_t recomp_lookup(uint32_t address) {
 }
 recomp_func_t recomp_lookup_manual(uint32_t address) { (void)address; return NULL; }
 recomp_func_t recomp_lookup_kernel(uint32_t address) { (void)address; return NULL; }
-void recomp_icall_fail_log(uint32_t address) { (void)address; ++unresolved; }
+void recomp_icall_fail_log(uint32_t address) {
+    if (tsfp_guest_recovery_active()) tsfp_guest_raise(TSFP_FAULT_DISPATCH,address,0,1);
+    (void)address; ++unresolved;
+}
 void recomp_icall_not_code_log(uint32_t address, uint32_t stack) {
+    if (tsfp_guest_recovery_active()) tsfp_guest_raise(TSFP_FAULT_DISPATCH,address,0,2);
     (void)address; (void)stack; ++unresolved;
 }
 void test_expect_fault(void (*operation)(void *), void *context,

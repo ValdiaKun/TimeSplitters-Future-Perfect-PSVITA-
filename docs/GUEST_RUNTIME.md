@@ -141,7 +141,7 @@ hardware-unverified.
 
 ## Next implementation
 
-Verify and adapt XADD/CMPXCHG EFLAGS, then guest exception/thread entry.
+Continue thread-object/kernel import integration, then Xbox exception delivery.
 The REP/string forms documented below now execute through a per-element runtime;
 other unbounded guest-pointer escapes remain fatal at generation time. Full
 instruction coverage, flags provenance at complex joins and actual title startup
@@ -337,3 +337,45 @@ Linux oracle sequences actual single-element x86 instructions. Modern fast REP
 engines produced runner-dependent results with physical synonyms; they are not
 used to define the guest's sequential alias semantics. Ordinary native REP,
 independent byte modeling and actual translated host/ARM checks remain enabled.
+
+## Execution and thread contracts (2026-10-29)
+
+`guest/execution.h` defines a snapshot ABI independent of register-name macros.
+`tsfp_guest_run` installs a linked, thread-local C boundary and returns either
+normal completion or a captured event. `tsfp_guest_raise` captures GPRs, PC,
+FS/SEH state, x87 storage/control, MMX/XMM bits and flags plus a validity mask.
+Arithmetic bridge bits not published by an adapted instruction are marked unknown;
+this is not complete EFLAGS, x87 80-bit precision or MXCSR emulation. The generator
+records source instruction addresses before emission; existing faults retain
+register/memory progress, including pushes before unresolved indirect dispatch.
+Read/write/atomic metadata is attached by checked memory entry points; borrowed
+lvalues intentionally report unknown access direction. Binding errors are not
+architectural instructions and have no guaranteed instruction site.
+
+Recovery is C `setjmp`/`longjmp` with explicit constraints: callbacks may execute
+only resource-free C translated frames/adapters. No held locks, VLAs, C++/foreign
+frames, cleanup handlers or resources needing unwinding may be crossed. No async
+signal or native exception recovery is installed. Nested scopes restore the
+previous boundary; the frame's pointers are initialized before setjmp and not
+modified thereafter. Events are captured into caller-owned storage. Without a
+boundary, raising aborts. Platform fault/dispatch hooks must call this API; test
+hooks do so inside a boundary and retain old oracle behavior outside one.
+
+`tsfp_guest_thread_enter` validates an already-owned mapped stack and FS/TLS range,
+resets guest CPU/vector/FP/flags state and attaches identity on the current native
+thread. It refuses duplicate attach or attach inside a recovery scope. Leave is
+explicit after boundary return; thread exit is a captured event with status, not
+an abrupt native pthread exit. Ownership, native creation/join, scheduling and
+protection from overlapping guest allocations remain platform responsibilities.
+
+`tsfp_guest_tls_prepare` stages at most 64 KiB before publishing a whole validated
+block: 0x40-byte minimal TIB, copied template and zeroed thread data. Own SEH head
+is FFFFFFFF, fs:[4] and TLS slot zero point at thread data, following the pinned
+PC `xbox_AllocThreadTib` contract. Input ranges and sizes are checked before
+allocation; the binding must remain stable and destination exclusively owned.
+Template aliasing is safe through staging. fs:[0x28] thread object, XBE template
+extraction and complete Xbox TLS initialization remain unimplemented.
+
+The translated fault/thread fixtures are independent of retail data. The
+[boot dependency map](TITLE_BOOT_DEPENDENCIES.md) identifies integration order;
+C recovery alone is neither Xbox SEH nor a completed title runtime.

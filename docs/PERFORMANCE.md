@@ -49,3 +49,9 @@ remain unmeasured on Vita; no FPS or speedup is claimed.
 Aligned atomic source adapters preserve atomic primitives and add correct flags;
 294 arithmetic scenarios and concurrent mirror increments are correctness checks.
 No atomic throughput, contention, hardware frame-time or speedup is measured.
+
+Execution snapshots and per-instruction site recording are correctness
+instrumentation, not measured optimizations. Their Vita overhead is unavailable.
+Snapshots allocate no heap per event; TLS preparation uses one bounded temporary
+(up to 64 KiB) freed before guest execution. No production memory budget or
+thread throughput is established. No device/frame-time results exist.

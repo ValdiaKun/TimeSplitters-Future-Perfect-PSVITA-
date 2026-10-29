@@ -3,6 +3,7 @@
 #define TSFP_LOWERED_MEMORY_H
 /* Included after recomp_types.h: retains the PC header as the baseline oracle. */
 #include "memory.h"
+#include "execution.h"
 #include "string_ops.h"
 #ifdef TSFP_PORTABLE_GUEST_MEMORY
 #define TSFP_LOAD_U8 tsfp_guest_load_u8

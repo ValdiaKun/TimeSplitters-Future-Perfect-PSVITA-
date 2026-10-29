@@ -83,6 +83,13 @@ FIXTURES[0x131a0] = ('fixture_xadd_carry', 'f00fc11983d200c3')
 FIXTURES[0x131c0] = ('fixture_atomic_string', 'f00fc119f3a69f0f90c2c3')
 FIXTURES[0x131e0] = ('fixture_cmpxchg_branch', 'f00fb1197506ba01000000c3ba02000000c3')
 
+FIXTURES[0x13200] = ('fixture_thread_args', '8b4424048b542408c20800')
+FIXTURES[0x13220] = ('fixture_flag_leaf', 'bb78563412c3')
+FIXTURES[0x13240] = ('fixture_flag_call', 'a6e8daffffffc3')
+FIXTURES[0x13260] = ('fixture_fault_load', '8b01c3')
+FIXTURES[0x13280] = ('fixture_fault_store', '8902c3')
+FIXTURES[0x132a0] = ('fixture_fault_divide', 'f7f1c3')
+
 
 def main():
     runtime = prepare()

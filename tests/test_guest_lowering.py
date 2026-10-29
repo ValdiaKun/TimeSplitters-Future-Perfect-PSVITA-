@@ -14,6 +14,12 @@ from tools.guest_lowering import lower_function
 ROOT = Path(__file__).resolve().parents[1]
 
 class LoweringTests(unittest.TestCase):
+    def test_snapshot_flags_mark_unpublished_bits_unknown(self):
+        from tools.string_lowering import snapshot_seed
+        instruction=SimpleNamespace(mnemonic='mov',operands=[])
+        self.assertEqual(snapshot_seed(instruction,'add',[]),['g_tsfp_flags_valid = 1024u;'])
+        self.assertEqual(snapshot_seed(instruction,'xadd',[]),['g_tsfp_flags_valid = 3285u;'])
+
     def test_atomic_operand_subset(self):
         from tools.atomic_lowering import validate
         validate(4, 'mem', 'reg')

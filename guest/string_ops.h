@@ -7,6 +7,7 @@ enum TsfpStringRepeat { TSFP_SINGLE, TSFP_REP_EQUAL, TSFP_REP_NOT_EQUAL };
 /* Arithmetic EFLAGS plus preserved caller bits. Guest-thread entry must seed
  * this TLS cell; it is not a replacement for the complete CPU flags runtime. */
 extern _Thread_local uint32_t g_tsfp_guest_flags;
+extern _Thread_local uint32_t g_tsfp_flags_valid;
 /* Compatibility name for the first string-only bridge. */
 #define g_tsfp_string_flags g_tsfp_guest_flags
 uint32_t tsfp_sub_flags(uint32_t left, uint32_t right, unsigned width, uint32_t previous);

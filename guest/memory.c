@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "memory.h"
+#include "execution.h"
+_Thread_local enum TsfpAccess g_tsfp_access;
 #include <limits.h>
 #include <string.h>
 _Static_assert(sizeof(float) == 4 && sizeof(double) == 8, "guest requires IEEE storage widths");
@@ -78,6 +80,7 @@ int tsfp_guest_range_valid(uint32_t address, size_t width) {
     return 1;
 }
 void *tsfp_guest_pointer(uint32_t address, size_t width) {
+    g_tsfp_access=TSFP_ACCESS_UNKNOWN;
     size_t available = 0;
     unsigned char *pointer = resolve(address, &available);
     /* A borrowed native pointer cannot represent a wrapped physical span. */
@@ -103,6 +106,7 @@ static void validate_transfer(uint32_t address, const void *host, size_t width) 
     }
 }
 static void transfer(uint32_t address, void *host, size_t width, int write) {
+    g_tsfp_access=write ? TSFP_ACCESS_WRITE : TSFP_ACCESS_READ;
     validate_transfer(address, host, width);
     unsigned char *host_bytes = host;
     while (width) {
@@ -151,7 +155,10 @@ TSFP_DEFINE_SCALAR_ACCESS(f64, double)
 
 
 void *tsfp_guest_atomic_pointer(uint32_t address) {
-    void *pointer = tsfp_guest_pointer(address, sizeof(uint32_t));
+    size_t available=0;
+    void *pointer=resolve(address,&available);
+    g_tsfp_access=TSFP_ACCESS_ATOMIC;
+    if (!pointer || available<sizeof(uint32_t)) tsfp_guest_memory_fault(address,sizeof(uint32_t));
     if ((address & 3u) || ((uintptr_t)pointer & 3u))
         tsfp_guest_memory_fault(address, sizeof(uint32_t));
     return pointer;
