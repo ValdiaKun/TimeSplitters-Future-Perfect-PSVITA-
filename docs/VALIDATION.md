@@ -241,3 +241,20 @@ retail generation, title boot, GPU validation and performance remain unavailable
 Native x86 reference is Linux x86_64; guest address-register rollover tests use
 explicit byte-model expectations rather than native 64-bit address rollover.
 Remote CI evidence will be appended after the implementation push.
+
+## Atomic flags follow-up (2026-10-29)
+
+111 actual translated functions and 12 source-pass tests pass the same mapped PC,
+portable host, ASan/UBSan and ARMv7 Cortex-A9 QEMU matrix. New transcript:
+
+```
+atomic-fixtures-v1: cases=294 flags=pass alias=pass fault=pass threads=pass
+```
+
+Native Linux x86_64 locked instructions independently check valid-operation
+registers, flags and memory. Additional assertions cover memory address/source
+aliasing, carry consumers, comparison branches, zero-count string flag retention,
+nonmutating invalid/unaligned faults and 2,000 concurrent mirror increments.
+Unsupported operand forms are source-pass rejection tests. The unchanged 1,518
+string scenarios and existing v3 suite pass. VitaSDK Release VPK cross-build
+passes; it supplies compilation evidence only. No on-device results or timings.

@@ -14,6 +14,13 @@ from tools.guest_lowering import lower_function
 ROOT = Path(__file__).resolve().parents[1]
 
 class LoweringTests(unittest.TestCase):
+    def test_atomic_operand_subset(self):
+        from tools.atomic_lowering import validate
+        validate(4, 'mem', 'reg')
+        for operands in ((1,'mem','reg'),(2,'mem','reg'),(4,'reg','reg'),(4,'mem','imm')):
+            with self.subTest(operands=operands), self.assertRaises(ValueError):
+                validate(*operands)
+
     def test_compound_update_expression_and_hygiene(self):
         emitted = lower_function('''void emitted(void) {
             uint32_t p = 0;

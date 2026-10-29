@@ -34,6 +34,8 @@ def configure(runtime):
         install_overflow_conditions(lifter)
         install_scalar_sse_moves(lifter.Lifter)
         install_stack_memory(lifter.Lifter)
+        from atomic_lowering import install as install_atomics
+        install_atomics(lifter)
         from string_lowering import install as install_strings
         from tools.recomp import translator as translator_module
         install_strings(lifter, translator_module)

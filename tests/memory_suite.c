@@ -13,6 +13,7 @@
 void fixture_memory(void);
 void test_generated_memory(void);
 void test_strings(void);
+void test_atomics(void);
 typedef struct InvalidBind { void *ram; size_t ram_size; void *contiguous; size_t contiguous_size; } InvalidBind;
 static void invalid_bind(void *context) {
     InvalidBind *bind = context;
@@ -188,6 +189,7 @@ void test_memory_map(void) {
     test_scalar_wraps();
     test_generated_memory();
     test_strings();
+    test_atomics();
     /* Byte transfers support RAM wrap; pointer lvalues must reject it on ARM. */
     static const unsigned char pattern[] = {1, 2, 3, 4, 5, 6, 7, 8};
     unsigned char actual[sizeof(pattern)] = {0};

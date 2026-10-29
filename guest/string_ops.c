@@ -6,7 +6,7 @@
 /* Successful accesses in the Linux mapped-PC oracle use its real shared views. */
 extern ptrdiff_t g_xbox_mem_offset;
 #endif
-_Thread_local uint32_t g_tsfp_string_flags = 2u;
+_Thread_local uint32_t g_tsfp_guest_flags = 2u;
 #define ARITHMETIC_FLAGS UINT32_C(0x8d5)
 static uint32_t mask_for(unsigned width) {
     if (width != 1 && width != 2 && width != 4) tsfp_guest_memory_fault(0,width);

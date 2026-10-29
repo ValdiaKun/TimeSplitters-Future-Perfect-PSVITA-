@@ -108,9 +108,25 @@ menu, diagnostic or synthetic CPU test as proof of gameplay.
   locally on mapped PC, portable host, ASan/UBSan and Cortex-A9 QEMU. Linux x86_64
   also executes actual string opcodes and captures real fault registers/flags.
 - VitaSDK Release diagnostic/guest VPK cross-build and strict input tests pass.
-  Remote CI pending push. No source/dependency pins changed.
+  CPU/ARM/Vita CI [40799068560](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40799068560)
+  and input CI 40799068641 passed at `b981d94`. No pins changed.
 - Known limits: 16-bit address-size and unimplemented segment/duplicate prefixes
   fail generation; unproven incoming arithmetic flag provenance fails generation.
   The flags bridge is not complete guest EFLAGS/SEH or thread initialization.
 - No real title files, Vita hardware, GPU tests or measured FPS are available.
   Next: accurate 32-bit XADD/CMPXCHG flags with native-x86 comparisons.
+
+## 2026-10-29: aligned atomic arithmetic flags
+
+- Added `tools/atomic_lowering.py`, shared condition expressions, and eight real
+  translated fixtures (111 total). Aligned dword memory XADD/CMPXCHG retain the
+  pinned atomic primitives, snapshot aliased operands before updates, publish
+  width-correct arithmetic flags, and feed LAHF/SETO/Jcc/ADC/string consumers.
+- 294 arithmetic cases compare registers, memory and flags against independent
+  arithmetic and actual native x86 opcodes. Fault-state, address alias, TLS and
+  two-worker mirror increments are tested. Unsupported widths/forms fail closed.
+- Host oracle, portable host, sanitizers, Cortex-A9 QEMU and Vita cross-build
+  pass locally. Remote checks are recorded after push. Physical Vita remains
+  unavailable; no gameplay, allocation-capacity or performance claim is made.
+- Next: deterministic exception recovery and real guest thread-entry contracts;
+  complete flags across calls/complex joins and x87 precision remain open.

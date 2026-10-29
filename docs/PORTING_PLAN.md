@@ -2,7 +2,7 @@
 
 **Project:** `ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-`  
 **Source upstream:** [TimeSplitters PC](https://github.com/ValdiaKun/timesplitters-future-perfect-pc)  
-**State:** native diagnostic and synthetic guest test VPKs cross-build; 103 PC-translated synthetic x86 functions execute on ARMv7 under QEMU. **No retail game runtime, renderer or gameplay. Hardware unverified.** See [STATUS.md](STATUS.md) and [VALIDATION.md](VALIDATION.md).
+**State:** native diagnostic and synthetic guest test VPKs cross-build; 111 PC-translated synthetic x86 functions execute on ARMv7 under QEMU. **No retail game runtime, renderer or gameplay. Hardware unverified.** See [STATUS.md](STATUS.md) and [VALIDATION.md](VALIDATION.md).
 
 ## Reference projects and applicability
 
@@ -95,12 +95,12 @@ Reviewed reference revisions and licensing constraints are in
 CapUnlocker, clock changes or an on-device shader compiler.
 
 Generated scalar integration now uses the real PC translator with a typed AST
-emission adapter; tests cover 103 synthetic functions on the host/ARM matrix.
+emission adapter; tests cover 111 synthetic functions on the host/ARM matrix.
 Bulk/string pointer escapes, complete instruction/flags/FP/exception coverage,
 kernel services and title entry remain open. Retail source generation and all
 hardware gates still require their explicit prerequisites.
 
 REP/string execution now has per-element fault/progress and native-x86 reference
-coverage (1,518 scenarios; 103 total translated fixtures). Prefix/flag provenance
-patterns without a proven adapter still fail closed. Next CPU gate: atomic flags,
-then exception/thread entry; game/kernel/render/hardware gates remain open.
+coverage (1,518 scenarios; 111 total translated fixtures). Prefix/flag provenance
+patterns without a proven adapter still fail closed. Aligned 32-bit atomic flags now have native-x86 reference coverage. Next CPU
+gate: exception/thread entry; game/kernel/render/hardware gates remain open.

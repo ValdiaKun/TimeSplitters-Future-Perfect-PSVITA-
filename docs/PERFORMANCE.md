@@ -45,3 +45,7 @@ path is introduced: virtual-disjoint ranges can physically overlap through RAM
 mirrors, and faults must preserve element progress. The 1,518 string scenarios
 are correctness coverage, not timing measurements. TLS flag and probe overhead
 remain unmeasured on Vita; no FPS or speedup is claimed.
+
+Aligned atomic source adapters preserve atomic primitives and add correct flags;
+294 arithmetic scenarios and concurrent mirror increments are correctness checks.
+No atomic throughput, contention, hardware frame-time or speedup is measured.

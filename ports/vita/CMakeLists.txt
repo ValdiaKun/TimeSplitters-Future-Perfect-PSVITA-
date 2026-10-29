@@ -49,6 +49,7 @@ if(TSFP_BUILD_GUEST_TESTS)
         "${TSFP_ROOT}/guest/address_space.c"
         "${TSFP_ROOT}/guest/string_ops.c"
         "${TSFP_ROOT}/tests/string_suite.c"
+        "${TSFP_ROOT}/tests/atomic_suite.c"
         "${TSFP_ROOT}/build/guest/string_table.c"
         "${TSFP_ROOT}/tests/memory_suite.c"
         "${TSFP_ROOT}/tests/generated_memory_suite.c"

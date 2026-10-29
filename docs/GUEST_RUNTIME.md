@@ -272,7 +272,7 @@ split store commits none of that element, but prior elements remain committed.
 `tsfp_guest_range_valid` provides a nonfaulting whole-element probe, using the
 existing binding/classification policy; bindings must remain quiescent/stable.
 
-The TLS `g_tsfp_string_flags` bridge records CF/PF/AF/ZF/SF/OF at operand width,
+The TLS `g_tsfp_guest_flags` bridge (`g_tsfp_string_flags` compatibility alias) records CF/PF/AF/ZF/SF/OF at operand width,
 preserves other caller bits, and tracks DF alongside `g_df`. CLD/STD update both.
 Generated condition decoding, LAHF and carry consumers use this bridge after a
 comparison. The pinned block's ZF-only seed is replaced with a checked Python
@@ -309,3 +309,25 @@ cover AF/PF/SF/OF as well as carry/zero. Generated LAHF/SETO, conditional branch
 ADC, incoming CMP and CLD/STD consumers verify source-level flag integration.
 The test heap/backing sizes are unchanged; no speed or actual device-allocation
 claim follows from this implementation.
+
+## Aligned atomic source integration (2026-10-29)
+
+`tools/atomic_lowering.py` adapts actual XADD/CMPXCHG emission before AST memory
+lowering. Only dword memory destinations and register sources are accepted;
+other widths and register-only forms fail generation. Atomic pointer validation
+still requires one aligned accessible span. This deliberately rejects unaligned
+x86 atomics rather than claiming equivalent bus/locking behavior.
+
+Address, source and compare values are captured before architectural writes.
+XADD returns old memory in the source register and publishes addition flags;
+CMPXCHG publishes accumulator-minus-old-memory flags, updates EAX only on failure,
+and stores the source on success. The pinned atomic primitive remains the RMW;
+no ordinary scalar load/store replaces it. Validation faults precede register or
+flag changes. Native-x86 comparisons test all six arithmetic flags, DF preservation,
+changed stores on successful comparisons, failures and arithmetic edges.
+
+Consumers use the shared TLS flags bridge, including predecessor ZF publication;
+this is not complete EFLAGS flow across arbitrary calls/joins. Two translated
+workers increment through distinct RAM aliases and retain independent TLS cells.
+No production guest scheduler, Xbox exception delivery or title thread entry is
+implemented by these tests. PC/runtime pins and third-party provenance are unchanged.

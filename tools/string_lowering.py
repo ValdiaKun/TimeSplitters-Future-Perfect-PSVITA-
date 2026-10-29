@@ -39,7 +39,7 @@ def compare_setter(setter):
     return setter and setter.split()[-1] in ('cmpsb','cmpsw','cmpsd','scasb','scasw','scasd')
 
 def seed(instruction, setter, operands):
-    if not decode(instruction) or setter is None or compare_setter(setter):
+    if not decode(instruction) or setter is None or compare_setter(setter) or setter in ('xadd','cmpxchg'):
         return []
     from translation_operands import _operand_width
     operation = {'cmp':0,'sub':1,'add':2,'test':3,'and':4,'or':4,'xor':4}.get(setter)
@@ -71,16 +71,8 @@ def install(module, translator_module):
     condition = module._make_condition
     def flags(jcc, setter, operands):
         if not compare_setter(setter): return condition(jcc, setter, operands)
-        cf, zf, sf, of, pf = [f'((g_tsfp_string_flags & {mask}u) != 0)' for mask in (1,64,128,2048,4)]
-        expressions = {'je':zf,'jz':zf,'jne':f'!{zf}','jnz':f'!{zf}',
-            'jb':cf,'jc':cf,'jnae':cf,'jae':f'!{cf}','jnb':f'!{cf}','jnc':f'!{cf}',
-            'jbe':f'({cf} || {zf})','jna':f'({cf} || {zf})','ja':f'(!{cf} && !{zf})',
-            'js':sf,'jns':f'!{sf}','jo':of,'jno':f'!{of}','jp':pf,'jnp':f'!{pf}',
-            'jl':f'({sf} != {of})','jge':f'({sf} == {of})',
-            'jle':f'({zf} || {sf} != {of})','jg':f'(!{zf} && {sf} == {of})'}
-        expression = expressions.get(jcc)
-        if expression is None: raise ValueError(f'Unsupported string flag consumer {jcc}')
-        return expression, 'string EFLAGS'
+        from flag_conditions import expression
+        return expression(jcc), 'string EFLAGS'
     module._make_condition = flags
     lahf = module._make_lahf_value
     module._make_lahf_value = lambda setter, operands: ('((g_tsfp_string_flags & 0xd5u) | 2u)' if compare_setter(setter) else lahf(setter,operands))

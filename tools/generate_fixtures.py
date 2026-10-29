@@ -74,6 +74,14 @@ FIXTURES[0x13000] = ('fixture_string_branch', 'f3a67406bb01000000c3bb02000000c3'
 FIXTURES[0x13020] = ('fixture_string_carry', 'f3a683d300c3')
 FIXTURES[0x13040] = ('fixture_string_cld', 'fcf3a4c3')
 FIXTURES[0x13060] = ('fixture_string_std', 'fdf3a4fcc3')
+FIXTURES[0x13100] = ('fixture_xadd_flags', 'f00fc1199f0f90c2c3')
+FIXTURES[0x13120] = ('fixture_cmpxchg_flags', 'f00fb1199f0f90c2c3')
+FIXTURES[0x13140] = ('fixture_xadd_raw', 'f00fc119c3')
+FIXTURES[0x13160] = ('fixture_cmpxchg_raw', 'f00fb119c3')
+FIXTURES[0x13180] = ('fixture_xadd_alias', 'f00fc100c3')
+FIXTURES[0x131a0] = ('fixture_xadd_carry', 'f00fc11983d200c3')
+FIXTURES[0x131c0] = ('fixture_atomic_string', 'f00fc119f3a69f0f90c2c3')
+FIXTURES[0x131e0] = ('fixture_cmpxchg_branch', 'f00fb1197506ba01000000c3ba02000000c3')
 
 
 def main():
