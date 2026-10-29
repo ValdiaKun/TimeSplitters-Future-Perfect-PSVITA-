@@ -471,3 +471,34 @@ No assertions disabled or new warning suppressions. Strict input tests, Python
 syntax, whitespace and staged-content checks pass; VitaSDK Release diagnostic and
 guest VPK cross-build pass. No physical Vita, retail XBE/metadata, game boot,
 GPU measurement or FPS result exists. Remote final-revision checks follow push.
+
+## Raw-header follow-up
+
+After `06f876b` passed push 40809921287 and PR 40809933198 CPU/Vita jobs,
+added a bounded structural XBE decoder and loader support for read-only import
+sections patched before publication. Authored byte buffers have synthetic empty
+certificates and both canonical retail/debug encodings; no retail data is used.
+
+The same complete host/ASan/UBSan/ARMv7 command and Vita Release cross-build pass.
+New matching cross-target transcript:
+
+```
+xbe-v1: keys=retail,debug malformed=24 rollback=pass entry=37
+```
+
+`tools/verify_image_fixture.py` independently runs pinned PC XBEParser on the
+same C-authored build-local files, comparing entry, key selection, six sections,
+raw padding (68 raw bytes versus 64 virtual), read-only imports and ordinals
+104/320/258. Oracle output: `pinned-pc-xbe-oracle: retail,debug entry/sections/imports=pass`.
+This check runs automatically after the mapped-PC fixture execution in CI.
+
+Malformed cases test magic, header/table/count bounds, overflow/raw extents,
+virtual/raw overlap, bad encoded entry, stack metadata, invalid ordinals and TLS
+pointers, plus truncated buffers and output aliasing. Failed normalization leaves
+output unchanged. Both valid buffers execute the actual initialized entry, exit
+37, and reject later writes to the patched read-only table. Prior CPU, native
+REP, concurrency, 27 image rollback and permission tests remain enabled.
+
+The normalizer does not verify signatures/certificates or authenticate retail
+compatibility. TLS contents/index/callback initialization remain caller-supplied
+rather than extracted. No physical Vita, real title or measured performance.

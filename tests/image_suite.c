@@ -5,6 +5,7 @@
 #define RECOMP_GENERATED_CODE
 #include "recomp_types.h"
 #include "image.h"
+#include "xbe.h"
 #include "kernel.h"
 #include "memory.h"
 #include "string_ops.h"
@@ -41,6 +42,68 @@ static TsfpImageDescription description(TsfpImageSection *s) {
     d.tib=0x89000; d.tls_template=0x8c000; d.tls_size=16; d.thread_data_size=16;
     d.object=0x8a000; d.object_template=0x8b000; d.resolve=lookup;
     return d;
+}
+static _Alignas(TsfpXbeImage) unsigned char xbe[0x8000];
+static void readonly_import(void *unused) { (void)unused; tsfp_guest_store_u32(0x88000,0); }
+static void put(unsigned offset,uint32_t value) { memcpy(xbe+offset,&value,4); }
+static void test_xbe(void) {
+    TsfpImageSection sections[6]; TsfpImageDescription d=description(sections);
+    sections[5]=(TsfpImageSection){0x88000,16,1,data,16};
+    sections[2]=(TsfpImageSection){0x88010,sizeof(data)-16,3,data+16,sizeof(data)-16};
+    for (unsigned debug=0;debug<2;++debug) {
+        memset(xbe,0,sizeof(xbe)); memcpy(xbe,"XBEH",4);
+        put(0x104,0x10000); put(0x108,0x1000); put(0x10c,0x81000); put(0x110,0x178);
+        put(0x118,0x10500); put(0x500,0x1d0); /* Authored zero-content certificate. */
+        put(0x11c,6); put(0x120,0x10200); put(0x130,0x1000);
+        put(0x128,0x13400^(debug ? 0x94859d4bu : 0xa8fc57abu));
+        put(0x158,0x88000^(debug ? 0xefb1f152u : 0x5b6d40b6u));
+        size_t cursor=0x1000;
+        for (unsigned i=0;i<6;++i) {
+            unsigned offset=0x200+i*56;
+            put(offset,((sections[i].flags&2u) ? 1u : 0u)|(sections[i].flags&4u));
+            put(offset+4,sections[i].address); put(offset+8,sections[i].size);
+            size_t raw_size=i==0 ? 68 : sections[i].file_size; /* padded raw text */
+            put(offset+12,(uint32_t)cursor); put(offset+16,(uint32_t)raw_size);
+            if (sections[i].file_size) memcpy(xbe+cursor,sections[i].data,sections[i].file_size);
+            cursor+=raw_size;
+        }
+#ifdef TSFP_PC_MAPPED_ORACLE
+        FILE *fixture=fopen(debug ? "build/guest/synthetic-debug.xbe" : "build/guest/synthetic-retail.xbe","wb");
+        assert(fixture && fwrite(xbe,1,cursor,fixture)==cursor && fclose(fixture)==0);
+#endif
+        TsfpXbeImage parsed;
+        assert(tsfp_xbe_normalize(xbe,cursor,&parsed) && parsed.entry==0x13400 && parsed.import_count==3 && parsed.sections[0].file_size==64);
+        unsigned char parsed_before[sizeof(parsed)]; memcpy(parsed_before,&parsed,sizeof(parsed));
+        for (unsigned variant=0;variant<12;++variant) {
+            unsigned char saved[0x8000]; memcpy(saved,xbe,sizeof(xbe));
+            switch (variant) {
+            case 0: xbe[0]=0; break;
+            case 1: put(0x11c,UINT32_MAX); break;
+            case 2: put(0x120,0xffffffff); break;
+            case 3: put(0x20c,UINT32_MAX); break;
+            case 4: put(0x210,UINT32_MAX); break;
+            case 5: put(0x200+56+4,0x13300); break;
+            case 6: put(0x128,0); break;
+            case 7: put(0x130,0); break;
+            case 8: put((unsigned)cursor-16,0x80000200); break;
+            case 9: put((unsigned)cursor-16,0x80000000); break;
+            case 10: put(0x12c,UINT32_MAX); break;
+            case 11: put(0x200+56+12,0x1000); break;
+            }
+            assert(!tsfp_xbe_normalize(xbe,cursor,&parsed) && !memcmp(parsed_before,&parsed,sizeof(parsed)));
+            memcpy(xbe,saved,sizeof(xbe));
+        }
+        assert(!tsfp_xbe_normalize(xbe,0x100,&parsed));
+        assert(!tsfp_xbe_normalize(xbe,cursor,(TsfpXbeImage *)xbe));
+        d.sections=parsed.sections; d.count=parsed.count; d.entry=parsed.entry;
+        d.import_table=parsed.import_table; d.import_count=parsed.import_count; d.stack_size=parsed.stack_commit;
+        assert(tsfp_image_initialize(&d)==TSFP_IMAGE_OK);
+        TsfpFault f; assert(tsfp_image_run(&f)==1 && f.kind==TSFP_THREAD_EXIT && f.detail==37);
+        assert(tsfp_guest_run(readonly_import,NULL,&f)==1 && f.access==TSFP_ACCESS_WRITE);
+        assert(tsfp_guest_load_u32(0x88000)==0xfe000000);
+        assert(tsfp_image_reset());
+    }
+    puts("xbe-v1: keys=retail,debug malformed=24 rollback=pass entry=37");
 }
 static void *out_of_memory(size_t size) { assert(size<=TSFP_IMAGE_MAX_BYTES); return NULL; }
 static void invoke(void *context) { (*(recomp_func_t *)context)(); }
@@ -145,5 +208,6 @@ void test_image(void) {
     assert(tsfp_image_initialize(&d)==TSFP_IMAGE_OK);
     assert(tsfp_image_run(&f)==1 && f.kind==TSFP_FAULT_IMPORT && f.detail==511);
     assert(tsfp_image_reset());
+    test_xbe();
     printf("image-v1: rejected=%u rollback=pass aliases=pass permissions=pass entry=37 unsupported=pass\n",rejected);
 }

@@ -133,7 +133,7 @@ Every gate needs implementation **and** the stated evidence; report `implemented
 | **F — performance** | Stable real-device frame-time data with reproducible settings; measured bottleneck fixes and regression comparisons; no fabricated 30/60 FPS claims |
 | **G — release** | Legal/source/notice inventory, reproducible VPK, no retail assets bundled, user-file setup documented, hardware test matrix and known limitations disclosed |
 
-The immediate next major CPU task (as documented in `docs/GUEST_RUNTIME.md`) is **bounded XBE metadata normalization and remaining kernel/thread services**. Per-element REP/string lowering now has the documented host/native-x86/ARM synthetic coverage. RAM aliases/MMIO classification and generated scalar wrap accesses have the documented synthetic coverage. Do this before broad GPU or retail-game integration unless a newly verified blocker changes the critical path.
+The immediate next major CPU task (as documented in `docs/GUEST_RUNTIME.md`) is **XBE TLS/initial-thread normalization and remaining kernel/thread services**. Per-element REP/string lowering now has the documented host/native-x86/ARM synthetic coverage. RAM aliases/MMIO classification and generated scalar wrap accesses have the documented synthetic coverage. Do this before broad GPU or retail-game integration unless a newly verified blocker changes the critical path.
 
 ## Build, test and CI commands
 

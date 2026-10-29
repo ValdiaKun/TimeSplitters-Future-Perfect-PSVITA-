@@ -77,3 +77,12 @@ source of field layouts. New `guest/image.c` is original GPL-3.0-only checked
 normalization/publication logic, not copied Win32 mapping code. It rejects raw
 file lengths above virtual size; a future XBE parser must normalize raw padding
 (the PC clamps copy size). No XBE parser or retail source is copied here.
+
+## Raw XBE structural subset
+
+Inspected pinned PC tools/compiler/xbe_image.py (canonical retail/debug key pairs,
+header/section bounds, file/virtual overlap, entry selection, imports) and prepared
+xbox_memory_layout.c (raw copy clipping, temporary write access for read-only
+thunk tables). New C decoder is original GPL-3.0-only code. The validation tool
+invokes the pinned Python parser on authored build-local fixtures; it does not
+copy parser code or export-name tables. No new dependencies or source pins.

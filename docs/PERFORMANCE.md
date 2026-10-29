@@ -70,3 +70,8 @@ and retains fixed section/permission metadata. Instruction and memory-policy
 guards introduce unmeasured overhead. No throughput, frame-rate, device allocation
 capacity or production budget is established. The transactional startup copy is
 for validation/publication correctness, not a measured loading optimization.
+
+Raw XBE normalization borrows file views and uses fixed bounded local metadata;
+it allocates no section copies. Initialization still stages at most 1 MiB once.
+Read-only imports patch before final policy publication. No loader throughput or
+real-device frame/memory measurement is available.

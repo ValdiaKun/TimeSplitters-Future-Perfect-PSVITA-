@@ -42,3 +42,10 @@ software permissions and compiled entry resolution. One-shot entry and teardown
 are tested through real translated code. Next dependency is bounded normalization
 of authored XBE headers/section records into this descriptor. Retail hash checking
 and matching generated analysis/dispatch data remain mandatory before real use.
+
+Raw-header normalization subset is now implemented in guest/xbe.c and compared
+with the pinned PC parser. Authored retail/debug headers both reach synthetic
+entry through image initialization. The next concrete dependency is TLS-directory
+extraction (raw data, zero fill, index writes and callback policy) into initial
+thread storage. Caller-provided synthetic thread configuration remains explicit;
+no authenticated retail image or complete XBE/title boot is claimed.

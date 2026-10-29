@@ -446,8 +446,10 @@ are rejected until self-modifying code semantics are established. File bytes are
 copied and the rest zero-filled in one bounded temporary. Allocation has an
 injectable paired platform interface; allocation failure changes no guest state.
 
-Thread/TLS/object/import/stack ranges must be contained in writable declared
-sections, physically disjoint and bounded; template sources must not overlap the
+Thread/TLS/object/stack ranges must be contained in writable declared sections;
+imports may be in readable non-executable sections and are patched only before
+final permissions publish. These destination ranges must be physically disjoint
+and bounded; template sources must not overlap the
 mutated regions. TIB/TLS/thread-object initialization follows existing PC layout.
 Stack bytes are zeroed. Import markers are checked before commit; unknown bounded
 ordinals may bind but execution produces the existing explicit import fault.
@@ -479,3 +481,30 @@ Entry is one-shot until reset/reinitialization; nested runs/reset are rejected.
 The test image uses actual translated FS/TLS/import instructions and exits 37.
 No XBE parsing/signature validation, production section capacity, native page
 protection, retail dispatch catalog or complete Xbox title boot is implemented.
+
+## Raw XBE structural normalization subset
+
+`guest/xbe.{h,c}` consumes a bounded accessible host byte buffer and produces
+borrowed normalized section views. It does not open files or authenticate a game.
+Output remains byte-for-byte unchanged on failure; output/input overlap is rejected.
+It checks magic/header/image sizes, 56-byte section records, section count/budget,
+virtual and file extents/overlap, arithmetic overflow, supported flags and file
+backing. Padded raw section data is clipped to virtual size, matching PC loading.
+Only ordinary W/PRELOAD/X section flags are currently supported; RWX and additional
+inserted/head/tail flags are explicitly rejected. Empty sections are unsupported.
+
+Canonical retail/debug entry and thunk keys come from pinned PC xbe_image.py.
+A key pair must produce a file-backed executable entry and a bounded, terminated,
+valid ordinal table. The decoder reports TLS directory address and stack commit;
+TLS directory range is checked, but its contents are not yet normalized into
+initial-thread allocations/index/callback policy. Caller still supplies the
+validated thread/stack/object/TLS configuration used by image_initialize.
+
+Both encodings of an entirely authored XBE buffer now normalize and execute the
+same translated entry to exit 37. The pinned PC parser independently checks their
+entry, sections, key selection and imports. The synthetic files/certificates live
+only under ignored build output; they are not retail images. Certificate/digest
+verification, full XBE semantics and actual supported-title compatibility are not
+established. Retail use still requires the existing supported SHA-256 gate and
+matching ignored generated code/analysis metadata. Read-only import data is
+patched during quiescent initialization, then retains read-only guest permissions.

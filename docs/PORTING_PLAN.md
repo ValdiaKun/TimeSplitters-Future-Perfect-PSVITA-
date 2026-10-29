@@ -125,3 +125,8 @@ host/ARM correctness matrix. R/W/execute guards and rollback tests cover the
 bounded low-RAM subset; this is not retail boot or full M2 acceptance. Next:
 normalize bounded synthetic XBE headers/sections into the descriptor, preserving
 hash/analysis prerequisites for eventual retail generation.
+
+Bounded raw XBE header/section/key/import normalization now feeds the synthetic
+image path and has PC-parser comparison. Remaining boot gates include actual TLS
+directory/index preparation, object/handle services, supported authenticated title
+metadata, full dispatch and hardware validation. This does not complete M2.

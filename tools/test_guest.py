@@ -44,7 +44,7 @@ def main():
         base = ['-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-Wno-unused-label',
                 '-Wno-unused-variable', '-Wno-unused-but-set-variable', '-fno-strict-aliasing',
                 '-ffp-contract=off', '-Iguest', '-Itests']
-        sources = ['tests/guest_harness.c', 'guest/memory.c', 'guest/execution.c', 'guest/kernel.c', 'tests/kernel_suite.c', 'guest/image.c', 'tests/image_suite.c', 'tests/execution_suite.c', 'guest/address_space.c', 'guest/string_ops.c', 'tests/string_suite.c', 'tests/atomic_suite.c', 'tests/string_native_oracle.c', 'build/guest/string_table.c', 'tests/memory_suite.c', 'tests/generated_memory_suite.c', 'tests/mmx_state.c', 'tests/pc_memory_oracle.c', 'build/guest/fixtures.c', '-lm', '-pthread']
+        sources = ['tests/guest_harness.c', 'guest/memory.c', 'guest/execution.c', 'guest/kernel.c', 'tests/kernel_suite.c', 'guest/image.c', 'guest/xbe.c', 'tests/image_suite.c', 'tests/execution_suite.c', 'guest/address_space.c', 'guest/string_ops.c', 'tests/string_suite.c', 'tests/atomic_suite.c', 'tests/string_native_oracle.c', 'build/guest/string_table.c', 'tests/memory_suite.c', 'tests/generated_memory_suite.c', 'tests/mmx_state.c', 'tests/pc_memory_oracle.c', 'build/guest/fixtures.c', '-lm', '-pthread']
         host_cc = shlex.split(os.environ.get('CC', 'cc'))
         run(host_cc + ['--version'])
         run(host_cc + ['-std=c11','-O2','-Wall','-Wextra','-Werror','-DTSFP_PC_MAPPED_ORACLE',
@@ -58,6 +58,7 @@ def main():
             mode_sources = [s.replace('build/guest/fixtures.c', 'build/guest/pristine/fixtures.c') for s in sources] if mode == 'pristine' else sources
             run(host_cc + base + includes + sanitizers + mode_sources + ['-o', target])
             transcripts[mode] = run([str(ROOT / target)])
+            if mode == 'pristine': run([sys.executable, 'tools/verify_image_fixture.py'])
         if args.arm_cc:
             cc = shlex.split(args.arm_cc)
             run(cc + ['--version'])

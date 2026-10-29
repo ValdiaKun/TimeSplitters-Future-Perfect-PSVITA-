@@ -224,3 +224,21 @@ each. Push probe identified AMD a10f11/hypervisor=1, flags44. No device measurem
   boot. PC raw-lvalue oracle does not enforce Vita software write permissions.
 - Next: a bounded XBE-section/header normalization adapter to this validated
   descriptor, tested with authored binary headers before retail input is allowed.
+
+Image commit `06f876b` passed push CPU/Vita CI 40809921287 and PR CPU/Vita CI
+40809933198 (both jobs); input CI 40809925583 passed before continuing.
+
+## 2026-10-29: bounded raw XBE normalization
+
+- Added `guest/xbe.{h,c}` and independent pinned-PC parser verification tool.
+  Checked header/section extents, raw padding, canonical key pairs, import ordinal
+  termination and unchanged-output failures; file buffers remain caller-owned.
+- Authored retail/debug-encoded byte buffers both normalize, initialize and execute
+  the real translated synthetic entry to exit 37. Read-only imports patch before
+  policy publication and remain read-only during guest execution.
+- 24 malformed raw-header cases plus truncation/host-output-alias rejection pass;
+  all earlier 27 image rollback cases and CPU suites remain enabled.
+- Structural subset only: no retail/certificate authentication, full TLS directory
+  extraction, callbacks/index allocation, handles/scheduling or real game boot.
+- Next: validated XBE TLS-directory/index normalization into initial-thread storage,
+  checked against pinned PC behavior with authored directory fixtures.

@@ -106,15 +106,17 @@ enum TsfpImageError tsfp_image_initialize(const TsfpImageDescription *descriptio
     if (!p.d.import_count || p.d.import_count>16) { result=TSFP_IMAGE_IMPORT; goto fail; }
     size_t sizes[]={tls_total,0x200,p.d.stack_size,p.d.import_count*4};
     for (unsigned i=0;i<4;++i) {
-        if (!at(&p,stage,reserved[i],sizes[i],TSFP_IMAGE_WRITE) || (uint64_t)(reserved[i]%TSFP_XBOX_RAM_SIZE)+sizes[i]>TSFP_XBOX_RAM_SIZE) goto fail;
+        if (!at(&p,stage,reserved[i],sizes[i],i==3 ? TSFP_IMAGE_READ : TSFP_IMAGE_WRITE) || (uint64_t)(reserved[i]%TSFP_XBOX_RAM_SIZE)+sizes[i]>TSFP_XBOX_RAM_SIZE) goto fail;
         for (unsigned j=0;j<i;++j) if (overlap(reserved[i],sizes[i],reserved[j],sizes[j])) goto fail;
     }
+    for (size_t i=0;i<p.d.count;++i)
+        if ((p.s[i].flags&TSFP_IMAGE_EXECUTE) && p.d.import_table>=p.s[i].address && (uint64_t)(p.d.import_table-p.s[i].address)<p.s[i].size) { result=TSFP_IMAGE_IMPORT; goto fail; }
     unsigned char *tls=at(&p,stage,p.d.tls_template,p.d.tls_size,TSFP_IMAGE_READ);
     unsigned char *object=at(&p,stage,p.d.object_template,0x200,TSFP_IMAGE_READ);
     if (!tls || !object) goto fail;
     for (unsigned i=0;i<4;++i)
         if (overlap(p.d.tls_template,p.d.tls_size,reserved[i],sizes[i]) || overlap(p.d.object_template,0x200,reserved[i],sizes[i])) goto fail;
-    unsigned char *imports=at(&p,stage,p.d.import_table,sizes[3],TSFP_IMAGE_WRITE);
+    unsigned char *imports=at(&p,stage,p.d.import_table,sizes[3],TSFP_IMAGE_READ);
     uint32_t markers[16]; memcpy(markers,imports,p.d.import_count*4);
     if (!tsfp_kernel_imports_validate(markers,p.d.import_count)) { result=TSFP_IMAGE_IMPORT; goto fail; }
     unsigned char *tib=at(&p,stage,p.d.tib,tls_total,TSFP_IMAGE_WRITE);
