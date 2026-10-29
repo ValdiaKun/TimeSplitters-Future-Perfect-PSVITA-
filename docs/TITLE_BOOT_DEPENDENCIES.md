@@ -24,3 +24,7 @@ kernel import dispatch boundary using the pinned contracts, with deterministic
 fixtures and fail-closed unsupported ordinals. Do not expand GPU infrastructure
 as a substitute for establishing that entry path. Real title validation requires
 the supported user-provided executable, matching metadata, game data and Vita.
+
+Current correctness gate: Intel REP comparison-fault EFLAGS restoration must pass
+push and PR validation before extending this boot path. The native host oracle
+has a separate vendor contract; see VALIDATION.md for the captured regression.

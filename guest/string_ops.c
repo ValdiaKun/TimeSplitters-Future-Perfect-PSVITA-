@@ -86,6 +86,20 @@ void tsfp_guest_string(unsigned kind, unsigned width, unsigned repeat,
     if (repeat && !*count) return; /* No pointer arithmetic or access. */
     uint32_t step = direction ? 0u - width : width;
     for (;;) {
+        /* Intel REP CMPS/SCAS faults restore pre-instruction EFLAGS, while
+         * completed index/count progress remains visible (Intel SDM REP). */
+        if (repeat && (kind == TSFP_CMPS || kind == TSFP_SCAS)) {
+            uint32_t bad = *destination;
+            int invalid = !tsfp_guest_range_valid(bad,width);
+            if (kind == TSFP_CMPS && !tsfp_guest_range_valid(*source,width)) {
+                bad=*source; invalid=1;
+            }
+            if (invalid) {
+                g_tsfp_string_flags=entry_flags;
+                g_tsfp_access=TSFP_ACCESS_READ;
+                tsfp_guest_memory_fault(bad,width);
+            }
+        }
         uint32_t left = *accumulator, right;
         if (kind == TSFP_MOVS || kind == TSFP_CMPS || kind == TSFP_LODS)
             left = load_element(*source, width);

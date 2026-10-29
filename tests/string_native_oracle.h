@@ -8,6 +8,7 @@ typedef struct StringState {
     int fault;
 } StringState;
 #ifdef TSFP_PC_MAPPED_ORACLE
+int native_string_amd(void);
 void native_string_oracle(unsigned kind, unsigned width, unsigned repeat, StringState *state);
 #endif
 #endif

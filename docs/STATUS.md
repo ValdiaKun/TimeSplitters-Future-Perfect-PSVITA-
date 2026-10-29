@@ -164,3 +164,15 @@ No physical Vita execution or performance measurement was performed.
 Execution implementation `a8e96ec`: [CPU/ARM/Vita CI 40802669954](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40802669954)
 passed both jobs. Input CI 40802669848 passed. Push CI 40802663739 also passed.
 Scope remains synthetic execution and cross-compilation; no hardware/game/FPS evidence.
+
+## 2026-10-29: REP comparison fault-flags correction
+
+- Corrected a real guest semantic defect: Intel REP CMPS/SCAS faults restore
+  instruction-entry flags, with completed pointer/count progress preserved.
+- Added a standalone native reproduction and CPUID diagnostics. Local AMD retains
+  completed comparison flags; Intel specifies entry restoration. Native reference
+  expectations are explicit and strict by vendor; guest always follows Intel.
+- This supersedes the earlier observed-PC conclusion that last comparison flags
+  were the Xbox contract. No defined flag comparison was weakened. See VALIDATION.
+- Full local host/sanitizer/ARM matrix and Vita cross-build pass. New runtime work
+  waits for both push and PR CI on the fix. No game/hardware/performance claim.

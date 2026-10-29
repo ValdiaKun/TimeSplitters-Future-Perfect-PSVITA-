@@ -379,3 +379,11 @@ extraction and complete Xbox TLS initialization remain unimplemented.
 The translated fault/thread fixtures are independent of retail data. The
 [boot dependency map](TITLE_BOOT_DEPENDENCIES.md) identifies integration order;
 C recovery alone is neither Xbox SEH nor a completed title runtime.
+
+REP fault correction: the earlier partial-comparison flag observation was from an
+AMD native host and is not the Intel Xbox contract. Repeated CMPS/SCAS restore
+entry EFLAGS on a fault, retaining successful iteration index/count progression
+(Intel SDM REP description). The independent guest model now requires this.
+Native comparison uses explicit host-vendor expectations, never normalizes actual
+captured flags, and rejects unknown vendors. See VALIDATION.md and the standalone
+`tests/rep_fault_probe.c`; native host behavior is distinct from guest semantics.

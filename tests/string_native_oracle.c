@@ -14,7 +14,21 @@
 #include <stdlib.h>
 #include <ucontext.h>
 #include <stddef.h>
+#include <cpuid.h>
+#include <string.h>
+#include <stdio.h>
 extern ptrdiff_t g_xbox_mem_offset;
+/* Native host behavior is not the Xbox CPU contract. Keep every flag bit
+ * checked, but require an identified vendor for the native fault reference. */
+int native_string_amd(void) {
+    unsigned a,b,c,d; char vendor[13];
+    __cpuid(0,a,b,c,d);
+    memcpy(vendor,&b,4); memcpy(vendor+4,&d,4); memcpy(vendor+8,&c,4); vendor[12]=0;
+    if (!strcmp(vendor,"AuthenticAMD")) return 1;
+    if (!strcmp(vendor,"GenuineIntel")) return 0;
+    fprintf(stderr,"Unsupported native REP reference vendor: %s\n",vendor);
+    abort();
+}
 static sigjmp_buf resume;
 static StringState *result_state;
 static volatile sig_atomic_t active;

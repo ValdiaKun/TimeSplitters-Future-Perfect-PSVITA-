@@ -55,3 +55,7 @@ instrumentation, not measured optimizations. Their Vita overhead is unavailable.
 Snapshots allocate no heap per event; TLS preparation uses one bounded temporary
 (up to 64 KiB) freed before guest execution. No production memory budget or
 thread throughput is established. No device/frame-time results exist.
+
+REP comparison-fault correction adds whole-element probes before repeated
+comparisons to restore Intel entry flags before a fault. This is a correctness
+change; overhead is unmeasured. No string fast path or speed claim is introduced.

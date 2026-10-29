@@ -47,6 +47,9 @@ def main():
         sources = ['tests/guest_harness.c', 'guest/memory.c', 'guest/execution.c', 'tests/execution_suite.c', 'guest/address_space.c', 'guest/string_ops.c', 'tests/string_suite.c', 'tests/atomic_suite.c', 'tests/string_native_oracle.c', 'build/guest/string_table.c', 'tests/memory_suite.c', 'tests/generated_memory_suite.c', 'tests/mmx_state.c', 'tests/pc_memory_oracle.c', 'build/guest/fixtures.c', '-lm', '-pthread']
         host_cc = shlex.split(os.environ.get('CC', 'cc'))
         run(host_cc + ['--version'])
+        run(host_cc + ['-std=c11','-O2','-Wall','-Wextra','-Werror','-DTSFP_PC_MAPPED_ORACLE',
+            '-Itests','tests/rep_fault_probe.c','tests/string_native_oracle.c','-o','build/guest/rep-fault-probe'])
+        run([str(ROOT / 'build/guest/rep-fault-probe')])
         transcripts = {}
         for mode in ('pristine', 'portable', 'sanitized'):
             includes = ['-Ibuild/guest/pristine', '-DTSFP_PC_MAPPED_ORACLE'] if mode == 'pristine' else ['-Ibuild/guest/include', '-DTSFP_PORTABLE_GUEST_MEMORY']

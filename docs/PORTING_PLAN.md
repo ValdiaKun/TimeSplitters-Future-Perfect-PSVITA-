@@ -110,3 +110,7 @@ entry tests (117 translated functions total). Full B acceptance remains open:
 Xbox SEH delivery, thread objects/scheduling, arbitrary cross-call/join flags and
 FP fidelity are not established. Continue the concrete
 [TITLE_BOOT_DEPENDENCIES.md](TITLE_BOOT_DEPENDENCIES.md) integration order.
+
+Before further title services, gate on the REP comparison-fault correction passing
+both CI triggers on one revision. Intel fault semantics, not AMD native behavior,
+define this Xbox guest subset. Thread objects/imports remain the next boot task.

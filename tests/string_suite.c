@@ -66,7 +66,8 @@ static uint32_t expected_flags(uint32_t left, uint32_t right, unsigned width, ui
         (result & sign ? 128u : 0u) |
         (difference < -(int64_t)(limit/2) || difference >= (int64_t)(limit/2) ? 2048u : 0u);
 }
-static void model(unsigned kind, unsigned width, unsigned repeat, StringState *state, Image *image) {
+static void model(unsigned kind, unsigned width, unsigned repeat, StringState *state, Image *image, int intel_fault_flags) {
+    uint32_t entry_flags=state->flags;
     if (repeat && !state->count) return;
     uint32_t step = state->flags & 0x400 ? 0u-width : width;
     for (;;) {
@@ -94,6 +95,7 @@ static void model(unsigned kind, unsigned width, unsigned repeat, StringState *s
             (!!(state->flags & 64u) != (repeat == TSFP_REP_EQUAL))) return;
         continue;
     fault:
+        if (intel_fault_flags && repeat && (kind==TSFP_CMPS || kind==TSFP_SCAS)) state->flags=entry_flags;
         state->fault = 1;
         state->fault_address = fault_address;
         state->fault_width = width;
@@ -123,13 +125,16 @@ static unsigned cases;
 static void run_case(unsigned kind, unsigned width, unsigned repeat, StringState input, const Image *initial, int use_native) {
     Image expected_image = *initial, actual_image;
     StringState expected = input;
-    model(kind,width,repeat,&expected,&expected_image);
+    model(kind,width,repeat,&expected,&expected_image,1);
 #ifdef TSFP_PC_MAPPED_ORACLE
     if (use_native) {
         image_transfer((Image *)initial,1);
         StringState native = input;
         native_string_oracle(kind,width,repeat,&native);
-        compare_state(&native,&expected);
+        StringState native_expected=input;
+        Image native_image=*initial;
+        model(kind,width,repeat,&native_expected,&native_image,!native_string_amd());
+        compare_state(&native,&native_expected);
         image_transfer(&actual_image,0);
         if (memcmp(&actual_image,&expected_image,sizeof(actual_image)) != 0) {
             fprintf(stderr,"native string image mismatch kind=%u width=%u repeat=%u src=%08x dst=%08x count=%u flags=%x\n",kind,width,repeat,input.source,input.destination,input.count,input.flags);

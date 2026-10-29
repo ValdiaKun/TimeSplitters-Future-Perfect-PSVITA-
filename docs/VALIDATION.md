@@ -330,3 +330,47 @@ GPU benchmark or measured performance. Remote CI evidence follows the push.
 Execution implementation `a8e96ec`: [CPU/ARM/Vita CI 40802669954](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40802669954)
 passed both jobs. Input CI 40802669848 passed. Push CI 40802663739 also passed.
 Scope remains synthetic execution and cross-compilation; no hardware/game/FPS evidence.
+
+## REP comparison fault-flags regression (2026-10-29)
+
+Starting clean HEAD `60708abf`: PR CPU run 40802804271 failed while push run
+40802799286 passed. The failure captured source `0004003f`, destination
+`7fffffff`, count 2, actual EFLAGS `10e93` versus model `446`. The differing bits
+include defined arithmetic flags; this is not undefined AF, RF or IF noise.
+The former model incorrectly required the last completed comparison's flags.
+
+Intel SDM, REP/REPE/REPZ/REPNE/REPNZ description, states: when a fault occurs
+executing REPE/REPNE SCAS/CMPS, EFLAGS is restored to its state before the
+instruction. Reference text: https://www.felixcloutier.com/x86/rep:repe:repz:repne:repnz
+The Xbox uses an Intel CPU. Guest/runtime and the independent byte model now
+restore entry flags on that fault path while preserving completed index/count
+progress. Successful termination, zero count and non-comparison strings retain
+strict prior checks. No flags are declared undefined or masked away to pass.
+
+`tests/rep_fault_probe.c` is a minimal independent reproduction: two equal bytes,
+REPE CMPSB count 2, first destination byte valid and second in a PROT_NONE page.
+Its signal handler captures actual ucontext EFLAGS and index/count registers.
+It asserts all arithmetic/DF bits and exact progress. Run:
+
+```sh
+cc -std=c11 -O2 -Wall -Wextra -Werror -DTSFP_PC_MAPPED_ORACLE -Itests \
+  tests/rep_fault_probe.c tests/string_native_oracle.c -o /tmp/rep-fault-probe
+/tmp/rep-fault-probe
+```
+
+Local AMD EPYC 9V74 (`AuthenticAMD`) retains completed-comparison arithmetic
+flags (`44`) instead of Intel's required entry flags (`891`). The same result
+passes at -O0/-O2/-O3; changing C optimization is not the fix. The probe now logs
+CPUID vendor/signature and hypervisor bit in CI to expose runner differences.
+The native oracle checks AMD observations against a separate native expectation;
+Intel observations against the documented Intel contract. Both compare every
+previously checked defined flag, register and byte; unknown vendors abort.
+The portable guest model always enforces Intel behavior independently of host.
+AMD observations are host-reference evidence, not an AMD architectural guarantee
+or physical Xbox testing. Any deviation from either explicit reference fails.
+
+The probe runs separately from deterministic cross-target transcripts and is
+recorded in `build/guest/report.json`. The full 117-function/1,518-string/294-atomic
+matrix passes locally on PC, portable, ASan/UBSan and ARMv7 Cortex-A9 QEMU.
+VitaSDK cross-build passes. No dependency/source pins changed. Physical Vita,
+retail boot and performance remain unavailable. Remote trigger results follow.
