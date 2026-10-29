@@ -89,8 +89,9 @@ static TsfpThreadCreateResult create(TsfpThreadCreateRequest request) {
         return result;
     }
     int platform_error;
-    if (tsfp_storage_launch(lease,&platform_error)!=TSFP_STORAGE_OK) {
-        result.status=(platform_error==EAGAIN || platform_error==ENOMEM) ? TSFP_STATUS_INSUFFICIENT_RESOURCES : FAILED;
+    enum TsfpStorageError launch_error=tsfp_storage_launch(lease,&platform_error);
+    if (launch_error!=TSFP_STORAGE_OK) {
+        result.status=(launch_error==TSFP_STORAGE_EXHAUSTED || platform_error==EAGAIN || platform_error==ENOMEM) ? TSFP_STATUS_INSUFFICIENT_RESOURCES : FAILED;
         return result;
     }
     leases[slot]=lease; /* ownership is retained BEFORE client publication */

@@ -10,7 +10,7 @@ campaign execution. Physical Vita behavior is unverified.**
 - Pinned PC submodule/source manifest, offline runtime reconstruction and full
   authoritative patch application, reproducible ARM header adaptation.
 - Checked unaligned little-endian guest memory prototype and deterministic
-  generation of 125 synthetic x86 functions using the real PC translator.
+  generation of 126 synthetic x86 functions using the real PC translator.
 - Explicit 64 MiB RAM/28 mirror address views, independent optional contiguous
   backing, tiled alias and kernel-data/MMIO/flash/invalid classification.
   Checked byte transfers support RAM wrap; unsupported device accesses fault.
@@ -330,9 +330,20 @@ A durable C-scope bookkeeping guard releases service references on probe faults;
 valid outputs/EAX/ESP publish before guard release. Real translated parent/child
 fixtures create, validate contexts/identity, wait and close. Two concurrent
 callers, native resource errors, exhaustion and safe shutdown/retry are tested.
-125 authored translated functions now exist. Unsupported suspension/debug/extra
+126 authored translated functions now exist. Unsupported suspension/debug/extra
 bytes/TLS-size modes return errors; this is not full Xbox threading or retail
 boot. See HANDOFF.md for setup/teardown and restrictions. Next independent gate:
 bounded event handles and NtCreateEvent/Set/Clear plus event waits, using the
 pinned synchronization contract. Verified retail input/analysis and Vita hardware
 remain required to identify title-specific blockers and measure gameplay.
+
+## Bounded events — 2026-10-29
+
+Implemented typed, generation-checked manual/auto-reset events sharing the
+32-record thread registry. Actual translated imports 189/225/186 create/set/clear;
+233 waits on events or threads, and 187 closes either. Wait references retain
+closed objects and block image reset. Per-waiter grants survive clear, and late
+signals do not get consumed by expired waiters. All 126 translated functions pass
+the local PC/portable/sanitizer/ARM matrix. No retail boot or hardware claim.
+Non-null ObjectAttributes, alertable/absolute waits, named events, guest-address
+KeEvent objects and multiple-object waits remain unsupported.

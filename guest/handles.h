@@ -33,6 +33,16 @@ int tsfp_thread_timeout_decode(int present,uint64_t bits,TsfpWaitTimeout *out);
  * Closing after acquisition does not cancel a wait; release requires no waiters.
  * Completion wins a deadline tie when observed under the registry mutex. */
 uint32_t tsfp_thread_handle_wait(uint32_t handle,const TsfpWaitTimeout *timeout);
+/* Shared 32-cell registry. Event type 0 notification/manual, 1 sync/auto.
+ * Native output buffers are trusted and distinct; kernel probes guest outputs
+ * before state changes. Unnamed events only; closed events retire at last ref. */
+typedef struct TsfpEventInfo { unsigned type,signaled,waiters,granted; int handle_open; } TsfpEventInfo;
+uint32_t tsfp_event_create(unsigned type,int initial,uint32_t *handle);
+uint32_t tsfp_event_set(uint32_t handle,uint32_t *previous);
+uint32_t tsfp_event_clear(uint32_t handle);
+int tsfp_event_query(uint32_t handle,TsfpEventInfo *info);
+uint32_t tsfp_handle_close(uint32_t handle);
+uint32_t tsfp_handle_wait(uint32_t handle,const TsfpWaitTimeout *timeout);
 int tsfp_thread_handles_busy(void);
 int tsfp_thread_id_busy(uint32_t id);
 #endif

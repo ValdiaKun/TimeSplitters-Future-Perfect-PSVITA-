@@ -13,6 +13,12 @@
 #include <time.h>
 /* Link-time fault injection only in the test executable, not runtime hooks. */
 static _Thread_local int fail_clock,fail_condition;
+static _Thread_local unsigned advance_clock;
+void test_wait_advance_clock(unsigned seconds) { advance_clock=seconds; }
+void test_wait_fail_clock(void) { fail_clock=1; }
+void test_wait_fail_condition(void) { fail_condition=1; }
+void test_event_before_wait(pthread_cond_t *,pthread_mutex_t *);
+void test_event_after_wait(pthread_mutex_t *);
 /* Debian ARM uses redirected 64-bit time entry points. Match the actual ABI,
  * including timespec layout, rather than wrapping the legacy time32 symbol. */
 #if defined(__GLIBC__) && __TIMESIZE == 32 && defined(__USE_TIME_BITS64)
@@ -24,12 +30,17 @@ static _Thread_local int fail_clock,fail_condition;
 int __real_clock_gettime(clockid_t clock,struct timespec *out);
 int __wrap_clock_gettime(clockid_t clock,struct timespec *out) {
     if (fail_clock) { fail_clock=0; errno=EIO; return -1; }
-    return __real_clock_gettime(clock,out);
+    int error=__real_clock_gettime(clock,out);
+    if (!error && clock==CLOCK_MONOTONIC && advance_clock) { out->tv_sec+=advance_clock; advance_clock=0; }
+    return error;
 }
 int __real_pthread_cond_timedwait(pthread_cond_t *,pthread_mutex_t *,const struct timespec *);
 int __wrap_pthread_cond_timedwait(pthread_cond_t *c,pthread_mutex_t *m,const struct timespec *t) {
     if (fail_condition) { fail_condition=0; return EINVAL; }
-    return __real_pthread_cond_timedwait(c,m,t);
+    test_event_before_wait(c,m);
+    int error=__real_pthread_cond_timedwait(c,m,t);
+    if (!error) test_event_after_wait(m);
+    return error;
 }
 typedef struct Waiter { uint32_t owner,result; TsfpWaitTimeout timeout; } Waiter;
 static void *waiter(void *arg) {

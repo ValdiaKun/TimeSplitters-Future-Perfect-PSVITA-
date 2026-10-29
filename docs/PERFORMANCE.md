@@ -121,3 +121,12 @@ not a claimed speedup. There is no per-frame request, queue spin or packet heap
 allocation. Parent test threads use platform-default native stacks, also not a
 production budget. CPU dispatch/scheduling latency and real Vita memory/high-water
 use remain unmeasured; 30/60 FPS targets remain entirely provisional.
+
+## Event resource accounting (not a hardware benchmark)
+
+Events share the existing bounded 32-cell registry with threads; no event heap
+allocation or per-event native condition is introduced. Blocking waiters use
+stack-local grant/deadline nodes (maximum 64 references per object) and the
+existing monotonic condition. Broadcast wakes can cause unrelated waiters to
+recheck predicates; no performance improvement is claimed. Real Vita memory,
+contention cost, FPS and latency remain unmeasured.

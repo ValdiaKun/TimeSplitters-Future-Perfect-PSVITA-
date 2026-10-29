@@ -128,3 +128,14 @@ the generator checks its ABI/lookup. Its fake initial handle and unconditional
 success are not reused. The new request service, durable C bookkeeping guard,
 strict argument/output profile and shutdown ownership are original adapters,
 not copied Win32 scheduler code or a full Xbox kernel implementation.
+
+## Event contracts
+
+Inspected pinned PC kernel_sync.c, kernel_bridge.c and kernel.h: ordinals
+189/16-byte NtCreateEvent, 225/8-byte NtSetEvent, 186/4-byte NtClearEvent,
+233/12-byte NtWaitForSingleObject; NotificationEvent=0 and SynchronizationEvent=1.
+Generator guards pin these declarations. Independent implementation; no copied
+third-party event code. Wrong-kind Set/Clear uses the pinned invalid-handle status.
+Unlike the PC previous-state placeholder, this implementation tracks state.
+Bridge notification-generation comments motivate retaining grants across a
+subsequent clear; test schedules verify both event types.

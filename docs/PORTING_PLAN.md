@@ -187,9 +187,17 @@ A durable C-scope bookkeeping guard releases service references on probe faults;
 valid outputs/EAX/ESP publish before guard release. Real translated parent/child
 fixtures create, validate contexts/identity, wait and close. Two concurrent
 callers, native resource errors, exhaustion and safe shutdown/retry are tested.
-125 authored translated functions now exist. Unsupported suspension/debug/extra
+126 authored translated functions now exist. Unsupported suspension/debug/extra
 bytes/TLS-size modes return errors; this is not full Xbox threading or retail
 boot. See HANDOFF.md for setup/teardown and restrictions. Next independent gate:
 bounded event handles and NtCreateEvent/Set/Clear plus event waits, using the
 pinned synchronization contract. Verified retail input/analysis and Vita hardware
 remain required to identify title-specific blockers and measure gameplay.
+
+### Event acceptance progress
+
+Bounded manual/auto-reset event objects and translated 189/225/186/233/187 calls
+now pass local host/reference/sanitizer/ARM testing, including lifetime and
+timeout races. This does not establish a complete Xbox synchronization subsystem.
+Next bounded compatibility task: validate empty unnamed ObjectAttributes without
+adding speculative named-object support. Retail boot remains a separate gate.

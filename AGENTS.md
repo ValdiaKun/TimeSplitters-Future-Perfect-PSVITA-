@@ -14,7 +14,7 @@ Priorities, in strict order:
 4. Memory efficiency, streaming, latency and consistent presentation.
 5. Higher frame rates and graphical features **only if prior gates remain satisfied**.
 
-**Never claim that TimeSplitters is playable or that an FPS target is reached without direct evidence.** Current state at the time of this file: Vita diagnostic and synthetic guest-test VPKs cross-build; 125 synthetic PC-translated x86 functions execute under ARMv7 QEMU; real Xbox title initialization, native game renderer, gameplay and physical Vita execution remain unverified. Re-check `docs/STATUS.md` and the working tree before relying on this snapshot.
+**Never claim that TimeSplitters is playable or that an FPS target is reached without direct evidence.** Current state at the time of this file: Vita diagnostic and synthetic guest-test VPKs cross-build; 126 synthetic PC-translated x86 functions execute under ARMv7 QEMU; real Xbox title initialization, native game renderer, gameplay and physical Vita execution remain unverified. Re-check `docs/STATUS.md` and the working tree before relying on this snapshot.
 
 Proposed performance goals are **stable 30 FPS** (33.33 ms/frame) for correct gameplay and **60 FPS** (16.67 ms/frame) as a stretch goal if measured and correct. They are not forecasts. Preserve original guest interrupt/timing behavior and 60 Hz clock semantics; do not slow the game down to show 30 frames or confuse interpolated/presented frames with simulated frames.
 
@@ -133,7 +133,7 @@ Every gate needs implementation **and** the stated evidence; report `implemented
 | **F — performance** | Stable real-device frame-time data with reproducible settings; measured bottleneck fixes and regression comparisons; no fabricated 30/60 FPS claims |
 | **G — release** | Legal/source/notice inventory, reproducible VPK, no retail assets bundled, user-file setup documented, hardware test matrix and known limitations disclosed |
 
-The immediate next major CPU task (as documented in `docs/GUEST_RUNTIME.md`) is **waitable event objects and remaining boot-critical services**. Per-element REP/string lowering now has the documented host/native-x86/ARM synthetic coverage. RAM aliases/MMIO classification and generated scalar wrap accesses have the documented synthetic coverage. Do this before broad GPU or retail-game integration unless a newly verified blocker changes the critical path.
+The immediate next major CPU task (as documented in `docs/GUEST_RUNTIME.md`) is **remaining boot-critical services, including validated unnamed event attributes**. Per-element REP/string lowering now has the documented host/native-x86/ARM synthetic coverage. RAM aliases/MMIO classification and generated scalar wrap accesses have the documented synthetic coverage. Do this before broad GPU or retail-game integration unless a newly verified blocker changes the critical path.
 
 ## Build, test and CI commands
 

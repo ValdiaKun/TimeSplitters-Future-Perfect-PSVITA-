@@ -116,3 +116,13 @@ boot. See HANDOFF.md for setup/teardown and restrictions. Next independent gate:
 bounded event handles and NtCreateEvent/Set/Clear plus event waits, using the
 pinned synchronization contract. Verified retail input/analysis and Vita hardware
 remain required to identify title-specific blockers and measure gameplay.
+
+## Event boundary now supported
+
+Ordinals 189/225/186 and event waits through 233 execute through the actual
+translated import path with typed, retained handles. The profile supports
+unnamed events with null attributes, manual/auto reset, polling and non-alertable
+relative/infinite waits. Named objects, multi-object waits, KeEvent addresses and
+absolute/alertable modes remain missing. Next inspect empty unnamed
+ObjectAttributes descriptors before extending additional services. Supported
+retail XBE and matching analysis metadata are still unavailable for an entry trace.

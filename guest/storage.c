@@ -181,7 +181,7 @@ enum TsfpStorageError tsfp_storage_launch(uint32_t lease,int *platform_error) {
     tsfp_storage_lock();
     if (platform_error) *platform_error=r->worker.platform_error;
     if (error!=TSFP_WORKER_OK) {
-        rollback(r); tsfp_storage_unlock(); if (pthread_setcancelstate(old_cancel,NULL)) abort(); return TSFP_STORAGE_LAUNCH_FAILED;
+        rollback(r); tsfp_storage_unlock(); if (pthread_setcancelstate(old_cancel,NULL)) abort(); return error==TSFP_WORKER_RESOURCE ? TSFP_STORAGE_EXHAUSTED : TSFP_STORAGE_LAUNCH_FAILED;
     }
     release(r->backup); r->backup=NULL; r->owner=r->worker.owner; r->platform_error=0; r->state=TSFP_STORAGE_RUNNING;
     tsfp_storage_unlock(); if (pthread_setcancelstate(old_cancel,NULL)) abort(); return TSFP_STORAGE_OK;
@@ -240,5 +240,13 @@ int tsfp_storage_output_allowed(uint32_t address,size_t size) {
         !tsfp_tls_ranges_overlap(config.base,(size_t)config.stride*config.slots,address,size) &&
         !tsfp_tls_ranges_overlap(source.tls.raw_start,source.tls.raw_size,address,size) &&
         !tsfp_tls_ranges_overlap(source.object_template,512,address,size);
+    tsfp_storage_unlock(); return ok;
+}
+
+int tsfp_storage_kernel_output_allowed(uint32_t address,size_t size) {
+    tsfp_storage_lock(); int ok=!configured ||
+        (!tsfp_tls_ranges_overlap(config.base,(size_t)config.stride*config.slots,address,size) &&
+         !tsfp_tls_ranges_overlap(source.tls.raw_start,source.tls.raw_size,address,size) &&
+         !tsfp_tls_ranges_overlap(source.object_template,512,address,size));
     tsfp_storage_unlock(); return ok;
 }

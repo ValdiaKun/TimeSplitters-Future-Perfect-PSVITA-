@@ -770,3 +770,29 @@ All three host executables passed three additional full repeats on final source.
 `thread-service-v1: create=pass args=11,22 wait-close=pass faults=pass
 rollback=pass clients=2 repeats=8 shutdown=pass`. No physical Vita, retail title,
 gameplay, memory-capacity or FPS measurement is established.
+
+## Event synchronization local validation — 2026-10-29
+
+Baseline was clean 8ca662a676c2d9c9d17f88700dea4004af7b5327, with passing push
+40870843472 and PR 40870851118 CPU/Vita runs. Event source adds authored function
+0x13b00 (126 total) and the independently parsed 13-section synthetic XBE.
+`tools/test_guest.py` passed pristine PC shared-memory/header execution, portable
+host, ASan/UBSan and static Cortex-A9 QEMU. Event tests execute real translated
+create/set/clear/wait/close calls, not only native handle helpers.
+
+Coverage includes both reset types, BOOLEAN-width decoding, actual previous state,
+multiple waiters and unrelated events sharing a condition, signal-before-wait,
+clear-after-grant, close with references, image-reset refusal, stale/wrong-type
+handles, zero/finite/infinite waits, clock/condition failure injection, full
+32-cell exhaustion and transactional translated thread-create failure. Test-only
+native-condition gates force races; controlled monotonic clock advancement tests
+late signals without depending on scheduler latency. These are correctness tests,
+not timing or performance measurements. All previous fixtures remain enabled.
+
+Expected event line: `event-v1: manual=pass auto=pass grants=pass close-refs=pass
+deadlines=pass types=pass quota=32 repeats=32`. Final CI evidence belongs to the
+commit-specific draft PR checks; local testing alone is not remote verification.
+
+Final event source also passed both hash-locked VitaSDK Release VPK cross-builds,
+strict controller tests, Python compilation and git whitespace checks. Pristine,
+portable and sanitized host executables each passed three additional full runs.

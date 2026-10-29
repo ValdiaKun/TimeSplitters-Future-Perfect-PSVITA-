@@ -80,12 +80,21 @@ static uint32_t create_thread(const uint32_t *frame) {
     }
     return result.status;
 }
+static int event_output(uint32_t address) {
+    if (!tsfp_guest_range_valid(address,4) || !tsfp_guest_access_allowed(address,4,2)) {
+        g_tsfp_access=TSFP_ACCESS_WRITE; tsfp_guest_memory_fault(address,4);
+    }
+    return tsfp_storage_kernel_output_allowed(address,4);
+}
 static void dispatch(uint32_t ordinal) {
     unsigned arguments;
     switch (ordinal) {
+    case 189: arguments=4; break; /* NtCreateEvent */
+    case 225: arguments=2; break; /* NtSetEvent */
+    case 186: arguments=1; break; /* NtClearEvent */
     case 255: arguments=10; break; /* PsCreateSystemThreadEx */
     case 233: arguments=3; break; /* NtWaitForSingleObject, non-alertable relative/infinite subset */
-    case 187: arguments=1; break; /* NtClose, managed thread handles */
+    case 187: arguments=1; break; /* NtClose, typed managed handles */
     case 104: arguments=0; break; /* KeGetCurrentThread */
     case 320: arguments=2; break; /* RtlZeroMemory */
     case 258: arguments=1; break; /* PsTerminateSystemThread */
@@ -103,13 +112,30 @@ static void dispatch(uint32_t ordinal) {
     if (ordinal==258) tsfp_guest_thread_exit(frame[1]);
     uint32_t result=0;
     if (ordinal==104) result=tsfp_current_thread_object();
-    else if (ordinal==187) result=tsfp_thread_handle_close(frame[1]);
+    else if (ordinal==187) result=tsfp_handle_close(frame[1]);
+    else if (ordinal==189) {
+        if (frame[2]) result=TSFP_STATUS_NOT_SUPPORTED; /* named/object attributes */
+        else if (frame[3]>1) result=TSFP_STATUS_INVALID_PARAMETER;
+        else if (!event_output(frame[1])) result=TSFP_STATUS_INVALID_PARAMETER;
+        else {
+            uint32_t handle; result=tsfp_event_create(frame[3],(uint8_t)frame[4]!=0,&handle);
+            if (!result) tsfp_guest_store_u32(frame[1],handle);
+        }
+    }
+    else if (ordinal==225) {
+        if (frame[2] && !event_output(frame[2])) result=TSFP_STATUS_INVALID_PARAMETER;
+        else {
+            uint32_t previous; result=tsfp_event_set(frame[1],&previous);
+            if (!result && frame[2]) tsfp_guest_store_u32(frame[2],previous);
+        }
+    }
+    else if (ordinal==186) result=tsfp_event_clear(frame[1]);
     else if (ordinal==233) {
         TsfpWaitTimeout timeout;
         if (frame[2]) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
         uint64_t bits=frame[3] ? tsfp_guest_load_u64(frame[3]) : 0;
         if (!tsfp_thread_timeout_decode(frame[3]!=0,bits,&timeout)) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
-        result=tsfp_thread_handle_wait(frame[1],&timeout);
+        result=tsfp_handle_wait(frame[1],&timeout);
     }
     else if (frame[2]) {
         if (!tsfp_guest_range_valid(frame[1],frame[2])) {
@@ -125,8 +151,11 @@ static void dispatch(uint32_t ordinal) {
     }
     g_eax=result; g_esp=stack+(arguments+1)*4;
 }
+static void create_event(void) { dispatch(189); }
+static void set_event(void) { dispatch(225); }
+static void clear_event(void) { dispatch(186); }
 static void create_system_thread(void) { dispatch(255); }
-static void poll_thread(void) { dispatch(233); }
+static void wait_object(void) { dispatch(233); }
 static void close_handle(void) { dispatch(187); }
 static void current_thread(void) { dispatch(104); }
 static void zero_memory(void) { dispatch(320); }
@@ -148,8 +177,11 @@ void (*tsfp_kernel_lookup(uint32_t address))(void) {
     if (address<THUNK_BASE || (address&3u) || (address-THUNK_BASE)/4>=slot_count) return NULL;
     uint32_t slot=(address-THUNK_BASE)/4;
     switch (ordinals[slot]) {
+    case 189: return create_event;
+    case 225: return set_event;
+    case 186: return clear_event;
     case 255: return create_system_thread;
-    case 233: return poll_thread;
+    case 233: return wait_object;
     case 187: return close_handle;
     case 104: return current_thread;
     case 320: return zero_memory;

@@ -747,3 +747,28 @@ workers, then closes completed managed handles and joins/releases them. A failed
 server join retains STOPPING/pins and can be retried. Shutdown is not a guest
 thread-kill operation. Root/controller ownership and image lifecycle remain
 explicit; no full Xbox scheduler or PsCreateSystemThread alternative is supplied.
+
+## Typed events and completion waits
+
+The same 32 generation-checked cells hold threads or events; thread-owner APIs
+reject event cells. Manual-reset (type 0) set grants all registered waiters;
+auto-reset (type 1) grants one, or retains one coalesced signal if none is waiting.
+Clear resets the retained signal without revoking committed waiter grants.
+NtSetEvent returns the actual prior retained state through its optional LONG
+output; the pinned PC implementation writes a documented placeholder zero.
+
+All predicates, grants, deadline checks and reference transitions use the registry
+mutex. A shared monotonic condition broadcasts to avoid waking only a waiter on
+another object. Spurious wakeups recheck the object's predicate. Relative negative
+100-ns timeouts, zero polling and null/infinite waits retain existing semantics.
+Set checks finite waiters' deadlines before granting; clock failure leaves state
+unchanged. Waiters are bounded at 64 per object, with stack-local nodes only while
+native cancellation is deferred. There are no guest callbacks or guest memory
+accesses while nodes are linked under the registry lock. Closing a handle does
+not cancel existing references; the final closed-event reference retires its cell.
+
+Create/set output spans are checked before mutation and cannot target managed
+storage/templates. Event exhaustion maps to insufficient resources, including
+thread creation through the shared registry, with storage rollback. Non-null
+ObjectAttributes and unknown event types fail explicitly. Unsupported alertable,
+absolute, named, pulse and multiple-object semantics remain outside this subset.

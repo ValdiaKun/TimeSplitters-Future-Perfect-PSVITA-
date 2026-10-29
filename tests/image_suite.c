@@ -18,6 +18,9 @@
 void test_worker_adapter(void);
 void test_storage(void);
 void test_thread_service(void);
+void test_events(void);
+extern const unsigned char fixture_event_sequence_bytes[];
+extern const size_t fixture_event_sequence_size;
 extern const unsigned char fixture_service_parent_bytes[],fixture_service_child_bytes[],fixture_service_call_bytes[];
 extern const size_t fixture_service_parent_size,fixture_service_child_size,fixture_service_call_size;
 static unsigned char service_code[0x100];
@@ -201,7 +204,7 @@ static void test_handles(void) {
     for (unsigned i=0;i<sizeof(invalid)/sizeof(invalid[0]);++i) assert(tsfp_thread_handle_close(invalid[i])==TSFP_STATUS_INVALID_HANDLE);
 }
 static void test_xbe(void) {
-    TsfpImageSection sections[12]; TsfpImageDescription d=description(sections);
+    TsfpImageSection sections[13]; TsfpImageDescription d=description(sections);
     write_word(12,0x800000bb);
     write_word(0x4020,0x12345678); /* title-owned TLS index until guest entry */
     write_word(0x4040,0x8c080); write_word(0x4044,0x8c094); write_word(0x4048,0x8c020);
@@ -219,6 +222,7 @@ static void test_xbe(void) {
     memcpy(service_code+0xa0,fixture_service_child_bytes,fixture_service_child_size);
     sections[10]=(TsfpImageSection){0x13900,sizeof(service_code),5,service_code,sizeof(service_code)};
     sections[11]=(TsfpImageSection){0x13a00,0x20,5,fixture_service_call_bytes,fixture_service_call_size};
+    sections[12]=(TsfpImageSection){0x13b00,0x100,5,fixture_event_sequence_bytes,fixture_event_sequence_size};
     d.thread_data_size=64;
     sections[5]=(TsfpImageSection){0x88000,20,1,data,20};
     sections[2]=(TsfpImageSection){0x88014,sizeof(data)-20,3,data+20,sizeof(data)-20};
@@ -226,12 +230,12 @@ static void test_xbe(void) {
         memset(xbe,0,sizeof(xbe)); memcpy(xbe,"XBEH",4);
         put(0x104,0x10000); put(0x108,0x1000); put(0x10c,0x84000); put(0x110,0x178);
         put(0x118,0x10500); put(0x500,0x1d0); /* Authored zero-content certificate. */
-        put(0x11c,12); put(0x120,0x10200); put(0x130,0x1000);
+        put(0x11c,13); put(0x120,0x10200); put(0x130,0x1000);
         put(0x12c,0x8c040);
         put(0x128,0x13500^(debug ? 0x94859d4bu : 0xa8fc57abu));
         put(0x158,0x88000^(debug ? 0xefb1f152u : 0x5b6d40b6u));
         size_t cursor=0x1000;
-        for (unsigned i=0;i<12;++i) {
+        for (unsigned i=0;i<13;++i) {
             unsigned offset=0x200+i*56;
             put(offset,((sections[i].flags&2u) ? 1u : 0u)|(sections[i].flags&4u));
             put(offset+4,sections[i].address); put(offset+8,sections[i].size);
@@ -330,6 +334,7 @@ static void test_xbe(void) {
         test_worker_adapter();
         test_storage();
         test_thread_service();
+        test_events();
         test_handles();
         assert(tsfp_guest_run(readonly_import,NULL,&f)==1 && f.access==TSFP_ACCESS_WRITE);
         assert(tsfp_guest_load_u32(0x88000)==0xfe000000);

@@ -27,8 +27,13 @@ thread_service_suite.c drives actual translated creation/wait/close; storage,
 wait and worker suites retain all fault/concurrency/rollback regressions.
 Final CI evidence and latest source revision are in draft PR #1.
 
-Next: extend bounded handles with manual/auto-reset events and actual translated
-NtCreateEvent (189), NtSetEvent (225), NtClearEvent (186), and ordinal-233 event
-wait tests. Inspect pinned kernel_sync.c/kernel_bridge.c; preserve close/reference
-semantics and do not invent success for unsupported waits. A supported user-owned
-XBE plus matching analysis metadata is still missing for a real entry trace.
+Events now use typed cells in the same 32-record registry. tests/event_suite.c
+drives translated 189/225/186/233/187, including grants, deadlines, reference
+retention and mixed event/thread quota rollback. The thirteenth authored XBE
+section adds function 0x13b00; there are 126 translated functions.
+
+Next: inspect the pinned guest OBJECT_ATTRIBUTES layout and accept validated
+empty unnamed event descriptors. Do not infer guest widths from native host
+structs. Names/root directories/unsupported flags must fail explicitly. A
+supported user-owned XBE plus matching analysis metadata is still missing for
+a real entry trace. No physical Vita or performance measurements are available.
