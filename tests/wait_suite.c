@@ -15,7 +15,7 @@
 static _Thread_local int fail_clock,fail_condition;
 /* Debian ARM uses redirected 64-bit time entry points. Match the actual ABI,
  * including timespec layout, rather than wrapping the legacy time32 symbol. */
-#if defined(__GLIBC__) && defined(__USE_TIME64_REDIRECTS)
+#if defined(__GLIBC__) && __TIMESIZE == 32 && defined(__USE_TIME_BITS64)
 #define __real_clock_gettime __real___clock_gettime64
 #define __wrap_clock_gettime __wrap___clock_gettime64
 #define __real_pthread_cond_timedwait __real___pthread_cond_timedwait64

@@ -656,3 +656,10 @@ both Release VPKs cross-built. Strict input, Python syntax and whitespace checks
 passed. Pristine, portable and sanitized suites each passed three extra runs
 (including wait stress/cancellation and historical string/atomic tests).
 No physical Vita, retail executable/analysis data, or performance results exist.
+
+CI correction: `e8a45b9` push 40844635544 and PR 40844642312 failed at the
+Ubuntu ARM link (host tests and Vita job passed). Older glibc redirects time64
+without defining newer __USE_TIME64_REDIRECTS, so the wrapper function was not
+emitted. Detect the established __TIMESIZE==32 plus __USE_TIME_BITS64 instead;
+this preserves the same ABI and all error-injection assertions. This is a test
+link portability fix, not relaxed runtime/error expectations.
