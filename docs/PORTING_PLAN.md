@@ -230,3 +230,8 @@ Issue #3 now retains VM in/out words and rejects destructive self-reference; see
 GUEST_RUNTIME.md support matrix. Next is issue #4 authenticated intake/provenance
 and a genuine title-entry trace. Missing proprietary inputs are an explicit gate,
 not permission to substitute synthetic boot or expand unrelated compatibility.
+
+Authenticated intake preflight and negative tests are implemented. The next
+external gate is supported original XBE plus matching analysis/provenance, then
+actual generation and first entry/fault tracing. Keep issue #4 open until that
+evidence exists. No synthetic substitute may satisfy genuine title boot.

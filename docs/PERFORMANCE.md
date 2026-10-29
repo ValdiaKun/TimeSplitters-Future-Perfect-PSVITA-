@@ -158,3 +158,7 @@ Issue #3 extends the existing kernel output TLS record from one reference to two
 and reuses the bounded64-reference registry. No allocator/backing/rollback-buffer
 duplication. Publication cost and real Vita memory/frame-time effects remain
 unmeasured. No optimization or hardware performance claim.
+
+Title intake is a bounded read-only host preflight, not a game-frame path. Its
+256MiB XBE/32MiB per-JSON host limits are validation bounds, not Vita capacity
+measurements. No gameplay, hardware timing or FPS result is inferred.

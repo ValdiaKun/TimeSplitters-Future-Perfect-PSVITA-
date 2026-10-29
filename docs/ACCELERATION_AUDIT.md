@@ -61,3 +61,10 @@ Issue #3 reuses the existing kernel output scope guard, heap pins and original
 xboxrecomp differential trace. No new upstream pin/copy or second VM engine.
 The supported profile is failure-atomic with retained result storage, not an
 atomic two-word read for concurrent consumers. Self-release/decommit stays rejected.
+
+Issue #4 intake reuses tracked PC tools/compiler/xbe_image.py at unchanged
+759f7a0 on a pre-hashed byte snapshot. The original summary-basename check is
+not build authentication; local provenance binds all five actual recompiler
+analysis inputs to supported XBE/source hashes, with an explicit attestation
+limitation. No new parser, analysis binary, retail code or external dependency
+is copied. Actual generation and first-fault tracing require missing inputs.

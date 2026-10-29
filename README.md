@@ -26,3 +26,7 @@ Research references:
 See [status](docs/STATUS.md), [guest build/test instructions](docs/GUEST_RUNTIME.md), [Vita build instructions](ports/vita/README.md), [validation](docs/VALIDATION.md), and [roadmap](docs/PORTING_PLAN.md). Both diagnostic and synthetic guest VPKs cross-build; ARMv7 fixture execution passes under QEMU. Hardware and gameplay remain unverified.
 
 New guest harness code is GPL-3.0-only; see [NOTICE](NOTICE) and the pinned dependency’s license notices.
+
+Local user-owned executable/analysis prerequisites can be checked read-only with
+`python3 tools/check_title_inputs.py`; see [title intake](docs/TITLE_INPUTS.md).
+Missing data produces a precise manifest, not a simulated boot result.

@@ -67,8 +67,19 @@ locations are supported. Release/decommit of an output owner rejects unchanged;
 relocate result words and retry. This is failure-atomic publication, not a
 concurrent two-word atomic snapshot. Callers synchronize word and target access.
 
-Next: issue #4, authenticated user XBE plus bound analysis intake and actual
-entry tracing. Use a read-only preflight/missing-input manifest; never infer
-retail BSS ownership or reuse another game's metadata. Original files/metadata
-remain absent, physical Vita unavailable and no title/gameplay/FPS verified.
-Managed-pool output pointers and broader VM/services remain unsupported.
+Next: issue #4 real-input gate. Run `python3 tools/check_title_inputs.py` first.
+Exact ignored installation layout and local provenance contract are in
+TITLE_INPUTS.md. The current command returns2/missing_inputs with all seven
+logical slots absent. No hash override exists in its production CLI. It reuses
+the pinned PC parser and verifies source identity plus exact snapshots; local
+metadata attestation does not prove analysis derivation. Unknown imports are
+reported, not stubbed. Nothing is generated or executed by this tool.
+
+Once the supported XBE and matching analysis are available, validate intake,
+use the existing guarded generator with explicit analysis-directory overrides,
+then integrate authenticated dispatch/image ownership and capture the first
+actual entry/fault. Do not infer unused retail BSS from zeros. Issue #4 stays
+open: original inputs, generation and real trace remain unavailable. Managed-
+pool result roles, broader services and native graphics/hardware gates remain.
+Physical Vita/retail/gameplay/FPS are unverified. Issues #2/#3 have passed their
+bounded acceptance gates; do not reimplement them.

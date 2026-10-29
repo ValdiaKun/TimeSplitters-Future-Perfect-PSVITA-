@@ -400,3 +400,15 @@ Tests cover zero/recommit semantics, pointer and post-pin faults, quota errors,
 ordinary exhaustion/unsupported flags, retry, and concurrent release/decommit
 of result containers. No new allocator, mapping, buffer or dependency introduced.
 Authentic title boot still requires the supported XBE and bound analysis data.
+
+## Issue #4: authenticated intake subset, retail trace blocked
+
+Added read-only check_title_inputs.py, reusing the pinned PC XBE parser on the
+exact hashed snapshot. Verifies supported US build/title, PC source identity,
+local hash-bound analysis provenance, function/entry/ABI coverage and import
+dispatch presence. Safe path/size/JSON controls reject malformed inputs; no game
+data is downloaded, generated or executed. Thirteen asset-free tests pass.
+Live preflight reports missing XBE plus provenance and five analysis files.
+Issue #4 remains open: provenance is local attestation, not proof of analysis
+correctness; no generation, actual title entry or fault trace has occurred.
+See TITLE_INPUTS.md for exact ignored setup paths and required hashes.

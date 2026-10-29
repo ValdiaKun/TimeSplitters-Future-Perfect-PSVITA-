@@ -22,6 +22,8 @@ jobs:
           sudo apt-get install -y gcc-arm-linux-gnueabihf qemu-user
       - name: Compare PC runtime, portable adapter, sanitizers and ARMv7
         run: python tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc
+      - name: Validate authenticated title intake without game data
+        run: python -m unittest discover -s tests -p test_title_inputs.py
       - name: Validate bounded compressed-texture layout
         run: python tools/test_graphics.py --arm-cc arm-linux-gnueabihf-gcc
       - uses: actions/upload-artifact@v4

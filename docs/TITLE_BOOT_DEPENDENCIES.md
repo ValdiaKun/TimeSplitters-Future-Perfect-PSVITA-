@@ -153,3 +153,10 @@ references. The next critical gate is authentic executable/analysis intake and
 real first-fault tracing (#4). General VM modes, managed-pool output pointers,
 retail memory ownership/layout, full services and native GPU execution remain
 separate dependencies, not implied by passing synthetic publication tests.
+
+The read-only intake CLI now emits exact missing slots and checks original XBE
+and bound analysis before any future generation. It never generates or invokes
+retail code. Install the seven inputs documented in TITLE_INPUTS.md and run
+check_title_inputs.py; only after validation should pinned generation/dispatch
+and a controlled genuine entry trace be integrated. Import presence alone does
+not establish supported argument modes. Issue #4 remains incomplete.

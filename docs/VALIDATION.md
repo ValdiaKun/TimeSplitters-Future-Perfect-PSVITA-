@@ -936,3 +936,23 @@ Issue #3 final local results: PC/shared-map, portable, ASan/UBSan, Cortex-A9
 QEMU and original-source VM differential passed with matching transcripts. Both
 locked VitaSDK VPKs cross-built; strict input/Python/whitespace passed. Three
 additional full runs per host mode passed. No existing fixture/check removed.
+
+Issue #3 commit a02872832fbbeeccf3a1e39eced80261ad2ecdf6 passed push
+[40975623375](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40975623375)
+and PR[40975628102](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40975628102),
+both CPU/graphics/Vita jobs; controller40975628210 passed before intake integration.
+
+## Issue #4 intake-tool subset
+
+`python3 -m unittest discover -s tests -p test_title_inputs.py`:13 pass, using
+authored XBE/RET and test-only supported-hash mocking. Production CLI has no hash
+override. Tests exercise the real pinned parser, missing/unsupported inputs,
+source/provenance/metadata hashes, duplicate JSON, size/path/symlink rejection,
+entry/ABI and executable/BSS extent rules, title/region/debug checks, dispatch
+coverage and non-mutating snapshots. CI runs this suite explicitly.
+`python3 tools/check_title_inputs.py`: expected exit2 with missing_inputs, all
+seven required logical slots missing, generation/retail_boot=not_run and
+trace_unavailable=true. Nothing proprietary was fetched or executed.
+Python compilation and whitespace checks pass. Native runtime source remains
+unchanged from the fully verified issue #3 commit. No physical/Vita3K test or
+retail trace is established. Metadata attestation is not proof of derivation.
