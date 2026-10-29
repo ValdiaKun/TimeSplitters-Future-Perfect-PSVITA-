@@ -10,7 +10,7 @@ campaign execution. Physical Vita behavior is unverified.**
 - Pinned PC submodule/source manifest, offline runtime reconstruction and full
   authoritative patch application, reproducible ARM header adaptation.
 - Checked unaligned little-endian guest memory prototype and deterministic
-  generation of 117 synthetic x86 functions using the real PC translator.
+  generation of 119 synthetic x86 functions using the real PC translator.
 - Explicit 64 MiB RAM/28 mirror address views, independent optional contiguous
   backing, tiled alias and kernel-data/MMIO/flash/invalid classification.
   Checked byte transfers support RAM wrap; unsupported device accesses fault.
@@ -199,3 +199,9 @@ behavior, but its vendor cannot be established retrospectively from those logs.
   entry. No Vita hardware, game data/metadata, GPU test or performance result.
 - Next: bounded section/import initialization with a synthetic image and dispatch
   entry validation; then adapt the next genuinely required kernel/object service.
+
+Final runtime implementation `d5952d4`: push [40804967536](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40804967536)
+and PR [40804973727](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40804973727)
+both passed CPU/ARM and Vita jobs. Input CI 40804973827 passed. PC baseline,
+portable and ASan/UBSan executables additionally passed three repeated local runs
+each. Push probe identified AMD a10f11/hypervisor=1, flags44. No device measurements.

@@ -231,10 +231,10 @@ Failures resolved during implementation:
   bytes but dropped it from its mnemonic/prefix metadata. Decode repetition from
   instruction bytes; all width/prefix combinations remain regression fixtures.
 - A partial REPNE CMPS fault disagreed with an assumed entry-flag restoration.
-  Native SIGSEGV context showed the last completed comparison's flags. Keep that
-  state and the completed register/count/memory progress; do not commit a faulting
-  element. The full oracle matrix now agrees. This is observed PC behavior, not
-  evidence of physical Xbox exception semantics.
+  Native AMD SIGSEGV context showed last-comparison flags; the initial workaround
+  treated that as the guest contract. This was incorrect for Intel. The later
+  REP fault regression correction below supersedes that workaround and enforces
+  Intel entry-flags restoration while retaining completed register/count progress.
 
 No test assertions or warnings were disabled. Physical Vita execution, full
 retail generation, title boot, GPU validation and performance remain unavailable.
@@ -415,3 +415,9 @@ loads. A cached RtlZeroMemory handler still zeroes memory after another ordinal
 lookup, and explicit reset makes old slot addresses unresolved. Review replaced
 an initial lookup-dependent generic handler with stable per-service/per-slot
 handlers so future call-site caches cannot reroute an import.
+
+Final runtime implementation `d5952d4`: push [40804967536](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40804967536)
+and PR [40804973727](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40804973727)
+both passed CPU/ARM and Vita jobs. Input CI 40804973827 passed. PC baseline,
+portable and ASan/UBSan executables additionally passed three repeated local runs
+each. Push probe identified AMD a10f11/hypervisor=1, flags44. No device measurements.
