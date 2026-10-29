@@ -626,3 +626,33 @@ strict input, Python and whitespace checks. All three host modes passed three
 additional repeats. Output: `thread-poll-v1: running=timeout completion=sticky
 closed=invalid unsupported=fault bounds=pass`. This remains synthetic execution,
 not Xbox blocking synchronization or physical Vita validation.
+
+## Blocking completion waits — 2026-10-29
+
+Starting baseline `66a91d6` was clean; push CPU/Vita run 40835829120, PR
+40835837474 and input 40835837578 passed. Re-ran the full documented ARM command
+before edits: pristine/portable/ASan+UBSan/Cortex-A9 QEMU baseline passed.
+
+New wait suite: relative tick decode including INT64_MIN, poll/finite timeout,
+completed infinite wait, four referenced waiters acquired before close across
+32 lifecycles, repeated/stale waits, wake-all completion, teardown pins, native
+cancellation cleanup, 16 completion/deadline races and injected clock/condition
+errors. Existing 32-handle exhaustion and all prior suites remain enabled.
+Actual translated fixture_kernel_call now exercises a finite timeout and an
+infinite wait completed by a separate native owner outside guest recovery;
+stdcall, unsupported alertable/absolute modes and faulting metadata stay checked.
+122 translated functions retained; no generated C was manually modified.
+
+First ARM error-injection run failed: the test wrapper targeted legacy time32
+symbols, while Debian ARM glibc headers redirected runtime calls to
+__clock_gettime64/__pthread_cond_timedwait64. Disassembly and preprocessor
+__USE_TIME64_REDIRECTS confirmed the mismatch. The wrapper now selects matching
+symbols AND timespec ABI. Injection remains test-only linker wrapping; production
+has no fault hooks. The corrected ARM run passed. VitaSDK cross-build passed
+with monotonic condition APIs; physical Vita scheduling remains unverified.
+
+Final local results: all four CPU modes and independent PC XBE/TLS parser passed;
+both Release VPKs cross-built. Strict input, Python syntax and whitespace checks
+passed. Pristine, portable and sanitized suites each passed three extra runs
+(including wait stress/cancellation and historical string/atomic tests).
+No physical Vita, retail executable/analysis data, or performance results exist.

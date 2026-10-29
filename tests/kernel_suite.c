@@ -2,6 +2,7 @@
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
+#define _POSIX_C_SOURCE 200809L
 #define RECOMP_GENERATED_CODE
 #include "recomp_types.h"
 #include "kernel.h"
@@ -10,12 +11,25 @@
 #include "memory.h"
 #include <assert.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <time.h>
 void fixture_title_entry(void); void fixture_kernel_call(void);
 static void invoke(void *p) { (*(recomp_func_t *)p)(); }
 static void poll_call(uint32_t handle,uint32_t alertable,uint32_t timeout) {
     g_esi=0x88000; g_esp=0x8dfd0; g_eax=77;
     tsfp_guest_store_u32(g_esp,handle); tsfp_guest_store_u32(g_esp+4,alertable);
     tsfp_guest_store_u32(g_esp+8,timeout); tsfp_guest_store_u32(g_esp+12,0);
+}
+static void *complete_blocked_thread(void *context) {
+    uint32_t owner=*(uint32_t *)context;
+    struct timespec start,now; assert(!clock_gettime(CLOCK_MONOTONIC,&start));
+    for (;;) {
+        TsfpThreadInfo info; assert(tsfp_thread_owner_query(owner,&info));
+        if (info.waiters) break;
+        assert(!clock_gettime(CLOCK_MONOTONIC,&now) && now.tv_sec-start.tv_sec<5);
+        struct timespec pause={0,100000}; assert(!nanosleep(&pause,NULL));
+    }
+    assert(tsfp_thread_owner_finish(owner,29)); return NULL;
 }
 static void test_thread_poll(uint32_t object) {
     uint32_t owner; assert(tsfp_thread_owner_create(object,41,&owner));
@@ -25,7 +39,14 @@ static void test_thread_poll(uint32_t object) {
     TsfpFault f; recomp_func_t fn=fixture_kernel_call;
     poll_call(owner,0,0x90080);
     assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0x102 && g_esp==0x8dfe0);
-    assert(tsfp_thread_owner_finish(owner,29));
+    tsfp_guest_store_u64(0x90080,UINT64_C(0)-10000);
+    poll_call(owner,0,0x90080);
+    assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0x102 && g_esp==0x8dfe0);
+    pthread_t finisher; assert(!pthread_create(&finisher,NULL,complete_blocked_thread,&owner));
+    poll_call(owner,0,0);
+    assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0 && g_esp==0x8dfe0);
+    assert(!pthread_join(finisher,NULL));
+    tsfp_guest_store_u64(0x90080,0);
     for (unsigned i=0;i<2;++i) {
         poll_call(owner,0,0x90080);
         assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0 && g_esp==0x8dfe0);
@@ -37,8 +58,10 @@ static void test_thread_poll(uint32_t object) {
     for (unsigned variant=0;variant<4;++variant) {
         tsfp_guest_store_u64(0x90080,variant==2 ? UINT64_MAX : variant==3 ? 1 : 0);
         poll_call(owner,variant==1,variant==0 ? 0 : 0x90080);
-        assert(tsfp_guest_run(invoke,&fn,&f)==1 && f.kind==TSFP_FAULT_IMPORT && f.detail==233);
-        assert(g_eax==77 && g_esp==0x8dfcc);
+        if (variant==1 || variant==3) {
+            assert(tsfp_guest_run(invoke,&fn,&f)==1 && f.kind==TSFP_FAULT_IMPORT && f.detail==233);
+            assert(g_eax==77 && g_esp==0x8dfcc);
+        } else assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==TSFP_STATUS_INVALID_HANDLE && g_esp==0x8dfe0);
     }
     poll_call(owner,0,0x73fffffc);
     assert(tsfp_guest_run(invoke,&fn,&f)==1 && f.kind==TSFP_FAULT_MEMORY);

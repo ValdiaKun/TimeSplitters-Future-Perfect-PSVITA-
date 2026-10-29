@@ -289,3 +289,11 @@ Non-alertable zero-timeout thread-completion polling (ordinal 233) is now
 implemented through the translated call path. All blocking/alertable modes
 fail closed. Next gate remains lifetime-safe blocking completion references
 and a platform creation/join adapter, not additional unrelated CPU fixtures.
+
+### Blocking completion prerequisite — 2026-10-29
+
+Added non-alertable relative/infinite thread waits, monotonic deadlines, atomic
+waiter references, wake-all completion and close-versus-wait lifetime rules.
+Owner release/teardown cannot recycle referenced records. Positive absolute
+deadlines and alertable waits remain explicit faults. Native worker launch/join
+is the next bounded adapter; no guest scheduler or retail boot is claimed.

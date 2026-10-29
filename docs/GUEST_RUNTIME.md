@@ -592,3 +592,33 @@ nonzero relative/absolute and alertable modes raise an explicit import fault
 without changing EAX or performing a wait. This is deliberately not a complete
 Xbox wait implementation: blocking wait references, deadlines, APCs and events
 remain unimplemented. No clock or pthread wait semantics are assumed.
+
+## Blocking completion waits (bounded non-alertable profile)
+
+NtWaitForSingleObject (233) accepts null/infinite and zero/negative relative
+timeouts. Negative values are unsigned-decoded 100 ns magnitudes, including
+INT64_MIN; positive absolute FILETIME deadlines and all alertable modes fault
+explicitly pending guest wall-clock/APC contracts. Relative intervals retain
+100 ns units rather than copying the PC host's millisecond quantization.
+The authoritative source is pinned `kernel_sync.c` timeout/result mapping.
+
+A monotonic pthread condition variable and registry mutex atomically acquire
+a reference while the handle is open. Closing later prevents new waits but
+does not cancel acquired waits. Completion broadcasts and remains signaled.
+Owner release requires zero waiters; closed referenced objects continue to pin
+the image. Predicate checks and wakeups share the mutex, avoiding lost wakeups;
+completion observed under that mutex wins a simultaneous deadline boundary.
+Spurious wakes recheck the predicate. Relative waits use a fixed monotonic
+deadline; at most one-second native timed sleeps avoid time_t overflow on very
+long waits, without polling/spinning. Up to 64 references per record are bounded;
+exhaustion returns INSUFFICIENT_RESOURCES. Native clock/condition errors return
+UNSUCCESSFUL after reference cleanup, never success. There is no per-wait heap
+allocation. Failed monotonic-condition setup fails closed.
+
+All guest argument/timeout reads occur before native references or locks. There
+is no guest callback, longjmp or guest access while waiting. Native cancellation
+is disabled while locks/references exist and restored only after cleanup; guest
+termination is separate from pthread cancellation. Async signal-based recovery
+and forced native thread killing are unsupported. Registry/image lifecycle
+serialization and joined/stopped-owner rules remain required. This provides
+completion waits, not a guest scheduler or event/APC implementation.

@@ -61,7 +61,7 @@ int tsfp_kernel_imports_prepare(uint32_t table, size_t count) {
 static void dispatch(uint32_t ordinal) {
     unsigned arguments;
     switch (ordinal) {
-    case 233: arguments=3; break; /* NtWaitForSingleObject, poll-only subset */
+    case 233: arguments=3; break; /* NtWaitForSingleObject, non-alertable relative/infinite subset */
     case 187: arguments=1; break; /* NtClose, managed thread handles */
     case 104: arguments=0; break; /* KeGetCurrentThread */
     case 320: arguments=2; break; /* RtlZeroMemory */
@@ -75,10 +75,11 @@ static void dispatch(uint32_t ordinal) {
     if (ordinal==104) result=tsfp_current_thread_object();
     else if (ordinal==187) result=tsfp_thread_handle_close(frame[1]);
     else if (ordinal==233) {
-        /* No blocking wait, APC, deadline or clock behavior is silently faked. */
-        if (frame[2] || !frame[3]) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
-        if (tsfp_guest_load_u64(frame[3])!=0) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
-        result=tsfp_thread_handle_poll(frame[1]);
+        TsfpWaitTimeout timeout;
+        if (frame[2]) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
+        uint64_t bits=frame[3] ? tsfp_guest_load_u64(frame[3]) : 0;
+        if (!tsfp_thread_timeout_decode(frame[3]!=0,bits,&timeout)) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
+        result=tsfp_thread_handle_wait(frame[1],&timeout);
     }
     else if (frame[2]) {
         if (!tsfp_guest_range_valid(frame[1],frame[2])) {

@@ -90,3 +90,9 @@ This bounded ownership implementation is not a claimed performance optimization.
 Zero-timeout polling performs a checked timeout read and one fixed-record mutex
 lookup; it allocates no memory and does not sleep/spin. No device latency or
 throughput has been measured. Polling is not a proposed game scheduling policy.
+
+Blocking completion uses a shared monotonic condition and bounded registry
+references; no per-wait allocation or busy loop is introduced. Timed sleeps
+are bounded to one second for long-deadline time_t safety. Condition scheduling
+latency, Vita thread capacity and actual wait overhead are unmeasured. No FPS
+or production memory-budget conclusion follows from host/QEMU tests.
