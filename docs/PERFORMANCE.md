@@ -86,3 +86,7 @@ The thread registry uses 32 static records and one native mutex, without per-rec
 heap allocation. Closing does not free guest memory; native owners release after
 stopping/joining. No throughput or Vita synchronization cost has been measured.
 This bounded ownership implementation is not a claimed performance optimization.
+
+Zero-timeout polling performs a checked timeout read and one fixed-record mutex
+lookup; it allocates no memory and does not sleep/spin. No device latency or
+throughput has been measured. Polling is not a proposed game scheduling policy.

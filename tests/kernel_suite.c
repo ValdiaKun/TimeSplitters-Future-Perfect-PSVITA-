@@ -5,12 +5,50 @@
 #define RECOMP_GENERATED_CODE
 #include "recomp_types.h"
 #include "kernel.h"
+#include "handles.h"
 #include "execution.h"
 #include "memory.h"
 #include <assert.h>
 #include <stdio.h>
 void fixture_title_entry(void); void fixture_kernel_call(void);
 static void invoke(void *p) { (*(recomp_func_t *)p)(); }
+static void poll_call(uint32_t handle,uint32_t alertable,uint32_t timeout) {
+    g_esi=0x88000; g_esp=0x8dfd0; g_eax=77;
+    tsfp_guest_store_u32(g_esp,handle); tsfp_guest_store_u32(g_esp+4,alertable);
+    tsfp_guest_store_u32(g_esp+8,timeout); tsfp_guest_store_u32(g_esp+12,0);
+}
+static void test_thread_poll(uint32_t object) {
+    uint32_t owner; assert(tsfp_thread_owner_create(object,41,&owner));
+    assert(tsfp_thread_owner_start(owner));
+    tsfp_guest_store_u32(0x88000,0x800000e9); assert(tsfp_kernel_imports_prepare(0x88000,1));
+    tsfp_guest_store_u64(0x90080,0);
+    TsfpFault f; recomp_func_t fn=fixture_kernel_call;
+    poll_call(owner,0,0x90080);
+    assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0x102 && g_esp==0x8dfe0);
+    assert(tsfp_thread_owner_finish(owner,29));
+    for (unsigned i=0;i<2;++i) {
+        poll_call(owner,0,0x90080);
+        assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0 && g_esp==0x8dfe0);
+    }
+    assert(tsfp_thread_handle_close(owner)==0);
+    poll_call(owner,0,0x90080);
+    assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==TSFP_STATUS_INVALID_HANDLE);
+    assert(tsfp_thread_owner_release(owner));
+    for (unsigned variant=0;variant<4;++variant) {
+        tsfp_guest_store_u64(0x90080,variant==2 ? UINT64_MAX : variant==3 ? 1 : 0);
+        poll_call(owner,variant==1,variant==0 ? 0 : 0x90080);
+        assert(tsfp_guest_run(invoke,&fn,&f)==1 && f.kind==TSFP_FAULT_IMPORT && f.detail==233);
+        assert(g_eax==77 && g_esp==0x8dfcc);
+    }
+    poll_call(owner,0,0x73fffffc);
+    assert(tsfp_guest_run(invoke,&fn,&f)==1 && f.kind==TSFP_FAULT_MEMORY);
+    assert(f.address==0x73fffffc && f.width==8 && f.access==TSFP_ACCESS_READ && g_eax==77 && g_esp==0x8dfcc);
+    g_esi=0x88000; g_esp=0x73fffffc; g_eax=77;
+    assert(tsfp_guest_run(invoke,&fn,&f)==1 && f.kind==TSFP_FAULT_MEMORY);
+    assert(f.address==0x73fffff8 && f.width==16 && g_eax==77 && g_esp==0x73fffff8);
+    assert(!tsfp_thread_handles_busy());
+    puts("thread-poll-v1: running=timeout completion=sticky closed=invalid unsupported=fault bounds=pass");
+}
 void test_kernel(void) {
     const uint32_t table=0x88000,tib=0x89000,object=0x8a000,source=0x8b000;
     for (unsigned i=0;i<0x200;i+=4) tsfp_guest_store_u32(source+i,0x12345678);
@@ -66,6 +104,7 @@ void test_kernel(void) {
     tsfp_guest_store_u32(g_esp+8,4); tsfp_guest_store_u32(0x90000,0xabcdef01);
     assert(tsfp_guest_run(invoke,&cached,&f)==0 && g_eax==0 && g_esp==0x8dffc);
     assert(tsfp_guest_load_u32(0x90000)==0);
+    test_thread_poll(object);
     assert(tsfp_guest_thread_leave());
     tsfp_kernel_imports_reset(); assert(!tsfp_kernel_lookup(0xfe000000));
     puts("kernel-entry-v1: object=pass imports=3 stdcall=pass zero=pass exit=37 unsupported=pass");

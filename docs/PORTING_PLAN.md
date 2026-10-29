@@ -141,3 +141,8 @@ and live-image teardown protection, including close/finish races and exhaustion
 coverage. This completes only the ownership prerequisite, not guest thread
 creation or synchronization. Next acceptance: waitable completion and explicit
 platform launch/join integration, preserving independent TLS and rollback.
+
+Non-alertable zero-timeout thread-completion polling (ordinal 233) is now
+implemented through the translated call path. All blocking/alertable modes
+fail closed. Next gate remains lifetime-safe blocking completion references
+and a platform creation/join adapter, not additional unrelated CPU fixtures.

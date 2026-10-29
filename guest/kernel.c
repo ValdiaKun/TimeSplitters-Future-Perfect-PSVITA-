@@ -61,18 +61,25 @@ int tsfp_kernel_imports_prepare(uint32_t table, size_t count) {
 static void dispatch(uint32_t ordinal) {
     unsigned arguments;
     switch (ordinal) {
+    case 233: arguments=3; break; /* NtWaitForSingleObject, poll-only subset */
     case 187: arguments=1; break; /* NtClose, managed thread handles */
     case 104: arguments=0; break; /* KeGetCurrentThread */
     case 320: arguments=2; break; /* RtlZeroMemory */
     case 258: arguments=1; break; /* PsTerminateSystemThread */
     default: tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
     }
-    uint32_t stack=g_esp, frame[3];
+    uint32_t stack=g_esp, frame[4];
     tsfp_guest_read(stack,frame,(arguments+1)*4); /* all args before side effects */
     if (ordinal==258) tsfp_guest_thread_exit(frame[1]);
     uint32_t result=0;
     if (ordinal==104) result=tsfp_current_thread_object();
     else if (ordinal==187) result=tsfp_thread_handle_close(frame[1]);
+    else if (ordinal==233) {
+        /* No blocking wait, APC, deadline or clock behavior is silently faked. */
+        if (frame[2] || !frame[3]) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
+        if (tsfp_guest_load_u64(frame[3])!=0) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
+        result=tsfp_thread_handle_poll(frame[1]);
+    }
     else if (frame[2]) {
         if (!tsfp_guest_range_valid(frame[1],frame[2])) {
             g_tsfp_access=TSFP_ACCESS_WRITE;
@@ -87,6 +94,7 @@ static void dispatch(uint32_t ordinal) {
     }
     g_eax=result; g_esp=stack+(arguments+1)*4;
 }
+static void poll_thread(void) { dispatch(233); }
 static void close_handle(void) { dispatch(187); }
 static void current_thread(void) { dispatch(104); }
 static void zero_memory(void) { dispatch(320); }
@@ -108,6 +116,7 @@ void (*tsfp_kernel_lookup(uint32_t address))(void) {
     if (address<THUNK_BASE || (address&3u) || (address-THUNK_BASE)/4>=slot_count) return NULL;
     uint32_t slot=(address-THUNK_BASE)/4;
     switch (ordinals[slot]) {
+    case 233: return poll_thread;
     case 187: return close_handle;
     case 104: return current_thread;
     case 320: return zero_memory;

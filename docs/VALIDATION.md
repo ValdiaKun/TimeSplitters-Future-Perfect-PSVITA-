@@ -605,3 +605,24 @@ The repeat command initially used nonexistent `pc-baseline`/`host-pc` names
 `handles-v1: close=pass ownership=pass stale=pass race=pass quota=32`.
 Native creation/join remains explicit, and the test closes/releases only after
 joining the two guest workers. No physical Vita or FPS measurement available.
+
+Ownership commit `857e5002b542fef84b2fbcb6b8cb541416a2c4ca` passed push
+CPU/Vita [40835387243](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40835387243),
+PR CPU/Vita [40835393411](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40835393411),
+and input [40835393354](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40835393354).
+
+Subsequent poll tests reuse actual translated `fixture_kernel_call` (122
+functions retained): running timeout, sticky completion, invalid closed handle,
+stdcall stack cleanup, unsupported infinite/relative/absolute/alertable modes,
+faulting timeout and faulting complete argument frame. Expected status and
+zero-timeout contracts are audited in pinned `src/kernel/kernel_sync.c`
+(`xbox_nt_timeout_to_ms`, `xbox_wait_result_to_ntstatus`); ordinal/argument
+size is generator-guarded against `kernel_bridge.c`. This compares the supported
+contract, not native Win32 scheduling or unsupported wait behavior.
+
+Poll subset local matrix passed: pristine PC-header/shared-map, portable host,
+ASan/UBSan, static ARMv7 Cortex-A9 QEMU, both VitaSDK Release VPK cross-builds,
+strict input, Python and whitespace checks. All three host modes passed three
+additional repeats. Output: `thread-poll-v1: running=timeout completion=sticky
+closed=invalid unsupported=fault bounds=pass`. This remains synthetic execution,
+not Xbox blocking synchronization or physical Vita validation.

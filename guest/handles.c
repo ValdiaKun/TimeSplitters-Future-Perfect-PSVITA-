@@ -61,6 +61,12 @@ uint32_t tsfp_thread_handle_close(uint32_t handle) {
     if (ok) r->info.handle_open=0;
     unlock(); return ok ? 0 : TSFP_STATUS_INVALID_HANDLE;
 }
+uint32_t tsfp_thread_handle_poll(uint32_t handle) {
+    lock(); Record *r=find(handle);
+    uint32_t status=TSFP_STATUS_INVALID_HANDLE;
+    if (r && r->info.handle_open) status=r->info.state==TSFP_THREAD_TERMINATED ? 0 : 0x102u;
+    unlock(); return status;
+}
 int tsfp_thread_handles_busy(void) {
     lock(); int busy=0;
     for (unsigned i=0;i<TSFP_THREAD_HANDLES;++i) if (records[i].info.state) { busy=1; break; }

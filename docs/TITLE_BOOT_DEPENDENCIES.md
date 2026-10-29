@@ -64,3 +64,8 @@ closes a registered token and terminates through real imports. Native worker
 creation/join remains explicit test/platform ownership. Next gate: waitable
 thread completion, timeout/reference semantics, then a bounded creation/join
 adapter; do not claim guest scheduler support from these registry tests.
+
+Non-alertable zero-timeout thread-completion polling (ordinal 233) is now
+implemented through the translated call path. All blocking/alertable modes
+fail closed. Next gate remains lifetime-safe blocking completion references
+and a platform creation/join adapter, not additional unrelated CPU fixtures.

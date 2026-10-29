@@ -579,3 +579,16 @@ has stopped. They serialize image setup/reset with owner creation. Image teardow
 checks all owner records, including closed guest handles. This does not enforce
 OS joining automatically, create native threads, implement duplication/waits,
 or adapt PsCreateSystemThread. Concurrent close/finish/query are supported.
+
+### Nonblocking completion poll subset
+
+Ordinal 233 `NtWaitForSingleObject` now accepts only a non-alertable wait with
+a readable 64-bit timeout equal to zero, for registered thread handles. Running
+and created records return STATUS_TIMEOUT (0x102); completed records return
+SUCCESS repeatedly without consuming completion. Closed/stale tokens return
+INVALID_HANDLE. The mutex orders polling with finish/close and no reference
+escapes the lock. Stack/timeout reads precede registry access. Null/infinite,
+nonzero relative/absolute and alertable modes raise an explicit import fault
+without changing EAX or performing a wait. This is deliberately not a complete
+Xbox wait implementation: blocking wait references, deadlines, APCs and events
+remain unimplemented. No clock or pthread wait semantics are assumed.

@@ -158,7 +158,7 @@ def main():
     if '#define BRIDGE_HANDLE_TAG  0x48000000u' not in bridge:
         raise RuntimeError('Pinned opaque handle tag changed')
     memory_layout = (runtime / 'src/kernel/xbox_memory_layout.c').read_text()
-    for ordinal, size, name in ((187,4,'NtClose'),(104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
+    for ordinal, size, name in ((233,12,'NtWaitForSingleObject'),(187,4,'NtClose'),(104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
         if not re.search(rf'case {ordinal}: return\s+{size};',bridge) or not re.search(rf'case {ordinal}: return bridge_{name};',bridge):
             raise RuntimeError(f'Pinned kernel ordinal/ABI changed: {ordinal} {name}')
     for name,value in (('XBOX_THREAD_OBJ_SIZE','0x200u'),('XBOX_THREAD_ID_OFF','0x12Cu')):

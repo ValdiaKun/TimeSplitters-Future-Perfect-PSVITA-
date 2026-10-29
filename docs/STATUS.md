@@ -284,3 +284,8 @@ PR CPU/Vita [40814711797](https://github.com/ValdiaKun/TimeSplitters-Future-Perf
 and input [40814711841](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40814711841).
 Next: waitable thread completion with explicit timeout and ownership contracts,
 then a platform creation/join adapter. Retail files/metadata and Vita unavailable.
+
+Non-alertable zero-timeout thread-completion polling (ordinal 233) is now
+implemented through the translated call path. All blocking/alertable modes
+fail closed. Next gate remains lifetime-safe blocking completion references
+and a platform creation/join adapter, not additional unrelated CPU fixtures.
