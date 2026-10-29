@@ -131,7 +131,14 @@ static void run_case(unsigned kind, unsigned width, unsigned repeat, StringState
         native_string_oracle(kind,width,repeat,&native);
         compare_state(&native,&expected);
         image_transfer(&actual_image,0);
-        assert(memcmp(&actual_image,&expected_image,sizeof(actual_image)) == 0);
+        if (memcmp(&actual_image,&expected_image,sizeof(actual_image)) != 0) {
+            fprintf(stderr,"native string image mismatch kind=%u width=%u repeat=%u src=%08x dst=%08x count=%u flags=%x\n",kind,width,repeat,input.source,input.destination,input.count,input.flags);
+            for (size_t n=0;n<sizeof(actual_image);++n)
+                if (((unsigned char *)&actual_image)[n]!=((unsigned char *)&expected_image)[n]) {
+                    fprintf(stderr,"image byte=%zu actual=%02x expected=%02x\n",n,((unsigned char *)&actual_image)[n],((unsigned char *)&expected_image)[n]); break;
+                }
+            assert(!"native string image differs from byte model");
+        }
     }
 #else
     (void)use_native;
