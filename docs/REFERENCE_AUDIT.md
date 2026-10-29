@@ -105,3 +105,11 @@ for invalid file handles; the bridge also accepts special fake handles. The
 Vita adapter independently implements a strict registered-thread subset and
 generation retirement, with no copied source or fake-handle success behavior.
 Generator guards retain the pinned tag/ordinal/argument contract.
+
+Native worker contract at the unchanged PC/runtime pins: kernel_bridge.c
+bridge_run_thread_inline pushes context2/context1/return marker, and
+bridge_thread_main returns native status zero on ordinary return. The Vita
+adapter independently implements those entry/status contracts plus explicit
+join and native lifetime pins. It does not copy the Win32 guest-lock/scheduler
+or claim compatibility for priorities/suspension. Public pthread backend only;
+Vita scheduling/hardware behavior still requires device validation.

@@ -15,6 +15,11 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
+void test_worker_adapter(void);
+extern const unsigned char fixture_thread_args_bytes[];
+extern const size_t fixture_thread_args_size;
+extern const unsigned char fixture_fault_divide_bytes[];
+extern const size_t fixture_fault_divide_size;
 void fixture_tls_entry(void); void fixture_tls_worker(void);
 void fixture_image_entry(void); void fixture_fault_store(void); void fixture_flag_leaf(void);
 extern const unsigned char fixture_tls_entry_bytes[],fixture_tls_worker_bytes[];
@@ -191,7 +196,7 @@ static void test_handles(void) {
     for (unsigned i=0;i<sizeof(invalid)/sizeof(invalid[0]);++i) assert(tsfp_thread_handle_close(invalid[i])==TSFP_STATUS_INVALID_HANDLE);
 }
 static void test_xbe(void) {
-    TsfpImageSection sections[8]; TsfpImageDescription d=description(sections);
+    TsfpImageSection sections[10]; TsfpImageDescription d=description(sections);
     write_word(12,0x800000bb);
     write_word(0x4020,0x12345678); /* title-owned TLS index until guest entry */
     write_word(0x4040,0x8c080); write_word(0x4044,0x8c094); write_word(0x4048,0x8c020);
@@ -201,6 +206,8 @@ static void test_xbe(void) {
     sections[4].size=0x4000;
     sections[6]=(TsfpImageSection){0x13500,0x100,5,fixture_tls_entry_bytes,fixture_tls_entry_size};
     sections[7]=(TsfpImageSection){0x13600,0x40,5,fixture_tls_worker_bytes,fixture_tls_worker_size};
+    sections[8]=(TsfpImageSection){0x13200,0x20,5,fixture_thread_args_bytes,fixture_thread_args_size};
+    sections[9]=(TsfpImageSection){0x132a0,0x20,5,fixture_fault_divide_bytes,fixture_fault_divide_size};
     d.thread_data_size=64;
     sections[5]=(TsfpImageSection){0x88000,20,1,data,20};
     sections[2]=(TsfpImageSection){0x88014,sizeof(data)-20,3,data+20,sizeof(data)-20};
@@ -208,12 +215,12 @@ static void test_xbe(void) {
         memset(xbe,0,sizeof(xbe)); memcpy(xbe,"XBEH",4);
         put(0x104,0x10000); put(0x108,0x1000); put(0x10c,0x84000); put(0x110,0x178);
         put(0x118,0x10500); put(0x500,0x1d0); /* Authored zero-content certificate. */
-        put(0x11c,8); put(0x120,0x10200); put(0x130,0x1000);
+        put(0x11c,10); put(0x120,0x10200); put(0x130,0x1000);
         put(0x12c,0x8c040);
         put(0x128,0x13500^(debug ? 0x94859d4bu : 0xa8fc57abu));
         put(0x158,0x88000^(debug ? 0xefb1f152u : 0x5b6d40b6u));
         size_t cursor=0x1000;
-        for (unsigned i=0;i<8;++i) {
+        for (unsigned i=0;i<10;++i) {
             unsigned offset=0x200+i*56;
             put(offset,((sections[i].flags&2u) ? 1u : 0u)|(sections[i].flags&4u));
             put(offset+4,sections[i].address); put(offset+8,sections[i].size);
@@ -309,6 +316,7 @@ static void test_xbe(void) {
         }
         assert(g_eax==main_eax && tsfp_guest_load_u32(0x89048)==0xdeadbeef);
         assert(tsfp_guest_load_u32(0x8c088)==0xdeadbeef && tsfp_guest_load_u32(0x8c020)==0xfffffff7);
+        test_worker_adapter();
         test_handles();
         assert(tsfp_guest_run(readonly_import,NULL,&f)==1 && f.access==TSFP_ACCESS_WRITE);
         assert(tsfp_guest_load_u32(0x88000)==0xfe000000);

@@ -663,3 +663,38 @@ without defining newer __USE_TIME64_REDIRECTS, so the wrapper function was not
 emitted. Detect the established __TIMESIZE==32 plus __USE_TIME_BITS64 instead;
 this preserves the same ABI and all error-injection assertions. This is a test
 link portability fix, not relaxed runtime/error expectations.
+
+Blocking wait portability fix `fa002b1` passed push CPU/Vita
+[40845089499](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40845089499),
+PR CPU/Vita [40845101037](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40845101037),
+and input [40845101348](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40845101348).
+Only after these gates passed did native worker adapter work begin.
+
+Native worker tests reuse the existing 122 translated functions: authored XBE
+now has ten sections, adding actual byte views for fixture_thread_args and
+fixture_fault_divide. The independent PC parser checks both addresses and exact
+file bytes; count/metadata expectations were updated with the fixture extension.
+Normal return verifies both contexts and exact ret-8 stack cleanup; independent
+worker exit verifies status 37 and its own TLS identity. Tests cover native pin
+after guest close/completion, double/concurrent join, retry after injected join
+error, injected create EAGAIN with guest-RAM rollback, unknown entry, invalid
+stack/identity/overflow, mirror conflicts, recovery-scope rejection, sixteen
+relaunches and captured divide failure. Source generator remains authoritative;
+no generated C edits or new retail input were used.
+
+An initial new fault test used a mapped contiguous address: the PC shared-map
+header oracle permits that read while the portable image policy rejects it.
+Replaced that adapter fault-capture case with the existing architectural divide
+fixture, supported by both paths. Existing memory/permission tests are unchanged.
+The PC-parser oracle initially retained the old eight-section expectation; it
+now asserts ten and validates the added authored bytes explicitly. An authored
+length typo (10 versus 11 bytes for ret-8 fixture) was corrected.
+
+Final adapter results: pristine PC shared-map/reference, portable host,
+ASan/UBSan, ARMv7 Cortex-A9 QEMU and the independent PC parser all passed the
+documented full command. Both VitaSDK Release VPKs cross-built. Pristine,
+portable and sanitized binaries each passed three extra full repeats; strict
+input/Python/whitespace checks passed. Adapter exhaustion also rejects a launch
+against 32 existing owner records and cleans its reservation. Native create
+EAGAIN and join EINVAL remain visible; retry clears the backend error on success.
+No device or retail-title test, hardware FPS or production stack budget exists.

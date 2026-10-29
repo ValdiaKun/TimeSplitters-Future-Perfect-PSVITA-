@@ -144,7 +144,7 @@ def main():
         table.append(f'if (kind == {kind} && width == {width} && mode == {mode}) return {name};')
     table.append('return 0; }')
     table.insert(0,'#include <stddef.h>')
-    for address in (0x12660,0x13280,0x13300,0x13400,0x13500,0x13600):
+    for address in (0x12660,0x13200,0x13280,0x132a0,0x13300,0x13400,0x13500,0x13600):
         name,raw=FIXTURES[address]
         data=bytes.fromhex(raw)
         table.append(f'const unsigned char {name}_bytes[] = {{'+','.join(str(b) for b in data)+'};')

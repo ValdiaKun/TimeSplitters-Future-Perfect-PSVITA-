@@ -42,11 +42,21 @@ int tsfp_thread_owner_create(uint32_t object,uint32_t id,uint32_t *token) {
         Record *r=&records[i];
         if (!r->info.state && r->generation<MAX_GENERATION) {
             ++r->generation;
-            r->info=(TsfpThreadInfo){object,id,0,TSFP_THREAD_CREATED,1,0};
+            r->info=(TsfpThreadInfo){object,id,0,TSFP_THREAD_CREATED,1,0,0};
             uint32_t value=TAG|(r->generation<<6)|(i+1); unlock(); *token=value; return 1;
         }
     }
     unlock(); return 0;
+}
+int tsfp_thread_owner_native_pin(uint32_t token) {
+    lock(); Record *r=find(token); int ok=r && r->info.state==TSFP_THREAD_CREATED && !r->info.native_pin;
+    if (ok) r->info.native_pin=1;
+    unlock(); return ok;
+}
+int tsfp_thread_owner_native_unpin(uint32_t token) {
+    lock(); Record *r=find(token); int ok=r && r->info.state==TSFP_THREAD_TERMINATED && r->info.native_pin;
+    if (ok) r->info.native_pin=0;
+    unlock(); return ok;
 }
 int tsfp_thread_owner_start(uint32_t token) {
     lock(); Record *r=find(token); int ok=r && r->info.state==TSFP_THREAD_CREATED;
@@ -68,7 +78,7 @@ int tsfp_thread_owner_query(uint32_t token,TsfpThreadInfo *info) {
 }
 int tsfp_thread_owner_release(uint32_t token) {
     lock(); Record *r=find(token);
-    int ok=r && !r->info.handle_open && r->info.state==TSFP_THREAD_TERMINATED && !r->info.waiters;
+    int ok=r && !r->info.handle_open && r->info.state==TSFP_THREAD_TERMINATED && !r->info.waiters && !r->info.native_pin;
     if (ok) r->info=(TsfpThreadInfo){0}; /* generation is never rolled back */
     unlock(); return ok;
 }

@@ -77,3 +77,14 @@ waiter references, wake-all completion and close-versus-wait lifetime rules.
 Owner release/teardown cannot recycle referenced records. Positive absolute
 deadlines and alertable waits remain explicit faults. Native worker launch/join
 is the next bounded adapter; no guest scheduler or retail boot is claimed.
+
+### Native worker launch/join subset — 2026-10-29
+
+Implemented a 32-record host worker adapter, private prepared guest storage,
+trusted entry resolution, two start contexts, CPU/fault/exit capture, backend
+stack ownership, create rollback, retryable join and a distinct native pin.
+Handle close/completion cannot release storage before join. Callers still
+prepare guest TLS/object/stack storage; no PsCreateSystemThread import or retail
+scheduler is claimed. Next: bounded guest storage reservation/rollback, followed
+by a safe thread-creation service boundary. Retail input/metadata and physical
+Vita remain unavailable; no renderer/gameplay/performance milestone is met.

@@ -622,3 +622,42 @@ termination is separate from pthread cancellation. Async signal-based recovery
 and forced native thread killing are unsupported. Registry/image lifecycle
 serialization and joined/stopped-owner rules remain required. This provides
 completion waits, not a guest scheduler or event/APC implementation.
+
+## Bounded native worker launch/join adapter
+
+`guest/worker.c` reserves at most 32 caller-owned worker records with disjoint
+low-RAM guest stack/TIB/object spans, checked permissions and matching identity
+links. Range checks precede reservation; identity reads follow reservation to
+avoid reading another active worker's private state. The trusted compiled entry
+resolver never casts guest RAM to a native function. Callers prepare stable
+private TLS using the existing helpers and retain all native/guest storage.
+Other manually managed thread storage must also remain disjoint by caller contract.
+
+`platform/threads_pthread.c` owns native creation/join via public pthread APIs,
+including VitaSDK's implementation. Backend stacks are distinct from guest
+stacks, explicitly sized between 64 KiB and 1 MiB, and backend-owned until join.
+This cross-built backend is not a claim that Vita scheduling equals Windows.
+Native create failure rolls back owner, native pin and reservation without
+writing guest RAM. Backend error codes remain available in platform_error.
+
+The native entry disables forced cancellation, initializes per-thread CPU state,
+pushes two start contexts and a root return marker (PC bridge convention), and
+executes inside the existing C-only fault boundary. Normal return yields native
+status zero as upstream does; CPU result registers are captured independently.
+PsTerminateSystemThread yields its requested exit status. Other guest faults
+remain captured with failing status, never successful termination. The thread
+leaves guest state before publishing completion.
+
+A separate owner native pin survives guest handle closure and completion until
+a successful native join. Join failures retain the pin and permit retry; only
+one concurrent joiner can succeed. Release requires join, guest handle close
+and no wait references. Joined output is copied under the controller lock
+before release is permitted. Image teardown remains blocked through all pins.
+Launch/join/release reject guest recovery scopes; no resource-owning native
+thread operation is called from translated callbacks by this adapter. Image
+lifecycle remains externally serialized. The API does not allocate guest stacks
+or implement PsCreateSystemThread, priorities, suspension or a title scheduler.
+
+Next integration gate: bounded guest stack/TIB/object reservations with rollback,
+then a safe kernel-service boundary for thread creation. Do not directly call
+this host adapter from inside a translated recovery callback.

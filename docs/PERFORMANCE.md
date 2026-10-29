@@ -96,3 +96,10 @@ references; no per-wait allocation or busy loop is introduced. Timed sleeps
 are bounded to one second for long-deadline time_t safety. Condition scheduling
 latency, Vita thread capacity and actual wait overhead are unmeasured. No FPS
 or production memory-budget conclusion follows from host/QEMU tests.
+
+Worker metadata is caller-owned and globally capped at 32 registered workers.
+Backend-owned native stack size is explicit (64 KiB to 1 MiB); tests request
+256 KiB each, with separate 4 KiB guest stacks and existing 164-byte TIB/TLS/data
+spans. These are test settings, not measured production stack bounds. The
+adapter introduces no duplicate guest RAM buffer. Native stack allocation,
+Vita capacity/high-water use, thread latency and gameplay effects are unmeasured.
