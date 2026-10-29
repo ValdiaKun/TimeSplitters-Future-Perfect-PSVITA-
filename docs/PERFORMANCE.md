@@ -148,3 +148,8 @@ and successful VPK cross-build still do not prove production fit or FPS.
 Event publication adds64 static two-word native reference records and shared
 ownership-lock operations. It introduces no host allocation or new RAM backing.
 Reference and lock cost are not benchmarked; no performance gain is claimed.
+
+Issue #2 adds two native token fields and a count to the existing per-native-thread
+CallGuard; it reuses the same64-reference registry and ownership lock. No new
+backing, request allocation or guard engine. Latency/memory effects and Vita FPS
+remain unmeasured; this is a correctness change, not a claimed optimization.

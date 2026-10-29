@@ -379,3 +379,14 @@ a result is pinned; stale/double unpins and the64-reference limit are tested.
 A native test gate pauses actual translated creation and races actual translated
 free/decommit; injected post-pin faults verify cleanup and cancellation restoration.
 Thread-create/VM outputs in the heap remain unsupported. No retail/device/FPS claim.
+
+## Issue #2: thread-creation heap outputs
+
+Extended existing CallGuard with two retained allocation references; handles
+and optional IDs may be in distinct committed allocations or mirror aliases.
+Translated callers create, wait and close; concurrent release/decommit fails
+unchanged while publication is pending. Tests cover both pin-exhaustion points,
+second-pointer faults, exact/partial alias conflicts, native EAGAIN rollback,
+post-pin fault cleanup and cancellation restoration. All127 fixtures retained.
+VM in/out words remain guarded outside the heap pending issue #3. Retail and
+physical Vita/gameplay/performance gates remain unverified.

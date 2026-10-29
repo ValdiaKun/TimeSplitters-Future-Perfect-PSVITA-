@@ -20,6 +20,9 @@ int tsfp_thread_service_stop(int *platform_error);
  * RPC, output writes and register/stack publication. Leave LAST on normal exit. */
 int tsfp_thread_service_call_enter(void);
 void tsfp_thread_service_call_leave(void);
+/* Called only inside the existing CallGuard after role/range probes. References
+ * remain owned through RPC, output and EAX/ESP publication, including faults. */
+uint32_t tsfp_thread_service_pin_output(uint32_t address);
 /* Native-only packet: no guest output pointers or caller stack pointers are
  * retained by the service. Creation runs on a different native C stack. */
 TsfpThreadCreateResult tsfp_thread_service_create(const TsfpThreadCreateRequest *);

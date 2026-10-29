@@ -882,3 +882,28 @@ comparison. Both VitaSDK Release VPKs cross-built; strict controller, Python
 and whitespace checks passed. Each host mode passed three further full repeats.
 Read-only review found no blocking generation/lifetime/recovery defect under the
 explicit profile; no general native cancellation unwinding or hardware claim.
+
+## V4 issue #2 validation
+
+Started clean at eccc03ec18b3f5d120ee8c76f6813d4cda9b8563 with passing push
+40971056312, PR40971064091 and controller40971064058; full local baseline passed.
+New translated thread callers use heap results, including separate handle/ID
+allocations, mirror addresses, optional null ID and two parallel callers over
+eight cycles. Wait and close now also run through actual translated imports.
+A test-only RPC gate holds both references while translated release/decommit
+attempts fail unchanged. Native EAGAIN compares pool bytes and output canaries;
+second-pointer faults and injected post-pin faults release CallGuard references.
+63/64 pre-held pins test failure of second/first acquisition; exact mirror and
+partial output overlap reject before request submission. Cancellation is checked.
+
+Development fixture failure: added imports initially occupied the child's result
+word at0x900b0, producing the wrong call target in the race check. Moved canonical
+imports to0x900e0 and copied the original three callable slots to their fixture
+addresses; VM race output words are separate at0x90110/114. Exact return/stack/
+unchanged-output checks remain enabled. No runtime semantic assertion weakened.
+
+Issue #2 final local matrix passed: pristine PC-header/shared-map, portable,
+ASan/UBSan, Cortex-A9 QEMU and pinned VM differential comparison; both locked
+VitaSDK Release VPKs cross-built. Graphics host/sanitizer/ARM, strict controller,
+Python and whitespace checks passed. Each host mode passed three more full runs.
+Read-only review found no blocking guard/lock/lifetime issue. No device/FPS test.

@@ -841,3 +841,16 @@ execution boundary's cleanup path. No callback-stack local survives longjmp and
 no resource-owning native thread creation is added. Setup/teardown still require
 external quiescence and guest data/free races remain caller-owned. Thread-create
 and VM output profiles retain their stricter checks pending separate integration.
+
+## Heap-resident thread outputs (issue #2)
+
+PsCreateSystemThreadEx reuses its existing CallGuard for up to two heap output
+references. Each independent handle/optional ID span is probed, role-checked and
+pinned before RPC. Physical aliases/partial overlap are rejected. The scalar
+service packet never retains guest output pointers. Cleanup unpins before
+decrementing active_calls and restoring cancellation, so shutdown cannot pass
+through unfinished publication. References span result writes and EAX/ESP.
+A second-probe fault, pin exhaustion, invalid request or native create error
+releases every acquired reference without publishing outputs. No second scope
+guard or native creation on a recovery callback stack is introduced. The storage
+output helper is only a role predicate; lifetime is owned by CallGuard.

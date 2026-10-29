@@ -31,6 +31,7 @@ typedef struct TsfpStorageProfile { uint32_t initial_id,max_stack; size_t thread
 /* Native service pin protects pool/configuration through service-thread join. */
 int tsfp_storage_service_pin(TsfpStorageProfile *);
 int tsfp_storage_service_unpin(void);
+/* Role predicate only: caller must retain output lifetime in CallGuard. */
 int tsfp_storage_output_allowed(uint32_t address,size_t size);
 int tsfp_storage_event_output_allowed(uint32_t address,size_t size);
 int tsfp_storage_kernel_output_allowed(uint32_t address,size_t size);

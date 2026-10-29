@@ -2,6 +2,7 @@
 #include "thread_service.h"
 #include "storage.h"
 #include "handles.h"
+#include "heap.h"
 #include "execution.h"
 #include <pthread.h>
 #include <stdlib.h>
@@ -19,7 +20,7 @@ static unsigned state,clients,active_calls;
 static int busy,pending,done,operation,stop_control;
 static TsfpThreadCreateRequest packet;
 static TsfpThreadCreateResult reply;
-typedef struct CallGuard { int active,old_cancel; } CallGuard;
+typedef struct CallGuard { int active,old_cancel; unsigned outputs; uint32_t pins[2]; } CallGuard;
 static _Thread_local CallGuard call_guard;
 static void lock(void) { if (pthread_mutex_lock(&mutex)) abort(); }
 static void unlock(void) { if (pthread_mutex_unlock(&mutex)) abort(); }
@@ -28,6 +29,7 @@ static void wait_changed(void) { if (pthread_cond_wait(&changed,&mutex)) abort()
 static void cleanup_call(void *context) {
     CallGuard *g=context;
     if (!g->active) abort();
+    while (g->outputs) if (!tsfp_heap_unpin_output(g->pins[--g->outputs])) abort();
     lock(); if (!active_calls) abort(); --active_calls; g->active=0; signal_all(); unlock();
     if (pthread_setcancelstate(g->old_cancel,NULL)) abort();
 }
@@ -35,11 +37,17 @@ int tsfp_thread_service_call_enter(void) {
     if (!tsfp_guest_recovery_active() || call_guard.active) return 0;
     if (pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,&call_guard.old_cancel)) return 0;
     lock(); int ok=state==RUNNING && active_calls<TSFP_THREAD_HANDLES;
-    if (ok) { ++active_calls; call_guard.active=1; }
+    if (ok) { ++active_calls; call_guard.active=1; call_guard.outputs=0; }
     unlock();
     if (!ok) { if (pthread_setcancelstate(call_guard.old_cancel,NULL)) abort(); return 0; }
     if (!tsfp_guest_scope_guard(cleanup_call,&call_guard)) { cleanup_call(&call_guard); return 0; }
     return 1;
+}
+uint32_t tsfp_thread_service_pin_output(uint32_t address) {
+    if (!call_guard.active || call_guard.outputs>=2) return TSFP_STATUS_INVALID_PARAMETER;
+    uint32_t result=tsfp_heap_pin_output(address,4,&call_guard.pins[call_guard.outputs]);
+    if (!result) ++call_guard.outputs;
+    return result;
 }
 void tsfp_thread_service_call_leave(void) {
     if (!tsfp_guest_scope_unguard(cleanup_call,&call_guard)) abort();

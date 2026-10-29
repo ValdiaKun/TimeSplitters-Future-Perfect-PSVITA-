@@ -143,3 +143,7 @@ Heap-resident event result words now have retained output references across
 translated create/set publication. Thread-create handle/ID and VM in/out words
 remain rejected in this heap; extend their existing guard contracts next rather
 than removing checks. This is still synthetic boot preparation without retail data.
+
+Thread creation can now publish heap-resident handle/ID words through retained
+CallGuard references. VM in/out words are the next bounded publication dependency
+(issue #3). No retail allocation arena or actual initialization trace is inferred.

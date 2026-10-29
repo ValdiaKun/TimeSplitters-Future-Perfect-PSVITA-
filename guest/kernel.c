@@ -71,12 +71,14 @@ static uint32_t create_thread(const uint32_t *frame) {
             g_tsfp_access=TSFP_ACCESS_WRITE; tsfp_guest_memory_fault(outputs[i],4);
         }
         if (!tsfp_storage_output_allowed(outputs[i],4)) return TSFP_STATUS_INVALID_PARAMETER;
+        uint32_t status=tsfp_thread_service_pin_output(outputs[i]);
+        if (status) return status;
     }
     if (outputs[1] && tsfp_tls_ranges_overlap(outputs[0],4,outputs[1],4)) return TSFP_STATUS_INVALID_PARAMETER;
     TsfpThreadCreateRequest request={frame[3],frame[4],frame[10],frame[6],frame[7]};
     TsfpThreadCreateResult result=tsfp_thread_service_create(&request);
     if (!result.status) {
-        /* Service/image pins keep both validated spans and permissions stable.
+        /* Service/image and allocation pins keep both validated spans stable.
          * No queue/native-create frame is on this stack during these stores. */
         tsfp_guest_store_u32(outputs[0],result.handle);
         if (outputs[1]) tsfp_guest_store_u32(outputs[1],result.id);

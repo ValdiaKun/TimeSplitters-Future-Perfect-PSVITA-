@@ -221,3 +221,7 @@ Heap-resident event result publication is now reference-protected and tested.
 Next: extend the existing thread-creation service's durable guard to retain its
 heap-resident handle/ID output allocations, with native-create failure, publication
 fault and concurrent free tests. VM in/out words remain a separate guarded profile.
+
+Issue #2 implementation retains heap handle/ID outputs with the existing creation
+service guard. Next gate is issue #3: VM in/out words, pinned reads/publication and
+explicit self-release/decommit rejection. Preserve native resource stack safety.

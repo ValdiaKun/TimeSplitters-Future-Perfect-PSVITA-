@@ -239,7 +239,7 @@ int tsfp_storage_service_unpin(void) {
     tsfp_storage_unlock(); return ok;
 }
 int tsfp_storage_output_allowed(uint32_t address,size_t size) {
-    tsfp_storage_lock(); int ok=!tsfp_heap_overlaps(address,size) && configured && service_pin &&
+    tsfp_storage_lock(); int ok=configured && service_pin &&
         !tsfp_tls_ranges_overlap(config.base,(size_t)config.stride*config.slots,address,size) &&
         !tsfp_tls_ranges_overlap(source.tls.raw_start,source.tls.raw_size,address,size) &&
         !tsfp_tls_ranges_overlap(source.object_template,512,address,size);

@@ -52,3 +52,7 @@ Follow-up reuse: event publication reuses this project's existing durable C-scop
 guard design from thread_service.c; it does not introduce a second recovery or
 thread engine. Generation-checked native allocation references protect event
 outputs. Thread-create/VM output integration remains separate.
+
+Issue #2 reuses the existing heap reference registry and thread-service CallGuard,
+keeping pinned PC ordinal255/40-byte ABI and the server-owned creation packet.
+No new external source/dependency or competing execution guard was introduced.

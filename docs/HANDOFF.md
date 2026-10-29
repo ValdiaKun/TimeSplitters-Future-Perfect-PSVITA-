@@ -56,10 +56,15 @@ through result and EAX/ESP publication, releasing on normal/fault paths. Native
 cancellation is deferred. Release/decommit returns UNSUCCESSFUL unchanged while
 an event output is pinned; retry after the call. Guest code cannot forge pins.
 
-Next: heap-resident PsCreateSystemThreadEx handle/ID outputs. Extend the existing
-thread-service CallGuard to own allocation references through probes/RPC/result
-publication and fault cleanup; test concurrent free, failed native create and
-multiple outputs. Do not add another scope guard atop the single-slot contract
-or remove the checks. VM in/out words still remain outside the managed heap.
-Then integrate an authenticated retail layout/entry trace once supported files
-and matching metadata exist. Physical Vita/retail/gameplay/FPS remain unverified.
+Thread-create outputs now reuse CallGuard's two retained heap references across
+probes/RPC/publication/EAX/ESP and fault cleanup. Distinct allocations and mirrors
+are tested; server packets still contain no guest output pointers. Do not call
+the storage role predicate as though it retained lifetime.
+
+Next: issue #3, transactional NtAllocateVirtualMemory/NtFreeVirtualMemory in/out
+words in the managed heap. Reuse a durable guard and pins before reading input;
+reject physical overlap and destructive self-referential free/decommit. Keep
+outputs stable through mutation and publication, with no guest accesses under
+ownership locks. Test separate output allocations, races, exhaustion and rollback.
+Then authenticated retail intake/entry trace (issue #4). Physical Vita/retail/
+gameplay/FPS remain unverified; supported original XBE/analysis remain absent.
