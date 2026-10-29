@@ -242,3 +242,10 @@ Image commit `06f876b` passed push CPU/Vita CI 40809921287 and PR CPU/Vita CI
   extraction, callbacks/index allocation, handles/scheduling or real game boot.
 - Next: validated XBE TLS-directory/index normalization into initial-thread storage,
   checked against pinned PC behavior with authored directory fixtures.
+
+Final implementation `d1038cb`: [push 40811313846](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40811313846)
+and [PR 40811318719](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40811318719)
+both passed CPU/ARM and Vita jobs; input CI 40811318711 passed. PC, portable and
+sanitizer executables each passed three repeated local runs; pinned PC parser
+accept/reject comparison passed. Scope remains synthetic/structural and
+cross-compilation, with no physical device or retail/performance evidence.

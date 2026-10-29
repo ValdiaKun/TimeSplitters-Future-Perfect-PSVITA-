@@ -514,3 +514,10 @@ also asserts both rejections (`malformed-metadata=pass`). No check was weakened.
 At `9d26dd4`, push 40811013395 and PR 40811019637 passed CPU/ARM/Vita jobs;
 input 40811019561 passed. The file-backed-metadata correction is validated by the
 same complete local matrix and gets its own final CI evidence after push.
+
+Final implementation `d1038cb`: [push 40811313846](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40811313846)
+and [PR 40811318719](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40811318719)
+both passed CPU/ARM and Vita jobs; input CI 40811318711 passed. PC, portable and
+sanitizer executables each passed three repeated local runs; pinned PC parser
+accept/reject comparison passed. Scope remains synthetic/structural and
+cross-compilation, with no physical device or retail/performance evidence.

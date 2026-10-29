@@ -8,7 +8,7 @@ an observed retail initialization trace: no supported XBE/analysis data is prese
 | Dependency | Authoritative entry point / Vita work |
 | --- | --- |
 | Verify executable and generate | `tools/recomp/`, PC `tools/compiler/`; existing `tools/guest_codegen.py` verifies US SHA-256 before retail generation. Matching analysis metadata still required. |
-| Image sections, initial memory, imports | `src/kernel/xbox_memory_layout.c`, `xbox_memory_layout.h`; adapt section loading and checked import patching, retaining the existing Vita RAM policy. No XBE loader integrated here. |
+| Image sections, initial memory, imports | `src/kernel/xbox_memory_layout.c`, `xbox_memory_layout.h`; adapt section loading and checked import patching, retaining the existing Vita RAM policy. Bounded structural normalization and synthetic initialization exist in guest/xbe.c and guest/image.c; retail integration remains unverified. |
 | Register initialization, title entry | `templates/new-game/src/main.c`, generated dispatch; connect validated entry address only after imports and title state are initialized. |
 | Threads, stack arguments, TLS | `src/kernel/kernel_bridge.c` `bridge_run_thread_inline`, `bridge_thread_main`, `bridge_PsCreateSystemThreadEx`; `xbox_memory_layout.c` `xbox_AllocThreadTib`. `guest/execution.c` now initializes caller-owned CPU/stack/FS state and a minimal TIB/TLS block. Xbox thread objects, template extraction, handles and native scheduling remain open. |
 | Faults and exception delivery | Header divide hook and checked memory/dispatch callbacks; new C-only capture boundary does not walk fs:[0] or deliver SEH. Need validated Xbox exception frame layout and safe dispatch before recovery into title code. |
