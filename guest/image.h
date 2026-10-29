@@ -39,4 +39,12 @@ enum TsfpImageError tsfp_image_initialize(const TsfpImageDescription *descriptio
 int tsfp_image_run(TsfpFault *fault); /* -1: no runnable image, 0 normal, 1 event */
 int tsfp_image_reset(void); /* quiescent; never clears guest RAM or saves */
 int tsfp_image_active(void);
+typedef struct TsfpImageThreadTemplate {
+    TsfpTlsSpec tls;
+    uint32_t object_template,initial_id;
+    size_t thread_data_size;
+} TsfpImageThreadTemplate;
+/* Pure quiescent validation: arena must be non-executable writable image BSS,
+ * disjoint from initial thread, imports, TLS metadata and templates. */
+int tsfp_image_thread_arena(uint32_t base,size_t size,TsfpImageThreadTemplate *);
 #endif

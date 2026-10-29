@@ -3,14 +3,14 @@
 #include "recomp_types.h"
 #include "worker.h"
 #include "handles.h"
+#include "storage.h"
 #include "memory.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-static pthread_mutex_t workers_mutex=PTHREAD_MUTEX_INITIALIZER;
 static TsfpWorker *workers[TSFP_THREAD_HANDLES];
-static void lock(void) { if (pthread_mutex_lock(&workers_mutex)) abort(); }
-static void unlock(void) { if (pthread_mutex_unlock(&workers_mutex)) abort(); }
+static void lock(void) { tsfp_storage_lock(); }
+static void unlock(void) { tsfp_storage_unlock(); }
 static int overlap(const TsfpWorkerSpec *a,const TsfpWorkerSpec *b) {
     uint32_t aa[]={a->stack,a->tib,a->object},bb[]={b->stack,b->tib,b->object};
     size_t as[]={a->stack_size,a->tls_size,512},bs[]={b->stack_size,b->tls_size,512};
@@ -67,7 +67,7 @@ enum TsfpWorkerError tsfp_worker_launch(TsfpWorker *w,const TsfpWorkerSpec *inpu
     TsfpImageFunction function=spec.resolve(spec.entry);
     if (!function) return TSFP_WORKER_INVALID;
     lock();
-    if (w->state) { unlock(); return TSFP_WORKER_BUSY; }
+    if (w->state || !tsfp_storage_worker_allowed_locked(w,&spec)) { unlock(); return TSFP_WORKER_BUSY; }
     unsigned slot=TSFP_THREAD_HANDLES;
     for (unsigned i=0;i<TSFP_THREAD_HANDLES;++i) {
         if (!workers[i]) { if (slot==TSFP_THREAD_HANDLES) slot=i; }
@@ -79,7 +79,7 @@ enum TsfpWorkerError tsfp_worker_launch(TsfpWorker *w,const TsfpWorkerSpec *inpu
         lock(); workers[slot]=NULL; memset(w,0,sizeof(*w)); unlock(); return TSFP_WORKER_INVALID;
     }
     uint32_t owner;
-    if (!tsfp_thread_owner_create(spec.object,spec.id,&owner)) {
+    if (!tsfp_thread_owner_create_storage(spec.object,spec.id,spec.storage_lease,&owner)) {
         lock(); workers[slot]=NULL; memset(w,0,sizeof(*w)); unlock(); return TSFP_WORKER_RESOURCE;
     }
     w->owner=owner; w->function=function; memset(&w->result,0,sizeof(w->result));
@@ -87,7 +87,7 @@ enum TsfpWorkerError tsfp_worker_launch(TsfpWorker *w,const TsfpWorkerSpec *inpu
     int error=tsfp_native_launch(&w->native,spec.native_stack_size,run,w);
     if (error) {
         if (!tsfp_thread_handle_close(owner) && tsfp_thread_owner_finish(owner,0xc0000001u) &&
-            tsfp_thread_owner_native_unpin(owner) && tsfp_thread_owner_release(owner)) {
+            tsfp_thread_owner_native_unpin(owner) && tsfp_thread_owner_release_storage(owner,spec.storage_lease)) {
             lock(); workers[slot]=NULL; memset(w,0,sizeof(*w)); w->platform_error=error; unlock(); return TSFP_WORKER_PLATFORM;
         }
         abort();
@@ -112,7 +112,16 @@ enum TsfpWorkerError tsfp_worker_join(TsfpWorker *w,TsfpWorkerResult *output) {
 int tsfp_worker_release(TsfpWorker *w) {
     if (!w || tsfp_guest_recovery_active()) return 0;
     lock();
-    if (w->state!=4 || !tsfp_thread_owner_release(w->owner)) { unlock(); return 0; }
+    if (w->state!=4 || !tsfp_thread_owner_release_storage(w->owner,w->spec.storage_lease)) { unlock(); return 0; }
     for (unsigned i=0;i<TSFP_THREAD_HANDLES;++i) if (workers[i]==w) workers[i]=NULL;
     memset(w,0,sizeof(*w)); unlock(); return 1;
+}
+
+int tsfp_worker_range_busy_locked(uint32_t base,size_t size) {
+    for (unsigned i=0;i<TSFP_THREAD_HANDLES;++i) if (workers[i]) {
+        TsfpWorkerSpec *s=&workers[i]->spec;
+        if (tsfp_tls_ranges_overlap(base,size,s->stack,s->stack_size) ||
+            tsfp_tls_ranges_overlap(base,size,s->tib,s->tls_size) || tsfp_tls_ranges_overlap(base,size,s->object,512)) return 1;
+    }
+    return 0;
 }

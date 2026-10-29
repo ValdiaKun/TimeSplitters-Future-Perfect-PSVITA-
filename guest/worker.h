@@ -5,6 +5,7 @@
 #include "../platform/threads.h"
 typedef struct TsfpWorkerSpec {
     uint32_t object,id,stack,tib,entry,context1,context2;
+    uint32_t storage_lease; /* zero for caller-owned storage */
     size_t stack_size,tls_size,native_stack_size;
     TsfpImageResolver resolve;
 } TsfpWorkerSpec;

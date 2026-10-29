@@ -3,13 +3,15 @@
 #include "handles.h"
 #include "memory.h"
 #include "tls.h"
+#include "storage.h"
+#include "execution.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
 #define TAG UINT32_C(0x48000000) /* Pinned PC's opaque 32-bit handle namespace. */
 #define MAX_GENERATION UINT32_C(0x3ffff)
-typedef struct Record { uint32_t generation; TsfpThreadInfo info; } Record;
+typedef struct Record { uint32_t generation,storage_lease; TsfpThreadInfo info; } Record;
 static Record records[TSFP_THREAD_HANDLES];
 static pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t completion;
@@ -32,22 +34,31 @@ static Record *find(uint32_t token) {
     return r->info.state && r->generation==((token&0xffffffu)>>6) ? r : NULL;
 }
 int tsfp_thread_owner_create(uint32_t object,uint32_t id,uint32_t *token) {
-    /* Guest checks precede locking: recovery must never unwind a held mutex. */
-    if (!token || !id || !tsfp_guest_range_valid(object,0x200) || !tsfp_guest_access_allowed(object,0x200,1)) return 0;
-    if (tsfp_guest_load_u32(object+0x12c)!=id) return 0;
+    return tsfp_thread_owner_create_storage(object,id,0,token);
+}
+int tsfp_thread_owner_create_storage(uint32_t object,uint32_t id,uint32_t lease,uint32_t *token) {
+    if (!token || !id || tsfp_guest_recovery_active() || !tsfp_guest_range_valid(object,0x200) ||
+        !tsfp_guest_access_allowed(object,0x200,1)) return 0;
+    tsfp_storage_lock();
+    if (!tsfp_storage_object_allowed_locked(object,id,lease) || tsfp_guest_load_u32(object+0x12c)!=id) {
+        tsfp_storage_unlock(); return 0;
+    }
+    int ok=0; uint32_t value=0;
     lock();
     for (unsigned i=0;i<TSFP_THREAD_HANDLES;++i)
-        if (records[i].info.state && (tsfp_tls_ranges_overlap(records[i].info.object,0x200,object,0x200) || records[i].info.id==id)) { unlock(); return 0; }
+        if (records[i].info.state && (tsfp_tls_ranges_overlap(records[i].info.object,0x200,object,0x200) || records[i].info.id==id)) goto done;
     for (unsigned i=0;i<TSFP_THREAD_HANDLES;++i) {
         Record *r=&records[i];
         if (!r->info.state && r->generation<MAX_GENERATION) {
-            ++r->generation;
+            ++r->generation; r->storage_lease=lease;
             r->info=(TsfpThreadInfo){object,id,0,TSFP_THREAD_CREATED,1,0,0};
-            uint32_t value=TAG|(r->generation<<6)|(i+1); unlock(); *token=value; return 1;
+            value=TAG|(r->generation<<6)|(i+1); ok=1; break;
         }
     }
-    unlock(); return 0;
+done:
+    unlock(); tsfp_storage_unlock(); if (ok) *token=value; return ok;
 }
+
 int tsfp_thread_owner_native_pin(uint32_t token) {
     lock(); Record *r=find(token); int ok=r && r->info.state==TSFP_THREAD_CREATED && !r->info.native_pin;
     if (ok) r->info.native_pin=1;
@@ -76,10 +87,11 @@ int tsfp_thread_owner_query(uint32_t token,TsfpThreadInfo *info) {
     TsfpThreadInfo value={0}; if (ok) value=r->info;
     unlock(); if (ok) *info=value; return ok;
 }
-int tsfp_thread_owner_release(uint32_t token) {
+int tsfp_thread_owner_release(uint32_t token) { return tsfp_thread_owner_release_storage(token,0); }
+int tsfp_thread_owner_release_storage(uint32_t token,uint32_t lease) {
     lock(); Record *r=find(token);
-    int ok=r && !r->info.handle_open && r->info.state==TSFP_THREAD_TERMINATED && !r->info.waiters && !r->info.native_pin;
-    if (ok) r->info=(TsfpThreadInfo){0}; /* generation is never rolled back */
+    int ok=r && r->storage_lease==lease && !r->info.handle_open && r->info.state==TSFP_THREAD_TERMINATED && !r->info.waiters && !r->info.native_pin;
+    if (ok) { r->info=(TsfpThreadInfo){0}; r->storage_lease=0; } /* generation is never rolled back */
     unlock(); return ok;
 }
 uint32_t tsfp_thread_handle_close(uint32_t handle) {
@@ -148,4 +160,10 @@ done:
     /* All native resources are safe before a pending cancellation can run. */
     if (pthread_setcancelstate(old_cancel,NULL)) abort();
     return status;
+}
+
+int tsfp_thread_id_busy(uint32_t id) {
+    lock(); int busy=0;
+    for (unsigned i=0;i<TSFP_THREAD_HANDLES;++i) if (records[i].info.state && records[i].info.id==id) { busy=1; break; }
+    unlock(); return busy;
 }

@@ -698,3 +698,35 @@ input/Python/whitespace checks passed. Adapter exhaustion also rejects a launch
 against 32 existing owner records and cleans its reservation. Native create
 EAGAIN and join EINVAL remain visible; retry clears the backend error on success.
 No device or retail-title test, hardware FPS or production stack budget exists.
+
+## Transactional storage — 2026-10-29
+
+Clean starting commit `bab27fc07f2d54b3e8ccfb5299b1b639e0a1f36d`; push
+[40846789507](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40846789507),
+PR [40846799063](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40846799063),
+and input 40846799052 all passed. Re-ran the documented full local CPU/ARM
+command before modifications; pristine/portable/sanitizer/QEMU baseline passed.
+
+New tests retain 122 translated fixtures and the independent PC XBE/TLS parser.
+Three reserved workers execute real argument, TLS and kernel-exit code; verifies
+ID, FS/TLS, ret-8 and status 37. Tests cover invalid image roles/permissions,
+address/size overflow, pool exhaustion, same-ID reservation races, generic handle
+and raw mirror claims, stale lease after cancel/reconfigure, alias-addressed pool
+execution, failed backup allocation, injected calloc failure after metadata was
+zeroed, and native-create EAGAIN. Rejected/rolled-back cases compare the entire
+15 KiB test arena byte-for-byte. Join EINVAL retains ownership for retry; generic
+release is rejected even after join. Concurrent image teardown is rejected across
+join/release; sixteen full creation cycles test reuse and balanced backup frees.
+
+Forced calloc failure is test-only linker wrapping; production gains no failure
+hooks. Pool allocator hooks are explicitly native, non-reentrant and changeable
+only without a configured pool. No hardware scheduling or retail title behavior
+is inferred from this profile. Exact full-matrix commands remain above.
+
+Final storage matrix passed locally: pristine/shared-map PC and parser oracle,
+portable host, ASan/UBSan, static Cortex-A9 QEMU, both VitaSDK Release VPKs,
+strict input, Python and whitespace checks. All three host modes passed three
+extra full repeats after final source changes. The calloc wrapper is armed only
+after main and avoids test TLS access during static-libc bootstrap. No assertion
+was disabled, no previous fixture dropped and no dependency pin changed.
+Physical Vita/retail/FPS validation remains unavailable.

@@ -661,3 +661,41 @@ or implement PsCreateSystemThread, priorities, suspension or a title scheduler.
 Next integration gate: bounded guest stack/TIB/object reservations with rollback,
 then a safe kernel-service boundary for thread creation. Do not directly call
 this host adapter from inside a translated recovery callback.
+
+## Transactional guest thread storage
+
+`guest/storage.c` configures an explicit, caller-ceded writable BSS pool with
+up to 32 fixed-stride slots, never more than 1 MiB total. This is a bounded
+synthetic image profile, not automatic scavenging of title BSS or a production
+heap. The caller must know that the arena has no live title globals. Structural
+checks reject initialized/executable sections, mirror self-wrap, initial stack/
+TIB/object/imports/TLS metadata and template overlap. Configure requires no live
+workers or handles and externally serialized image lifecycle. A configured pool
+pins the image, even when all slots are free, until explicitly disabled.
+
+A request supplies a unique nonzero thread ID, 16-byte-aligned guest stack size
+and compiled entry/contexts. Stack, aligned TIB/TLS/thread data and 512-byte
+object are laid out inside one slot with checked 64-bit arithmetic. Metadata
+is built using existing TLS/object helpers. Only metadata is backed up; stack
+bytes are neither copied nor cleared. Lease publication follows successful
+initialization. Backup allocation, partial TLS initialization and native-create
+failures restore all previous metadata and leave stack bytes unchanged. Cancel
+restores pre-reservation contents; successful launch commits initialization and
+frees the backup. Native error codes are available on failed launch.
+
+Leases use a separate 0x53 generation/slot namespace; they are native control
+tokens, not guest handles or pointers. Generations survive disable/reconfigure
+and retire rather than wrap. Prepared/launching/running/joining/joined/releasing
+states reject stale or conflicting operations. Managed owners retain their lease
+identity: generic owner release cannot free a storage-managed record. Release
+requires native join, guest-handle close and drained wait references. Launch/join
+defer cancellation through outer lease-state publication as well as inner native
+ownership transitions. Query retains the published handle across join states.
+
+Raw workers, handles and pool reservations share one ownership mutex (before
+the handle-registry mutex). Atomic checks prevent raw claims through RAM aliases
+or duplicate IDs into reserved storage. Pool-owned worker operations use the
+existing worker adapter and native pins; initialization holds no guest recovery
+boundary. Bindings/permissions/templates remain stable while configured, and
+allocator callbacks must be native, non-reentrant and non-unwinding. No title
+thread-creation import or production allocator is implied by this host API.

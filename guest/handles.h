@@ -12,6 +12,7 @@ typedef struct TsfpThreadInfo { uint32_t object,id,status; enum TsfpThreadLife s
  * serialization; native owners may otherwise close/query/finish concurrently.
  * One guest handle per record; duplication is not implemented. */
 int tsfp_thread_owner_create(uint32_t object,uint32_t id,uint32_t *token);
+int tsfp_thread_owner_create_storage(uint32_t object,uint32_t id,uint32_t lease,uint32_t *token);
 /* Platform owner pin persists through completion until actual native join. */
 int tsfp_thread_owner_native_pin(uint32_t token);
 int tsfp_thread_owner_native_unpin(uint32_t token);
@@ -19,6 +20,7 @@ int tsfp_thread_owner_start(uint32_t token);
 int tsfp_thread_owner_finish(uint32_t token,uint32_t status);
 int tsfp_thread_owner_query(uint32_t token,TsfpThreadInfo *info);
 int tsfp_thread_owner_release(uint32_t token);
+int tsfp_thread_owner_release_storage(uint32_t token,uint32_t lease);
 uint32_t tsfp_thread_handle_close(uint32_t handle);
 /* Zero-timeout, non-alertable poll; completion is sticky until close. */
 uint32_t tsfp_thread_handle_poll(uint32_t handle);
@@ -32,4 +34,5 @@ int tsfp_thread_timeout_decode(int present,uint64_t bits,TsfpWaitTimeout *out);
  * Completion wins a deadline tie when observed under the registry mutex. */
 uint32_t tsfp_thread_handle_wait(uint32_t handle,const TsfpWaitTimeout *timeout);
 int tsfp_thread_handles_busy(void);
+int tsfp_thread_id_busy(uint32_t id);
 #endif

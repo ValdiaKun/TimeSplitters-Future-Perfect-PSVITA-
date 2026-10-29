@@ -53,11 +53,13 @@ if(TSFP_BUILD_GUEST_TESTS)
         "${TSFP_ROOT}/guest/tls.c"
         "${TSFP_ROOT}/guest/handles.c"
         "${TSFP_ROOT}/guest/worker.c"
+        "${TSFP_ROOT}/guest/storage.c"
         "${TSFP_ROOT}/platform/threads_pthread.c"
         "${TSFP_ROOT}/tests/image_suite.c"
         "${TSFP_ROOT}/tests/kernel_suite.c"
         "${TSFP_ROOT}/tests/wait_suite.c"
         "${TSFP_ROOT}/tests/worker_suite.c"
+        "${TSFP_ROOT}/tests/storage_suite.c"
         "${TSFP_ROOT}/tests/execution_suite.c"
         "${TSFP_ROOT}/guest/address_space.c"
         "${TSFP_ROOT}/guest/string_ops.c"
@@ -75,7 +77,7 @@ if(TSFP_BUILD_GUEST_TESTS)
         -Wno-unused-label -Wno-unused-variable -Wno-unused-but-set-variable
         -fno-strict-aliasing -ffp-contract=off -mno-unaligned-access)
     target_link_libraries(tsfp_guest_test pthread m)
-    target_link_options(tsfp_guest_test PRIVATE -Wl,--wrap=clock_gettime -Wl,--wrap=pthread_cond_timedwait -Wl,--wrap=__clock_gettime64 -Wl,--wrap=__pthread_cond_timedwait64 -Wl,--wrap=pthread_create -Wl,--wrap=pthread_join)
+    target_link_options(tsfp_guest_test PRIVATE -Wl,--wrap=clock_gettime -Wl,--wrap=pthread_cond_timedwait -Wl,--wrap=__clock_gettime64 -Wl,--wrap=__pthread_cond_timedwait64 -Wl,--wrap=pthread_create -Wl,--wrap=pthread_join -Wl,--wrap=calloc)
     tsfp_create_self(guest-test.bin tsfp_guest_test)
     vita_create_vpk(tsfp-guest-test.vpk "TFPV00002" guest-test.bin
         VERSION ${VITA_VERSION} NAME "TSFP Guest ABI Tests")

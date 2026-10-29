@@ -103,3 +103,13 @@ Backend-owned native stack size is explicit (64 KiB to 1 MiB); tests request
 spans. These are test settings, not measured production stack bounds. The
 adapter introduces no duplicate guest RAM buffer. Native stack allocation,
 Vita capacity/high-water use, thread latency and gameplay effects are unmeasured.
+
+Storage reservations add 32 fixed native metadata records and an explicit guest
+arena of at most 1 MiB in this bounded profile. Prepared reservations retain
+only metadata backups (704 bytes each in current tests); they do not duplicate
+whole guest stacks. Aggregate retained backups cannot exceed the configured
+arena. The existing TLS builder uses one temporary up to 64 KiB. Successful
+launch immediately frees its backup. Tests cede three 5 KiB slots, request 4 KiB
+guest/256 KiB native stacks, and use 164-byte TIB/TLS/thread-data spans. These
+settings are not measured production budgets; native latency, fragmentation,
+hardware allocation capacity and FPS remain unmeasured. No optimization claimed.

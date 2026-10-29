@@ -16,6 +16,7 @@
 #include <pthread.h>
 #include <string.h>
 void test_worker_adapter(void);
+void test_storage(void);
 extern const unsigned char fixture_thread_args_bytes[];
 extern const size_t fixture_thread_args_size;
 extern const unsigned char fixture_fault_divide_bytes[];
@@ -317,6 +318,7 @@ static void test_xbe(void) {
         assert(g_eax==main_eax && tsfp_guest_load_u32(0x89048)==0xdeadbeef);
         assert(tsfp_guest_load_u32(0x8c088)==0xdeadbeef && tsfp_guest_load_u32(0x8c020)==0xfffffff7);
         test_worker_adapter();
+        test_storage();
         test_handles();
         assert(tsfp_guest_run(readonly_import,NULL,&f)==1 && f.access==TSFP_ACCESS_WRITE);
         assert(tsfp_guest_load_u32(0x88000)==0xfe000000);

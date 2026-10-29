@@ -3,6 +3,7 @@
 #include "memory.h"
 #include "kernel.h"
 #include "handles.h"
+#include "storage.h"
 #include <stdlib.h>
 #include <string.h>
 /* One image per guest address space. Setup/teardown require exclusive ownership. */
@@ -178,7 +179,31 @@ int tsfp_image_run(TsfpFault *fault) {
 }
 int tsfp_image_active(void) { return ready; }
 int tsfp_image_reset(void) {
-    if (tsfp_guest_thread_id() || tsfp_guest_recovery_active() || tsfp_thread_handles_busy()) return 0;
+    if (tsfp_guest_thread_id() || tsfp_guest_recovery_active() || tsfp_storage_configured() || tsfp_thread_handles_busy()) return 0;
     if (ready) { tsfp_guest_set_policy(NULL); tsfp_kernel_imports_reset(); memset(&image,0,sizeof(image)); ready=0; }
+    return 1;
+}
+
+int tsfp_image_thread_arena(uint32_t base,size_t size,TsfpImageThreadTemplate *out) {
+    if (!ready || ready==2 || !out || !image.d.tls.directory || !size || size>TSFP_XBOX_RAM_SIZE ||
+        base>=0x74000000u || size>0x74000000u-base ||
+        base%TSFP_XBOX_RAM_SIZE+size>TSFP_XBOX_RAM_SIZE || !tsfp_guest_access_allowed(base,size,3)) return 0;
+    uint32_t offset=base%TSFP_XBOX_RAM_SIZE; int bss=0;
+    for (size_t i=0;i<image.d.count;++i) {
+        TsfpImageSection s=image.s[i];
+        if (s.flags!=3u || s.file_size>=s.size) continue;
+        uint32_t start=(s.address+(uint32_t)s.file_size)%TSFP_XBOX_RAM_SIZE;
+        uint64_t end=(uint64_t)start+s.size-s.file_size;
+        if ((offset>=start && (uint64_t)offset+size<=end && (uint64_t)offset+size<=TSFP_XBOX_RAM_SIZE) ||
+            (end>TSFP_XBOX_RAM_SIZE && (uint64_t)offset+size<=end-TSFP_XBOX_RAM_SIZE)) bss=1;
+    }
+    if (!bss) return 0;
+    uint32_t addresses[]={image.d.stack_base,image.d.tib,image.d.object,image.d.object_template,
+        image.d.import_table,image.d.tls.directory,image.d.tls.index_address,image.d.tls.callbacks,image.d.tls.raw_start};
+    size_t sizes[]={image.d.stack_size,64+image.d.tls_size+image.d.thread_data_size,512,512,
+        image.d.import_count*4,24,4,image.d.tls.callbacks ? 4u : 0u,image.d.tls.raw_size};
+    for (unsigned i=0;i<sizeof(addresses)/sizeof(addresses[0]);++i)
+        if (tsfp_tls_ranges_overlap(base,size,addresses[i],sizes[i])) return 0;
+    *out=(TsfpImageThreadTemplate){image.d.tls,image.d.object_template,image.d.thread_id,image.d.thread_data_size};
     return 1;
 }

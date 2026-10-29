@@ -113,3 +113,11 @@ adapter independently implements those entry/status contracts plus explicit
 join and native lifetime pins. It does not copy the Win32 guest-lock/scheduler
 or claim compatibility for priorities/suspension. Public pthread backend only;
 Vita scheduling/hardware behavior still requires device validation.
+
+Storage contract audit uses unchanged pinned kernel/xbox_memory_layout.c
+xbox_AllocThreadStack, xbox_FreeThreadStack and xbox_AllocThreadTib. The PC
+stack allocator reserves heap slices and aligns the top; it does not establish
+Vita stack sizes. The adapter keeps private stack/TLS/object ownership and
+existing 0x200/+0x12c/+0x28 layouts, independently implementing bounded slot
+reuse and rollback. It does not copy the PC heap allocator or its 512 KiB/eight
+stack policy. Production title allocation remains a separate integration gate.

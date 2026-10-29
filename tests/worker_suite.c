@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 static _Thread_local int fail_create,fail_join;
+void test_fail_native_create(void) { fail_create=1; }
+void test_fail_native_join(void) { fail_join=1; }
 int __real_pthread_create(pthread_t *,const pthread_attr_t *,void *(*)(void *),void *);
 int __wrap_pthread_create(pthread_t *t,const pthread_attr_t *a,void *(*entry)(void *),void *context) {
     if (fail_create) { fail_create=0; return EAGAIN; }

@@ -88,3 +88,16 @@ prepare guest TLS/object/stack storage; no PsCreateSystemThread import or retail
 scheduler is claimed. Next: bounded guest storage reservation/rollback, followed
 by a safe thread-creation service boundary. Retail input/metadata and physical
 Vita remain unavailable; no renderer/gameplay/performance milestone is met.
+
+### Transactional guest storage — 2026-10-29
+
+Added an explicitly ceded BSS pool, bounded to 32 slots/1 MiB, with aligned
+stack/TIB/TLS/object layouts, generation leases, shared raw-worker/handle overlap
+guards, unique identities and image pins. Initialization/native-create failures
+restore prior metadata bytes; joined, closed, unreferenced workers alone can
+release managed storage. Tests run three translated workers and cover mirror
+conflicts, exhaustion, stale leases, competing reservations and concurrent teardown.
+This is not automatic allocation from arbitrary retail BSS. Next: a controlled
+thread-creation outcall/import boundary with checked ABI and output publication,
+without longjmp across native resource owners. Retail files/metadata and hardware
+remain unavailable; no game boot or gameplay/performance claim is made.
