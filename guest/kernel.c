@@ -2,6 +2,7 @@
 #define RECOMP_GENERATED_CODE
 #include "recomp_types.h"
 #include "kernel.h"
+#include "heap.h"
 #include "handles.h"
 #include "storage.h"
 #include "thread_service.h"
@@ -97,6 +98,8 @@ static int event_output(uint32_t address) {
 static void dispatch(uint32_t ordinal) {
     unsigned arguments;
     switch (ordinal) {
+    case 184: arguments=5; break; /* NtAllocateVirtualMemory */
+    case 199: arguments=3; break; /* NtFreeVirtualMemory */
     case 189: arguments=4; break; /* NtCreateEvent */
     case 225: arguments=2; break; /* NtSetEvent */
     case 186: arguments=1; break; /* NtClearEvent */
@@ -121,6 +124,16 @@ static void dispatch(uint32_t ordinal) {
     uint32_t result=0;
     if (ordinal==104) result=tsfp_current_thread_object();
     else if (ordinal==187) result=tsfp_handle_close(frame[1]);
+    else if (ordinal==184 || ordinal==199) {
+        uint32_t base_ptr=frame[1],size_ptr=frame[ordinal==184 ? 3 : 2];
+        if (!event_output(base_ptr) || !event_output(size_ptr) || tsfp_tls_ranges_overlap(base_ptr,4,size_ptr,4))
+            result=TSFP_STATUS_INVALID_PARAMETER;
+        else {
+            uint32_t base=tsfp_guest_load_u32(base_ptr),size=tsfp_guest_load_u32(size_ptr);
+            result=ordinal==184 ? tsfp_heap_allocate(&base,&size,frame[2],frame[4],frame[5]) : tsfp_heap_free(&base,&size,frame[3]);
+            if (!result) { tsfp_guest_store_u32(base_ptr,base); tsfp_guest_store_u32(size_ptr,size); }
+        }
+    }
     else if (ordinal==189) {
         result=event_attributes(frame[2]);
         if (!result) {
@@ -161,6 +174,8 @@ static void dispatch(uint32_t ordinal) {
     }
     g_eax=result; g_esp=stack+(arguments+1)*4;
 }
+static void allocate_memory(void) { dispatch(184); }
+static void free_memory(void) { dispatch(199); }
 static void create_event(void) { dispatch(189); }
 static void set_event(void) { dispatch(225); }
 static void clear_event(void) { dispatch(186); }
@@ -187,6 +202,8 @@ void (*tsfp_kernel_lookup(uint32_t address))(void) {
     if (address<THUNK_BASE || (address&3u) || (address-THUNK_BASE)/4>=slot_count) return NULL;
     uint32_t slot=(address-THUNK_BASE)/4;
     switch (ordinals[slot]) {
+    case 184: return allocate_memory;
+    case 199: return free_memory;
     case 189: return create_event;
     case 225: return set_event;
     case 186: return clear_event;

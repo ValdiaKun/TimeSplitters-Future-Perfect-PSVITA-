@@ -22,6 +22,8 @@ jobs:
           sudo apt-get install -y gcc-arm-linux-gnueabihf qemu-user
       - name: Compare PC runtime, portable adapter, sanitizers and ARMv7
         run: python tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc
+      - name: Validate bounded compressed-texture layout
+        run: python tools/test_graphics.py --arm-cc arm-linux-gnueabihf-gcc
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -52,4 +54,5 @@ jobs:
           export PATH="$VITASDK/bin:$PATH"
           cmake -S ports/vita -B build/vita -G Ninja -DTSFP_BUILD_GUEST_TESTS=ON
           cmake --build build/vita
+          "$VITASDK/bin/arm-vita-eabi-gcc" -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Igraphics -c graphics/xbox_bc_layout.c -o build/vita/bc-layout.o
       # No VPK publication: the guest test needs dependency notices/source when distributed.

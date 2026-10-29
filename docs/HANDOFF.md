@@ -36,17 +36,24 @@ Empty unnamed ObjectAttributes are now supported through explicit checked
 12-byte guest decoding. Nonzero names, root directories and flags remain errors.
 All 126 translated functions and existing regression suites remain enabled.
 
-Next: inspect pinned Xbox allocation entry paths in xbox_memory_layout.c and
-kernel_bridge.c and define a bounded, explicitly ceded guest-heap service profile
-with alias/permission checks and transactional allocation/free tests. Do not
-allocate from arbitrary retail BSS or add success stubs. Supported user-owned
-XBE and matching analysis metadata are still missing for an actual entry trace.
-Physical Vita execution, gameplay and performance remain unverified.
+Bounded allocation now lives in guest/heap.c. Configure before entering guest
+code with an explicitly ceded canonical low-RAM64KiB-aligned BSS span (<=1MiB);
+never infer unused retail BSS. Configuration pins the image. Both storage pool
+configuration orders reject physical overlap. Reserve/commit flags are distinct;
+only RW pages, ZeroBits0 and the documented exact flag combinations are supported.
+Wait for callers to quiesce, release every reservation, then disable before
+image reset. Plain guest VA reuse cannot detect a stale pointer after reallocation.
 
-Allocator inspection: pinned bridge ordinals 184 (20-byte allocate) and 199
-(12-byte free) use in/out guest pointers. PC bridge uses an immediately-backed
-heap, no-op commit/decommit and a large-reserve clamp; these are implementation
-limitations, not Xbox VM semantics to silently copy. Establish exact supported
-reserve/commit/release behavior, zeroing, returned rounded extents and output
-rollback before binding imports. A reserve must not obtain fresh RAM by aliasing
-a different live range. Keep unsupported modes explicit.
+The main CPU runner now executes127 translated functions and an independent
+hash-pinned xboxrecomp VM differential gate. Missing sources fail closed unless
+--fetch explicitly allows verified public source downloads. tools/test_graphics.py
+validates the isolated Xita BC layout adapter; no GPU or device run is implied.
+See ACCELERATION_AUDIT.md and NOTICE for exact revisions/licenses.
+
+Next: lifetime-safe heap-resident kernel output pointers. The current profile
+rejects them, including event results and thread handles. Add per-call allocation
+references/pins so free/decommit cannot revoke an output between probing and
+publication; test concurrent free, error rollback and protected recovery paths.
+Do not simply remove the output guard. Then integrate an authenticated retail
+layout/entry trace once supported user-owned XBE and matching metadata exist.
+Physical Vita, retail boot, gameplay and performance remain unverified.

@@ -206,3 +206,13 @@ Empty unnamed event attributes are now supported through checked 12-byte guest
 decoding; named attributes remain unsupported. Next boot prerequisite to inspect:
 bounded guest heap/allocation services using explicitly ceded storage and the
 pinned allocator/import contracts. Retail traces remain unavailable.
+
+### Reuse acceleration gate
+
+Implemented bounded guest allocation using the audited xboxrecomp page model,
+with actual translated imports, checked ownership and independent reference
+traces. Small Xita compressed-block conversion is the first isolated graphics
+compatibility proof. Neither establishes title boot or renderer choice.
+Next priority: lifetime-safe heap-resident kernel outputs, with allocation pins
+across event/thread publication and deterministic close/free/rollback tests.
+Then use an authenticated retail layout/trace to select further services.

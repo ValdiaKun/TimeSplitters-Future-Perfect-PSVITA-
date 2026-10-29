@@ -779,3 +779,45 @@ is read before output validation/allocation; unaligned and low-RAM mirror aliase
 use checked transfers. Names, directories and all flags return NOT_SUPPORTED;
 malformed descriptors fault with a 12-byte read and publish no object. Output may
 alias an empty descriptor because the input snapshot precedes publication.
+
+## Bounded reserve/commit service profile
+
+`guest/heap.{c,h}` adapts xboxrecomp's MIT page-owner/rounding algorithm at the
+revision in ACCELERATION_AUDIT.md. It suballocates existing RAM only; no new VM
+mappings/backings. A native owner explicitly cedes 64KiB-aligned writable image
+BSS, at most 1MiB, while lifecycle is quiescent. Existing image arena validation
+excludes initial stack/TIB/TLS/object/templates/import roles; the shared storage
+ownership mutex excludes managed/raw worker claims. Configuration pins image
+reset even when empty. Disable requires no allocations, owners or workers.
+
+Ordinals184/199 decode 20/12-byte stdcall frames, snapshot/probe both in/out words
+and reject physically overlapping outputs before mutation. Output pointers must
+remain valid under existing quiescent image bindings and be outside the ceded
+heap and managed thread pool/templates. The supported allocation flags are
+MEM_RESERVE(0x2000), MEM_COMMIT(0x1000), or both, ZeroBits=0, PAGE_READWRITE(4).
+Reservations round hints down to64KiB and extents up to4KiB; null hints choose a
+free64KiB-aligned span. Commit requires every page to belong to one reservation.
+Reserve-only, free and decommitted pages deny access through all RAM aliases;
+committed pages allow RW, never execution. Newly committed pages zero; repeated
+commit preserves data. Unsupported flags/protections/ZeroBits return NOT_SUPPORTED.
+No large-reserve clamp or no-op commit is inherited.
+
+MEM_DECOMMIT(0x4000) requires a positive fully-owned range, returns its rounded
+extent and revokes access; recommit zeroes it. MEM_RELEASE(0x8000) requires exact
+canonical reservation base and size0, frees the full reservation and clears both
+outputs (pinned PC convention). Interior/unknown/double frees fail. No guest
+access, allocation or callback occurs under the allocation mutation lock; a
+validated native view is retained for zeroing while image/backing are pinned.
+Raw native addresses never become guest addresses. Generation leases are not
+pretended for plain VM addresses: a stale pointer after a released address is
+reallocated cannot be distinguished from its new owner, as with raw guest VAs.
+Callers must synchronize access/free and retain exclusive arena ownership.
+
+Important bounded limitation: kernel outputs in this heap are currently rejected,
+including event handle/previous-state and thread-create outputs. Supporting them
+requires per-call lifetime pins across guest output publication; do not bypass
+the checks. General Xbox VM, guard/read-only/executable pages, MEM_TOP_DOWN,
+allocation queries/protection changes and automatic retail heap discovery remain
+unsupported. The raw PC-header oracle does not implement software page policy;
+checked helper faults run in all modes, translated policy faults specifically
+run in portable host/sanitizer/ARM modes. No retail compatibility is claimed.

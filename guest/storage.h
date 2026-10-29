@@ -36,6 +36,7 @@ int tsfp_storage_kernel_output_allowed(uint32_t address,size_t size);
 /* Internal ownership guard shared with raw worker/handle creation. Never call
  * guest-faulting APIs while locked; all ranges/policies must already be stable.
  * Lock order: ownership -> handle registry. No guest callbacks under this lock. */
+int tsfp_storage_range_allowed_locked(uint32_t base,size_t size);
 void tsfp_storage_lock(void);
 void tsfp_storage_unlock(void);
 int tsfp_storage_worker_allowed_locked(const TsfpWorker *,const TsfpWorkerSpec *);

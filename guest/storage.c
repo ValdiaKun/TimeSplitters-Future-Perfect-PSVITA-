@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "storage.h"
+#include "heap.h"
 #include "handles.h"
 #include "kernel.h"
 #include "memory.h"
@@ -59,7 +60,7 @@ enum TsfpStorageError tsfp_storage_configure(const TsfpStorageConfig *input) {
     if (configured || any() || tsfp_thread_handles_busy() || tsfp_worker_range_busy_locked(0,TSFP_XBOX_RAM_SIZE)) result=TSFP_STORAGE_BUSY;
     else {
         TsfpImageThreadTemplate t;
-        if (tsfp_image_thread_arena(c.base,(size_t)c.stride*c.slots,&t)) {
+        if (!tsfp_heap_overlaps(c.base,(size_t)c.stride*c.slots) && tsfp_image_thread_arena(c.base,(size_t)c.stride*c.slots,&t)) {
             config=c; source=t; configured=1; result=TSFP_STORAGE_OK;
         }
     }
@@ -77,6 +78,7 @@ static int matches(const TsfpWorkerSpec *a,const TsfpWorkerSpec *b) {
         a->stack_size==b->stack_size && a->tls_size==b->tls_size && a->native_stack_size==b->native_stack_size && a->resolve==b->resolve;
 }
 int tsfp_storage_worker_allowed_locked(const TsfpWorker *w,const TsfpWorkerSpec *s) {
+    if (tsfp_heap_overlaps(s->stack,s->stack_size) || tsfp_heap_overlaps(s->tib,s->tls_size) || tsfp_heap_overlaps(s->object,512)) return 0;
     if (s->storage_lease) {
         Reservation *r=find(s->storage_lease);
         return r && r->state==TSFP_STORAGE_LAUNCHING && w==&r->worker && matches(s,&r->spec);
@@ -92,6 +94,7 @@ int tsfp_storage_worker_allowed_locked(const TsfpWorker *w,const TsfpWorkerSpec 
         !tsfp_tls_ranges_overlap(source.object_template,512,s->tib,s->tls_size) && !tsfp_tls_ranges_overlap(source.object_template,512,s->object,512);
 }
 int tsfp_storage_object_allowed_locked(uint32_t object,uint32_t id,uint32_t lease) {
+    if (tsfp_heap_overlaps(object,512)) return 0;
     if (lease) {
         Reservation *r=find(lease);
         return r && r->state==TSFP_STORAGE_LAUNCHING && r->spec.object==object && r->spec.id==id;
@@ -236,7 +239,7 @@ int tsfp_storage_service_unpin(void) {
     tsfp_storage_unlock(); return ok;
 }
 int tsfp_storage_output_allowed(uint32_t address,size_t size) {
-    tsfp_storage_lock(); int ok=configured && service_pin &&
+    tsfp_storage_lock(); int ok=!tsfp_heap_overlaps(address,size) && configured && service_pin &&
         !tsfp_tls_ranges_overlap(config.base,(size_t)config.stride*config.slots,address,size) &&
         !tsfp_tls_ranges_overlap(source.tls.raw_start,source.tls.raw_size,address,size) &&
         !tsfp_tls_ranges_overlap(source.object_template,512,address,size);
@@ -244,9 +247,12 @@ int tsfp_storage_output_allowed(uint32_t address,size_t size) {
 }
 
 int tsfp_storage_kernel_output_allowed(uint32_t address,size_t size) {
-    tsfp_storage_lock(); int ok=!configured ||
+    tsfp_storage_lock(); int ok=!tsfp_heap_overlaps(address,size) && tsfp_storage_range_allowed_locked(address,size);
+    tsfp_storage_unlock(); return ok;
+}
+int tsfp_storage_range_allowed_locked(uint32_t address,size_t size) {
+    return !configured ||
         (!tsfp_tls_ranges_overlap(config.base,(size_t)config.stride*config.slots,address,size) &&
          !tsfp_tls_ranges_overlap(source.tls.raw_start,source.tls.raw_size,address,size) &&
          !tsfp_tls_ranges_overlap(source.object_template,512,address,size));
-    tsfp_storage_unlock(); return ok;
 }

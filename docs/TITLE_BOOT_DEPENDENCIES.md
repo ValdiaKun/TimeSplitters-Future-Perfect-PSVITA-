@@ -126,3 +126,15 @@ relative/infinite waits. Named objects, multi-object waits, KeEvent addresses an
 absolute/alertable modes remain missing. Empty unnamed
 ObjectAttributes descriptors are now validated before allocation/publication. Supported
 retail XBE and matching analysis metadata are still unavailable for an entry trace.
+
+## Allocation prerequisite now bounded
+
+Ordinals184/199 now have actual translated reserve/commit/free call coverage
+using explicitly ceded BSS and existing ownership/image-policy services. This is
+not full Xbox virtual memory and cannot choose a retail arena without an
+authenticated ownership/layout plan. No reserve clamps or fake commit/decommit
+are used. Kernel outputs residing in this heap remain unsupported pending
+publication-lifetime pins; address reuse does not provide stale-pointer identity.
+The next testable dependency is reference-safe heap-resident outputs before
+normal event/thread allocations can use heap-allocated result structures.
+See ACCELERATION_AUDIT.md for pinned source candidates and rejected assumptions.

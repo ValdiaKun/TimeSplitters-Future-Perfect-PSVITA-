@@ -813,3 +813,51 @@ ASan/UBSan, Cortex-A9 QEMU, both VitaSDK Release VPK cross-builds, strict
 controller, Python and whitespace checks. All three host executables passed
 three additional repeats, including the complete event suite. The event output
 now also reports `attributes=pass`. No test expectations were weakened.
+
+## Acceleration/allocator validation — 2026-10-29
+
+Clean start f95a4d87bd064a8c8abb2a291cca641fe1040999; push40888827153,
+PR40888834656 and input40888834655 all passed. Re-ran the full existing
+PC/portable/sanitizer/Cortex-A9 baseline before editing; all passed. PC pin and
+remote HEAD759f7a0 are equal. Root/upstream rules and runtime guides inspected.
+
+New tests:127 translated authored functions, fourteen-section synthetic XBE,
+actual allocation/store/load/free and two concurrent translated API callers
+(32cycles each). Reserve/commit/decommit/release, zero/recommit preservation,
+canonical/mirror permissions, cross-page all-or-nothing stores, exact release,
+double/interior free, flag rejection, invalid/aliased outputs, second-output
+fault rollback, exhaustion/fragmentation/no-clamp, ownership conflicts in both
+pool-configuration orders and image-reset pins are checked. Existing1518 string
+scenarios and294 atomic cases remain enabled. Raw PC lvalues lack software-page
+policy; generated policy-fault checks run under portable host/sanitizer/ARM.
+
+`tools/verify_vmem_reference.py --fetch --actual-trace build/guest/vmem-actual.txt`
+executes hash-pinned original MIT guest_vmem.c using a bounded host shim, then
+compares seven actual API result rows. Only successful release outputs normalize
+from freed extent to pinned-PC0/0. Five negative-control unit tests reject missing,
+extra, altered or malformed traces and wrong source hashes. Upstream's acceptance
+of an extra allocation bit is an executed control, not a behavior to copy.
+The main guest runner invokes this gate and compares all CPU-mode transcripts.
+
+`tools/test_graphics.py` runs162 independent BC-order cases, a fixed4x2 order,
+span/overflow/overlap/unchanged-output checks on host/sanitizer/Cortex-A9. This
+validates the adapted layout only; no shader, native GPU or device test occurred.
+The CI adds this gate and strict Vita compilation of the layout adapter.
+Exact local CPU/SDK commands remain the locked commands above; graphics uses
+the same ARM compiler/sysroot/QEMU options. No assertion or existing test dropped.
+
+A new translated cross-page store regression initially faulted on EXECUTE:
+the synthetic XBE had not installed the existing0x13280 store fixture. Added
+its authored bytes to the code section and independent parser check, retaining
+the exact expected WRITE/width4/PC assertion and unchanged-byte check. No memory
+check was relaxed to accommodate the fixture error.
+
+Final local results: PC-header/shared-map, portable host, ASan/UBSan and static
+Cortex-A9 QEMU all passed with matching transcripts; the original xboxrecomp
+seven-operation differential gate passed. Both locked VitaSDK Release VPKs
+cross-built. Graphics host/sanitizer/ARM tests and strict Vita layout compilation
+passed. Strict controller, Python and whitespace checks passed. Each of the
+three host guest executables passed three further complete runs. Independent
+read-only review found no blocking ownership/arithmetic/recovery defect within
+the explicit quiescent-lifecycle profile; its suggested cross-page, second-output
+and cross-owner tests were added and passed. Hardware and FPS remain unavailable.

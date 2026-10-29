@@ -36,6 +36,7 @@ def main():
     try:
         run([sys.executable, 'tools/generate_fixtures.py'])
         run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', 'test_guest_lowering.py'])
+        run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', 'test_vmem_reference.py'])
         report['generated_sha256'] = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in [out / 'fixtures.c', out / 'include/recomp_types.h', out / 'include/pc_memory_contract.h', out / 'pristine/fixtures.c', out / 'string_table.c']}
         report['source_sha256'] = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -44,7 +45,7 @@ def main():
         base = ['-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-Wno-unused-label',
                 '-Wno-unused-variable', '-Wno-unused-but-set-variable', '-fno-strict-aliasing',
                 '-ffp-contract=off', '-Iguest', '-Itests']
-        sources = ['tests/guest_harness.c', 'guest/memory.c', 'guest/execution.c', 'guest/kernel.c', 'tests/kernel_suite.c', 'tests/wait_suite.c', 'tests/event_suite.c', 'tests/worker_suite.c', 'tests/storage_suite.c', 'tests/thread_service_suite.c', 'guest/image.c', 'guest/xbe.c', 'guest/tls.c', 'guest/handles.c', 'guest/worker.c', 'guest/storage.c', 'guest/thread_service.c', 'platform/threads_pthread.c', 'tests/image_suite.c', 'tests/execution_suite.c', 'guest/address_space.c', 'guest/string_ops.c', 'tests/string_suite.c', 'tests/atomic_suite.c', 'tests/string_native_oracle.c', 'build/guest/string_table.c', 'tests/memory_suite.c', 'tests/generated_memory_suite.c', 'tests/mmx_state.c', 'tests/pc_memory_oracle.c', 'build/guest/fixtures.c', '-lm', '-pthread', '-Wl,--wrap=clock_gettime', '-Wl,--wrap=pthread_cond_timedwait', '-Wl,--wrap=__clock_gettime64', '-Wl,--wrap=__pthread_cond_timedwait64', '-Wl,--wrap=pthread_create', '-Wl,--wrap=pthread_join', '-Wl,--wrap=calloc', '-Wl,--wrap=pthread_cond_wait']
+        sources = ['tests/guest_harness.c', 'guest/memory.c', 'guest/heap.c', 'tests/heap_suite.c', 'guest/execution.c', 'guest/kernel.c', 'tests/kernel_suite.c', 'tests/wait_suite.c', 'tests/event_suite.c', 'tests/worker_suite.c', 'tests/storage_suite.c', 'tests/thread_service_suite.c', 'guest/image.c', 'guest/xbe.c', 'guest/tls.c', 'guest/handles.c', 'guest/worker.c', 'guest/storage.c', 'guest/thread_service.c', 'platform/threads_pthread.c', 'tests/image_suite.c', 'tests/execution_suite.c', 'guest/address_space.c', 'guest/string_ops.c', 'tests/string_suite.c', 'tests/atomic_suite.c', 'tests/string_native_oracle.c', 'build/guest/string_table.c', 'tests/memory_suite.c', 'tests/generated_memory_suite.c', 'tests/mmx_state.c', 'tests/pc_memory_oracle.c', 'build/guest/fixtures.c', '-lm', '-pthread', '-Wl,--wrap=clock_gettime', '-Wl,--wrap=pthread_cond_timedwait', '-Wl,--wrap=__clock_gettime64', '-Wl,--wrap=__pthread_cond_timedwait64', '-Wl,--wrap=pthread_create', '-Wl,--wrap=pthread_join', '-Wl,--wrap=calloc', '-Wl,--wrap=pthread_cond_wait']
         host_cc = shlex.split(os.environ.get('CC', 'cc'))
         run(host_cc + ['--version'])
         run(host_cc + ['-std=c11','-O2','-Wall','-Wextra','-Werror','-DTSFP_PC_MAPPED_ORACLE',
@@ -70,6 +71,9 @@ def main():
             transcripts['armv7-qemu'] = run(shlex.split(args.qemu) + ['-cpu', 'cortex-a9', str(ROOT / target)])
         if len(set(transcripts.values())) != 1:
             raise RuntimeError('CPU fixture transcript mismatch')
+        actual = out / 'vmem-actual.txt'
+        actual.write_text(transcripts['pristine'])
+        run([sys.executable, 'tools/verify_vmem_reference.py', '--fetch', '--actual-trace', str(actual)])
         report.update(result='pass', transcripts=transcripts, arm_executed=bool(args.arm_cc))
     except Exception as error:
         report.update(result='fail', error=str(error))

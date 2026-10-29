@@ -133,3 +133,14 @@ contention cost, FPS and latency remain unmeasured.
 
 Empty event-attribute decoding uses a fixed three-word stack snapshot; no
 allocation or additional resident pool is introduced. Cost is not benchmarked.
+
+## Allocation and layout accounting — no device measurements
+
+The guest allocator reuses ceded RAM and static256-page owner/atomic-commit
+metadata (maximum1MiB arena), with no call-time host allocation. The test cedes
+256KiB; this is not a production guest heap budget. Permission filtering adds
+page-state work only while configured; its CPU cost is unmeasured. The Xita BC
+layout adapter copies compressed blocks without decoding pixels and allocates
+no buffer itself; throughput and actual GPU correctness remain unmeasured.
+No host/QEMU time is presented as Vita performance. The synthetic160MiB heap
+and successful VPK cross-build still do not prove production fit or FPS.

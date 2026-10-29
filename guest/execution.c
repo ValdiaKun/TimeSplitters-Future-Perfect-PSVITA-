@@ -2,6 +2,7 @@
 #define RECOMP_GENERATED_CODE
 #include "recomp_types.h"
 #include "execution.h"
+#include "heap.h"
 #include "memory.h"
 #include "string_ops.h"
 #include "tls.h"
@@ -80,7 +81,7 @@ _Noreturn void tsfp_guest_raise(enum TsfpFaultKind kind, uint32_t address, size_
 }
 uint32_t tsfp_guest_thread_id(void) { return thread_id; }
 int tsfp_guest_thread_enter(uint32_t id, uint32_t base, size_t size, uint32_t fs, size_t tls_size) {
-    if (attached || boundary || !id || size<16 || (base&3u) || (size&3u) ||
+    if (tsfp_heap_overlaps(base,size) || tsfp_heap_overlaps(fs,tls_size) || attached || boundary || !id || size<16 || (base&3u) || (size&3u) ||
         (uint64_t)base+size>UINT32_MAX || !tsfp_guest_range_valid(base,size) ||
         !tls_size || !tsfp_guest_range_valid(fs,tls_size) ||
         !tsfp_guest_access_allowed(base,size,2) || !tsfp_guest_access_allowed(fs,tls_size,3) ||

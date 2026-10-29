@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "image.h"
+#include "heap.h"
 #include "memory.h"
 #include "kernel.h"
 #include "handles.h"
@@ -25,7 +26,7 @@ int tsfp_image_set_allocator(void *(*allocate)(size_t),void (*release)(void *)) 
     allocate_image=allocate ? allocate : malloc; release_image=release ? release : free;
     return 1;
 }
-static int policy(uint32_t address, size_t width, unsigned mode) {
+static int section_policy(uint32_t address, size_t width, unsigned mode) {
     if (!width || (uint64_t)width>UINT64_C(0x100000000)-address) return 0;
     while (width) {
         TsfpGuestSpan span=tsfp_guest_classify(address);
@@ -43,6 +44,9 @@ static int policy(uint32_t address, size_t width, unsigned mode) {
         width-=n; if (width) address+=(uint32_t)n;
     }
     return 1;
+}
+static int policy(uint32_t address,size_t width,unsigned mode) {
+    return section_policy(address,width,mode) && tsfp_heap_access_allowed(address,width,mode);
 }
 static unsigned char *at(Plan *p,unsigned char *stage,uint32_t address,size_t width,unsigned flags) {
     if (!width) return NULL;
@@ -64,7 +68,7 @@ static int overlap(uint32_t a,size_t na,uint32_t b,size_t nb) {
 }
 
 enum TsfpImageError tsfp_image_initialize(const TsfpImageDescription *description) {
-    if (ready || tsfp_thread_handles_busy() || tsfp_guest_policy_active() || tsfp_guest_thread_id() || tsfp_guest_recovery_active()) return TSFP_IMAGE_BUSY;
+    if (ready || tsfp_heap_configured() || tsfp_thread_handles_busy() || tsfp_guest_policy_active() || tsfp_guest_thread_id() || tsfp_guest_recovery_active()) return TSFP_IMAGE_BUSY;
     if (!description || !description->sections || !description->count || description->count>TSFP_IMAGE_MAX_SECTIONS || !description->resolve)
         return TSFP_IMAGE_METADATA;
     Plan p={0}; p.d=*description;
@@ -179,7 +183,7 @@ int tsfp_image_run(TsfpFault *fault) {
 }
 int tsfp_image_active(void) { return ready; }
 int tsfp_image_reset(void) {
-    if (tsfp_guest_thread_id() || tsfp_guest_recovery_active() || tsfp_storage_configured() || tsfp_thread_handles_busy()) return 0;
+    if (tsfp_guest_thread_id() || tsfp_guest_recovery_active() || tsfp_storage_configured() || tsfp_heap_configured() || tsfp_thread_handles_busy()) return 0;
     if (ready) { tsfp_guest_set_policy(NULL); tsfp_kernel_imports_reset(); memset(&image,0,sizeof(image)); ready=0; }
     return 1;
 }

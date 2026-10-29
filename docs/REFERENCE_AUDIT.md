@@ -144,3 +144,9 @@ Pinned bridge file-I/O layout comments explicitly define Xbox OBJECT_ATTRIBUTES
 as 12 bytes with RootDirectory/ObjectName/Attributes at offsets 0/4/8. Its event
 implementation ignores the native descriptor; this port only accepts null or a
 checked empty descriptor and fails closed for names/directories/flags.
+
+See ACCELERATION_AUDIT.md for the2026-10-29 focused reuse audit. New references
+are pinned without moving PC/runtime/toolchain revisions. MIT xboxrecomp
+guest_vmem ownership/rounding and GPL Xita BC layout are adapted with attribution
+and bounded wrappers; original VM source is hash-checked for differential tests.
+No full Windows kernel, Halo runtime, game captures/shaders or binaries imported.

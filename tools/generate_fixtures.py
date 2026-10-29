@@ -106,6 +106,7 @@ FIXTURES[0x13900] = ('fixture_service_parent', 'bea000090068a03901006a006a006a16
 FIXTURES[0x13a00] = ('fixture_service_call', 'ff16c3')
 FIXTURES[0x139a0] = ('fixture_service_child', '8b442404a3b00009008b5424088915b4000900648b0d280000008b812c010000a3b8000900c20800')
 
+FIXTURES[0x13b80] = ('fixture_allocation_sequence', 'bee00009006a04680030000068040109006a006800010900ff16a32001090085c075358b3d00010900c707785634128b0f890d24010900c7050401090000000000680080000068040109006800010900ff5604a328010900c3')
 FIXTURES[0x13b00] = ('fixture_event_sequence', 'bee00009006a006a006a006800010900ff16a3200109006804010900ff3500010900ff5604a32401090068080109006a00ff3500010900ff560ca328010900ff3500010900ff5608a32c010900ff3500010900ff5610a330010900c3')
 
 def main():
@@ -152,7 +153,7 @@ def main():
         table.append(f'if (kind == {kind} && width == {width} && mode == {mode}) return {name};')
     table.append('return 0; }')
     table.insert(0,'#include <stddef.h>')
-    for address in (0x12660,0x13200,0x13280,0x132a0,0x13300,0x13400,0x13500,0x13600,0x13900,0x139a0,0x13a00,0x13b00):
+    for address in (0x12660,0x13200,0x13280,0x132a0,0x13300,0x13400,0x13500,0x13600,0x13900,0x139a0,0x13a00,0x13b00,0x13b80):
         name,raw=FIXTURES[address]
         data=bytes.fromhex(raw)
         table.append(f'const unsigned char {name}_bytes[] = {{'+','.join(str(b) for b in data)+'};')
@@ -171,7 +172,7 @@ def main():
     for name,value in (('XboxNotificationEvent',0),('XboxSynchronizationEvent',1)):
         if not re.search(rf'\b{name}\s*=\s*{value}\b',kernel):
             raise RuntimeError(f'Pinned event type changed: {name}')
-    for ordinal, size, name in ((189,16,'NtCreateEvent'),(225,8,'NtSetEvent'),(186,4,'NtClearEvent'),(255,40,'PsCreateSystemThreadEx'),(233,12,'NtWaitForSingleObject'),(187,4,'NtClose'),(104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
+    for ordinal, size, name in ((184,20,'NtAllocateVirtualMemory'),(199,12,'NtFreeVirtualMemory'),(189,16,'NtCreateEvent'),(225,8,'NtSetEvent'),(186,4,'NtClearEvent'),(255,40,'PsCreateSystemThreadEx'),(233,12,'NtWaitForSingleObject'),(187,4,'NtClose'),(104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
         if not re.search(rf'case {ordinal}: return\s+{size};',bridge) or not re.search(rf'case {ordinal}: return bridge_{name};',bridge):
             raise RuntimeError(f'Pinned kernel ordinal/ABI changed: {ordinal} {name}')
     for name,value in (('XBOX_THREAD_OBJ_SIZE','0x200u'),('XBOX_THREAD_ID_OFF','0x12Cu')):

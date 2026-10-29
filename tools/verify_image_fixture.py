@@ -11,15 +11,18 @@ for kind in ('retail','debug'):
     x=parser.parse()
     assert x.header.entry_point==0x13500 and x.header.kernel_thunk_addr==0x88000
     assert x.header.is_debug==(kind=='debug')
-    assert len(x.sections)==13 and x.sections[0].raw_size==68 and x.sections[0].virtual_size==64
+    assert len(x.sections)==14 and x.sections[0].raw_size==68 and x.sections[0].virtual_size==64
     assert x.sections[8].virtual_addr==0x13200 and x.sections[9].virtual_addr==0x132a0
     assert parser.at(0x13200,11)==bytes.fromhex("8b4424048b542408c20800")
+    assert parser.at(0x13280,3)==bytes.fromhex("8902c3")
     assert parser.at(0x132a0,3)==bytes.fromhex("f7f1c3")
     assert x.sections[10].virtual_addr==0x13900 and x.sections[11].virtual_addr==0x13a00
     assert parser.at(0x13900,5)==bytes.fromhex("bea0000900")
     assert parser.at(0x139a0,4)==bytes.fromhex("8b442404")
     assert parser.at(0x13a00,3)==bytes.fromhex("ff16c3")
     assert x.sections[12].virtual_addr==0x13b00 and parser.at(0x13b00,5)==bytes.fromhex("bee0000900")
+    assert parser.at(0x13b80,5)==bytes.fromhex("bee0000900")
+    assert x.sections[13].virtual_addr==0x100000 and x.sections[13].virtual_size==0x40000
     assert x.tls.raw_data_start==0x8c080 and x.tls.raw_data_end==0x8c094
     assert x.tls.zero_fill_size==5 and x.tls.tls_index_addr==0x8c020 and x.tls.callbacks_addr==0x8c060
     assert [item.ordinal for item in x.kernel_imports]==[104,320,258,187]

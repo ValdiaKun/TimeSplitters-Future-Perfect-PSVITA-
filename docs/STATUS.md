@@ -10,7 +10,7 @@ campaign execution. Physical Vita behavior is unverified.**
 - Pinned PC submodule/source manifest, offline runtime reconstruction and full
   authoritative patch application, reproducible ARM header adaptation.
 - Checked unaligned little-endian guest memory prototype and deterministic
-  generation of 126 synthetic x86 functions using the real PC translator.
+  generation of 127 synthetic x86 functions using the real PC translator.
 - Explicit 64 MiB RAM/28 mirror address views, independent optional contiguous
   backing, tiled alias and kernel-data/MMIO/flash/invalid classification.
   Checked byte transfers support RAM wrap; unsupported device accesses fault.
@@ -353,3 +353,19 @@ mirrored descriptors, including output/input aliasing. Nonempty metadata fails
 closed; malformed reads leave handles/output unchanged. Next inspect bounded
 guest heap services against the pinned PC allocation path. Retail XBE/analysis
 and Vita hardware are still missing; no performance measurements exist.
+
+## Reuse acceleration and guest allocation — 2026-10-29
+
+- Added focused ACCELERATION_AUDIT.md with exact revisions/licenses and explicit
+  REUSE/ADAPT/REFERENCE/REJECT decisions; PC remote HEAD still equals its pin.
+- Adapted MIT xboxrecomp page ownership/rounding to a bounded ceded image-BSS
+  heap. Actual184/199 translated calls support distinct reserve/commit/decommit/
+  release with alias-safe page policy, zeroing, strict flags and output rollback.
+- Added authored allocation/store/load/free function (127 translated functions),
+  fourteen-section synthetic XBE, concurrent callers and independent original
+  xboxrecomp differential checks with strict missing/extra/changed controls.
+- Added small Xita-derived compressed-block layout proof with162 independent
+  cases; it is a host/ARM layout adapter, not a GXM renderer or rendered scene.
+- Heap-resident kernel output pointers remain rejected until safe publication
+  lifetimes exist. No retail files/analysis or physical console is present.
+  No boot, gameplay, GPU behavior, production budget or FPS is established.

@@ -25,6 +25,22 @@
     "mh3": {
       "url": "https://github.com/Grarak/mh3-wii",
       "revision": "98a4ef762ab464f2fbdf645b668da15bb42478eb"
+    },
+    "xboxrecomp": {
+      "url": "https://github.com/sp00nznet/xboxrecomp",
+      "revision": "f0f8a461496a4f23d9b0aeaa284b8d70ba7ab82b",
+      "sha256": {
+        "src/kernel/guest_vmem.c": "711b2368326ce1630bdd05ba7244e2ce6a42bbf253bfac8e7d9254be912a5262",
+        "src/kernel/guest_vmem.h": "eaacdcc7d600c5d188929ad2224b4f266286960615588e530e71acac85efad3c",
+        "LICENSE": "de6601cea3a6bf2d821b6b89f59b9d6e719cc017e530bcb4bbe2fcf7306e6dda"
+      }
+    },
+    "xita": {
+      "url": "https://github.com/Xita-Project/xita",
+      "revision": "896d6512b6d8c11279de927284e23f86d674bd2d",
+      "sha256": {
+        "runtime/xv_bc_layout.h": "5b686bd87f30f7ca179b34b32fefa981ead8ccbe28cdf661bcfacffa18aa0b88"
+      }
     }
   },
   "vitasdk": {
