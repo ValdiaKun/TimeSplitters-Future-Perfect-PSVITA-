@@ -10,7 +10,7 @@ campaign execution. Physical Vita behavior is unverified.**
 - Pinned PC submodule/source manifest, offline runtime reconstruction and full
   authoritative patch application, reproducible ARM header adaptation.
 - Checked unaligned little-endian guest memory prototype and deterministic
-  generation of 120 synthetic x86 functions using the real PC translator.
+  generation of 122 synthetic x86 functions using the real PC translator.
 - Explicit 64 MiB RAM/28 mirror address views, independent optional contiguous
   backing, tiled alias and kernel-data/MMIO/flash/invalid classification.
   Checked byte transfers support RAM wrap; unsupported device accesses fault.
@@ -249,3 +249,22 @@ both passed CPU/ARM and Vita jobs; input CI 40811318711 passed. PC, portable and
 sanitizer executables each passed three repeated local runs; pinned PC parser
 accept/reject comparison passed. Scope remains synthetic/structural and
 cross-compilation, with no physical device or retail/performance evidence.
+
+## 2026-10-29: XBE TLS initialization profile
+
+- Added `guest/tls.{h,c}`: file-backed directory/raw-data validation, checked
+  rounding/zero-fill/index metadata, physical overlap checks and explicit callback
+  policy. Null/empty tables accepted; non-empty tables and characteristics rejected.
+- Normalized XBE TLS now drives staged initial TIB/block/thread-data/object state.
+  Default preserves the PC title-owned index; explicit loader-write policy is
+  tested. The real translated entry computes/stores its negative index and reads
+  initialized/zero-filled TLS through fs:[4].
+- Two translated workers test isolated TLS, CPU, stacks, thread data and object
+  TlsData links. Permission/alias-invalid thread entry preserves CPU state.
+- 122 translated functions, 38 malformed TLS cases with RAM/CPU/import rollback,
+  empty raw ranges, both index policies and all previous tests pass locally on
+  PC/portable/sanitizers/ARMv7 QEMU; Vita Release cross-build passes.
+- Scope remains bounded: directory/raw/callback metadata in declared file-backed
+  sections, zero characteristics, no callback execution or production scheduler.
+  No retail title, physical Vita or measured performance. Next: thread lifecycle/
+  handle ownership contracts before broader kernel thread/wait imports.

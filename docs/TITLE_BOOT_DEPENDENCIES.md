@@ -49,3 +49,11 @@ entry through image initialization. The next concrete dependency is TLS-director
 extraction (raw data, zero fill, index writes and callback policy) into initial
 thread storage. Caller-provided synthetic thread configuration remains explicit;
 no authenticated retail image or complete XBE/title boot is claimed.
+
+The bounded TLS profile now extracts initialized bytes/zero fill, validates index
+and callback metadata, and stages main-thread TLS. Default indexing is title-owned
+as in the PC runtime; an explicit loader-write policy is tested. Authored x86
+entry and two workers execute negative-index fs:[4] accesses and private object
+TlsData links. Next dependency: ownership-safe guest thread handles/lifecycle,
+then validated wait/thread imports. Non-empty callbacks, full TLS characteristics,
+retail metadata and physical hardware remain separate gates.

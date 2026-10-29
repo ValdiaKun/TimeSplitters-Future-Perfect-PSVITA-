@@ -2,7 +2,7 @@
 
 **Project:** `ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-`  
 **Source upstream:** [TimeSplitters PC](https://github.com/ValdiaKun/timesplitters-future-perfect-pc)  
-**State:** native diagnostic and synthetic guest test VPKs cross-build; 120 PC-translated synthetic x86 functions execute on ARMv7 under QEMU. **No retail game runtime, renderer or gameplay. Hardware unverified.** See [STATUS.md](STATUS.md) and [VALIDATION.md](VALIDATION.md).
+**State:** native diagnostic and synthetic guest test VPKs cross-build; 122 PC-translated synthetic x86 functions execute on ARMv7 under QEMU. **No retail game runtime, renderer or gameplay. Hardware unverified.** See [STATUS.md](STATUS.md) and [VALIDATION.md](VALIDATION.md).
 
 ## Reference projects and applicability
 
@@ -95,18 +95,18 @@ Reviewed reference revisions and licensing constraints are in
 CapUnlocker, clock changes or an on-device shader compiler.
 
 Generated scalar integration now uses the real PC translator with a typed AST
-emission adapter; tests cover 120 synthetic functions on the host/ARM matrix.
+emission adapter; tests cover 122 synthetic functions on the host/ARM matrix.
 Bulk/string pointer escapes, complete instruction/flags/FP/exception coverage,
 kernel services and title entry remain open. Retail source generation and all
 hardware gates still require their explicit prerequisites.
 
 REP/string execution now has per-element fault/progress and native-x86 reference
-coverage (1,518 scenarios; 120 total translated fixtures). Prefix/flag provenance
+coverage (1,518 scenarios; 122 total translated fixtures). Prefix/flag provenance
 patterns without a proven adapter still fail closed. Aligned 32-bit atomic flags now have native-x86 reference coverage. Next CPU
 gate: exception/thread entry; game/kernel/render/hardware gates remain open.
 
 Execution foundation now has nested C-only fault capture and explicit thread/TLS
-entry tests (120 translated functions total). Full B acceptance remains open:
+entry tests (122 translated functions total). Full B acceptance remains open:
 Xbox SEH delivery, thread objects/scheduling, arbitrary cross-call/join flags and
 FP fidelity are not established. Continue the concrete
 [TITLE_BOOT_DEPENDENCIES.md](TITLE_BOOT_DEPENDENCIES.md) integration order.
@@ -130,3 +130,8 @@ Bounded raw XBE header/section/key/import normalization now feeds the synthetic
 image path and has PC-parser comparison. Remaining boot gates include actual TLS
 directory/index preparation, object/handle services, supported authenticated title
 metadata, full dispatch and hardware validation. This does not complete M2.
+
+TLS directory extraction, bounded allocation/index/zero-fill policy and worker
+isolation now have synthetic source/PC/ARM coverage. This does not complete B/D:
+non-empty callbacks, guest lifecycle/handles/waits, full flags/SEH, retail entry
+and hardware checks remain open. Proceed to explicit thread ownership contracts.

@@ -521,3 +521,56 @@ both passed CPU/ARM and Vita jobs; input CI 40811318711 passed. PC, portable and
 sanitizer executables each passed three repeated local runs; pinned PC parser
 accept/reject comparison passed. Scope remains synthetic/structural and
 cross-compilation, with no physical device or retail/performance evidence.
+
+## XBE TLS profile — 2026-10-29
+
+Started clean at `283db767620c2cdff8b6139cf7ba205bce8bdea0`, green push/PR CI,
+unchanged source/runtime/toolchain pins. Two authored x86 functions bring the
+suite to 122; 13 source-pass tests and all earlier string/atomic/image/XBE cases
+remain enabled. Full local commands:
+
+```sh
+LD_LIBRARY_PATH=/workspace/toolchains/arm/usr/lib/x86_64-linux-gnu \
+PATH=/workspace/toolchains/arm/usr/bin:$PATH \
+python3 tools/test_guest.py \
+  --arm-cc '/workspace/toolchains/arm/usr/bin/arm-linux-gnueabihf-gcc --sysroot=/workspace/toolchains/arm' \
+  --qemu /workspace/toolchains/arm/usr/bin/qemu-arm
+VITASDK="$PWD/.cache/toolchains/vitasdk" \
+PATH="$PWD/.cache/toolchains/vitasdk/bin:$PATH" \
+/home/agent/.local/bin/cmake --build build/vita-locked
+```
+
+PC mapped oracle, portable host, ASan/UBSan and Cortex-A9 ARMv7 QEMU pass with
+matching transcripts; Vita Release diagnostic/guest VPK cross-build passes:
+
+```
+tls-v1: malformed=38 rollback=pass index=title,loader zero-fill=pass workers=2 callbacks=reject
+```
+
+Coverage includes 19 malformed/conflicting TLS variants per encoding (38), raw
+range reversal/overflow/truncation, zero-fill overflow, index mapping/alignment/
+permissions/role aliases, malformed/non-empty callbacks, unsupported characteristics
+and full RAM/CPU/prior-import preservation. Empty raw ranges with zero or nonzero
+zero-fill execute correctly. Default index stays unchanged until actual translated
+entry computes/stores it; explicit loader-write policy is asserted before entry.
+Two native worker threads execute translated fs:[4]/negative-index and object
+TlsData accesses, modify independent TLS words and preserve main/raw-template
+state. Permission/alias-invalid thread entry and failed preparers preserve state.
+
+The independent pinned PC parser validates TLS fields and malformed reversed/
+truncated directories. Its raw template plus independent PC-layout arithmetic is
+compared with emitted TIB/TLS/object state: fs:[4], slot zero, raw bytes after the
+reserved slot, all zero padding/thread-data bytes, untouched initial index and
+object links. Output: `pinned-pc-tls-oracle: layout/index/zero-fill=pass malformed=pass`.
+This is not execution of Win32 kernel initialization or physical Xbox behavior.
+
+Failure resolved: the first extended oracle script called `.at()` on the metadata
+SimpleNamespace returned by parse(), causing AttributeError. Keep the parser
+instance and use its checked reader; no expected state/assertion was weakened.
+Review also closed permission/alias-invalid thread entry before CPU reset and
+ensured each worker object points at its own TLS block.
+
+Strict input tests, Python syntax, whitespace and staged-content checks pass.
+No new warnings suppressed or assertions disabled. No hardware, supported retail
+XBE/analysis, game execution or performance measurements; non-empty callbacks
+are explicitly rejected. Final push and PR CI evidence follows the push.

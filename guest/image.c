@@ -94,6 +94,13 @@ enum TsfpImageError tsfp_image_initialize(const TsfpImageDescription *descriptio
     for (size_t i=0;i<p.d.count;++i)
         if ((p.s[i].flags&TSFP_IMAGE_EXECUTE) && p.d.entry>=p.s[i].address && (uint64_t)(p.d.entry-p.s[i].address)<p.s[i].file_size) executable=1;
     if (!executable || !(p.function=p.d.resolve(p.d.entry))) return TSFP_IMAGE_ENTRY;
+    if ((p.d.tls_index_policy!=TSFP_TLS_TITLE_INDEX && p.d.tls_index_policy!=TSFP_TLS_WRITE_INDEX) || (!p.d.tls.directory && p.d.tls_index_policy!=TSFP_TLS_TITLE_INDEX)) return TSFP_IMAGE_TLS;
+    if (p.d.tls.directory) {
+        TsfpTlsSpec tls;
+        enum TsfpTlsError error=tsfp_tls_parse(p.s,p.d.count,p.d.tls.directory,&tls);
+        if (error!=TSFP_TLS_OK) return error==TSFP_TLS_CALLBACK_UNSUPPORTED ? TSFP_IMAGE_TLS_CALLBACKS : TSFP_IMAGE_TLS;
+        p.d.tls=tls; p.d.tls_template=tls.raw_start; p.d.tls_size=tls.block_size;
+    }
     unsigned char *stage=allocate_image(total);
     if (!stage) return TSFP_IMAGE_ALLOCATION;
     memset(stage,0,total);
@@ -111,20 +118,34 @@ enum TsfpImageError tsfp_image_initialize(const TsfpImageDescription *descriptio
     }
     for (size_t i=0;i<p.d.count;++i)
         if ((p.s[i].flags&TSFP_IMAGE_EXECUTE) && p.d.import_table>=p.s[i].address && (uint64_t)(p.d.import_table-p.s[i].address)<p.s[i].size) { result=TSFP_IMAGE_IMPORT; goto fail; }
-    unsigned char *tls=at(&p,stage,p.d.tls_template,p.d.tls_size,TSFP_IMAGE_READ);
+    size_t copy_size=p.d.tls.directory ? p.d.tls.raw_size : p.d.tls_size;
+    unsigned char *tls=copy_size ? at(&p,stage,p.d.tls_template,copy_size,TSFP_IMAGE_READ) : NULL;
     unsigned char *object=at(&p,stage,p.d.object_template,0x200,TSFP_IMAGE_READ);
-    if (!tls || !object) goto fail;
+    if ((copy_size && !tls) || !object) goto fail;
     for (unsigned i=0;i<4;++i)
-        if (overlap(p.d.tls_template,p.d.tls_size,reserved[i],sizes[i]) || overlap(p.d.object_template,0x200,reserved[i],sizes[i])) goto fail;
+        if ((copy_size && overlap(p.d.tls_template,copy_size,reserved[i],sizes[i])) || overlap(p.d.object_template,0x200,reserved[i],sizes[i])) goto fail;
+    if (p.d.tls.directory) {
+        for (unsigned i=0;i<4;++i)
+            if (overlap(p.d.tls.index_address,4,reserved[i],sizes[i])) { result=TSFP_IMAGE_TLS; goto fail; }
+        if (overlap(p.d.tls.index_address,4,p.d.object_template,0x200)) { result=TSFP_IMAGE_TLS; goto fail; }
+    }
     unsigned char *imports=at(&p,stage,p.d.import_table,sizes[3],TSFP_IMAGE_READ);
     uint32_t markers[16]; memcpy(markers,imports,p.d.import_count*4);
     if (!tsfp_kernel_imports_validate(markers,p.d.import_count)) { result=TSFP_IMAGE_IMPORT; goto fail; }
     unsigned char *tib=at(&p,stage,p.d.tib,tls_total,TSFP_IMAGE_WRITE);
-    memset(tib,0,tls_total); memcpy(tib+64,tls,p.d.tls_size);
+    memset(tib,0,tls_total); if (copy_size) memcpy(tib+64,tls,copy_size);
     uint32_t end=p.d.tib+64+p.d.tls_size,seh=UINT32_MAX;
     memcpy(tib,&seh,4); memcpy(tib+4,&end,4); memcpy(tib+64,&end,4); memcpy(tib+0x28,&p.d.object,4);
     unsigned char *thread=at(&p,stage,p.d.object,0x200,TSFP_IMAGE_WRITE);
     memcpy(thread,object,0x200); memcpy(thread+0x12c,&p.d.thread_id,4);
+    if (p.d.tls.directory) {
+        uint32_t block=p.d.tib+64; memcpy(thread+0x28,&block,4);
+        if (p.d.tls_index_policy==TSFP_TLS_WRITE_INDEX) {
+            unsigned char *index=at(&p,stage,p.d.tls.index_address,4,TSFP_IMAGE_WRITE);
+            if (!index) { result=TSFP_IMAGE_TLS; goto fail; }
+            memcpy(index,&p.d.tls.index_value,4);
+        }
+    }
     memset(at(&p,stage,p.d.stack_base,p.d.stack_size,TSFP_IMAGE_WRITE),0,p.d.stack_size);
     /* No fallible input validation/allocation remains. Bindings and input
      * ownership must stay quiescent. Unexpected internal inconsistency aborts,

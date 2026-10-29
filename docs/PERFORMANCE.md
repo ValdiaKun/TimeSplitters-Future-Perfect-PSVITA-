@@ -75,3 +75,9 @@ Raw XBE normalization borrows file views and uses fixed bounded local metadata;
 it allocates no section copies. Initialization still stages at most 1 MiB once.
 Read-only imports patch before final policy publication. No loader throughput or
 real-device frame/memory measurement is available.
+
+TLS extraction reuses the image staging buffer; no persistent duplicate template
+is retained. Standalone worker preparation uses one bounded temporary (at most
+64 KiB) and frees it before guest execution. Tests use 36-byte TLS blocks and
+64-byte thread-data buffers. These are synthetic configuration, not measured
+production capacity or throughput. Vita performance/allocation data unavailable.

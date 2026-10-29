@@ -496,9 +496,9 @@ inserted/head/tail flags are explicitly rejected. Empty sections are unsupported
 Canonical retail/debug entry and thunk keys come from pinned PC xbe_image.py.
 A key pair must produce a file-backed executable entry and a bounded, terminated,
 valid ordinal table. The decoder reports TLS directory address and stack commit;
-TLS directory words must be file-backed, but their contents are not yet normalized into
-initial-thread allocations/index/callback policy. Caller still supplies the
-validated thread/stack/object/TLS configuration used by image_initialize.
+TLS directory words must be file-backed; their contents now drive the bounded
+TLS initialization profile below. Caller supplies owned thread/stack/object
+placement and per-thread-data capacity.
 
 Both encodings of an entirely authored XBE buffer now normalize and execute the
 same translated entry to exit 37. The pinned PC parser independently checks their
@@ -508,3 +508,51 @@ verification, full XBE semantics and actual supported-title compatibility are no
 established. Retail use still requires the existing supported SHA-256 gate and
 matching ignored generated code/analysis metadata. Read-only import data is
 patched during quiescent initialization, then retains read-only guest permissions.
+
+## XBE TLS profile and index policy
+
+`guest/tls.c` parses the six TLS words from declared file-backed sections and
+checks raw end/start ordering, initialized backing, 64-bit rounding arithmetic,
+bounded block size, writable aligned index destination and role overlaps through
+RAM aliases. Directory/index/raw/callback overlaps fail closed. Metadata in XBE
+headers (outside declared sections) remains unsupported by this image profile.
+Nonzero characteristics are rejected pending an established alignment contract.
+
+The pinned PC runtime computes `round_up(raw_size + zero_fill,16) + 4` bytes.
+fs:[4] points to the end; the guest index is `-(block_size/4)`. Slot zero is
+reserved and replaced with the pointer to zeroed per-thread data; remaining raw
+bytes are preserved. Zero-fill, alignment padding and thread data are zeroed.
+Object+0x28 links to the current thread's TLS block; fs:[0x28] links the object.
+The existing synthetic/manual template-size path remains available without a
+TLS directory. XBE-derived values are reparsed/validated in image preflight,
+not trusted merely because a host caller supplied a TsfpTlsSpec.
+
+Upstream deliberately leaves the index untouched because titles compute/store it.
+`TSFP_TLS_TITLE_INDEX` preserves that behavior. `TSFP_TLS_WRITE_INDEX` explicitly
+writes the same negative value in the validated staging phase, never by bypassing
+final write permissions. Invalid index destinations or collisions abort before
+publication even with title-owned indexing. The optional policy is a tested host
+configuration, not a claim that all Xbox titles require loader-owned indexing.
+
+Callbacks are accepted only as a null pointer or file-backed empty table. Any
+non-empty table, even a valid compiled entry address, returns
+`TSFP_TLS_CALLBACK_UNSUPPORTED`; no callbacks are looked up/executed. Detailed
+normalization errors are exposed by tsfp_xbe_normalize_ex. Diagnostic output
+storage is caller-owned, accessible and distinct from file/normalized output.
+Full callback dispatch is a separate unimplemented lifecycle contract.
+
+`tsfp_guest_tls_prepare_xbe` prepares a bounded thread block from a stable guest
+raw template, using one temporary freed before execution. It validates complete
+read/write spans before allocation and rejects source/destination physical alias
+collisions. The caller owns disjoint storage and keeps templates/bindings stable;
+workers are prepared while guest execution is stopped. No persistent template
+cache or native-thread scheduler is introduced. The legacy preparer retains its
+original already-sized-template contract and alias-safe staging behavior.
+
+`tsfp_thread_object_prepare_tls` patches the worker's own object TlsData pointer
+and identity; its PC-layout block must be tib+0x40. This deliberately avoids the
+pinned worker clone inheriting the main object's TLS pointer. Initial PC layout
+and worker isolation are checked separately; no byte-identical Win32 scheduler
+claim is made. Thread entry checks permissions and active-image stack/TLS physical
+alias conflicts before resetting CPU state. Native creation/join remains explicit
+platform ownership, outside guest recovery scopes.

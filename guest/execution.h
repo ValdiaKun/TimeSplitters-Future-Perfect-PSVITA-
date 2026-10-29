@@ -39,6 +39,8 @@ int tsfp_guest_thread_enter(uint32_t id, uint32_t stack_base, size_t stack_size,
 /* Minimal upstream-layout TIB + TLS template + zeroed thread data, bounded to
  * 64 KiB. Caller owns exclusive destination and stable memory bindings. No
  * thread object at fs:[0x28] or Xbox SEH dispatcher is supplied here. */
+int tsfp_guest_tls_prepare_xbe(uint32_t destination,uint32_t source,uint32_t raw_size,
+                              uint32_t zero_fill,size_t thread_data_size);
 int tsfp_guest_tls_prepare(uint32_t destination, uint32_t template_address,
                            size_t template_size, size_t thread_data_size);
 _Noreturn void tsfp_guest_thread_exit(uint32_t status);

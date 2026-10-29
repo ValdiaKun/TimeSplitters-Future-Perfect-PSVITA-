@@ -5,6 +5,7 @@
 #include <stddef.h>
 /* Quiescent initialization only. Caller owns exclusive, disjoint TIB/object
  * storage and the template's lifetime during this call. No native handles. */
+int tsfp_thread_object_prepare_tls(uint32_t object,uint32_t template_address,uint32_t tib,uint32_t id,uint32_t tls_block);
 int tsfp_thread_object_prepare(uint32_t object, uint32_t template_address, uint32_t tib, uint32_t id);
 uint32_t tsfp_current_thread_object(void);
 /* Canonical ordinal markers, bounded to 16 function slots. No remapped or data

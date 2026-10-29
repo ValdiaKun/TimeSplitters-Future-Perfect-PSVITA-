@@ -86,3 +86,14 @@ xbox_memory_layout.c (raw copy clipping, temporary write access for read-only
 thunk tables). New C decoder is original GPL-3.0-only code. The validation tool
 invokes the pinned Python parser on authored build-local fixtures; it does not
 copy parser code or export-name tables. No new dependencies or source pins.
+
+## XBE TLS profile
+
+Same PC pin: prepared xbox_memory_layout.c TLS initialization (round to 16 plus
+4; fs:[4] block end; reserved slot zero; title-owned index) and xbox_AllocThreadTib
+(worker copy and per-thread data). tools/compiler/xbe_image.py supplies TLS field
+layout and file-backed/reversed-range validation. Original GPL-3.0-only adapters
+add overflow, permissions, alias and callback checks. Worker object+0x28 is patched
+to its own block instead of inheriting the main pointer; this is an explicit
+isolation correction rather than blindly copying the Win32 worker path. No
+foreign code, new dependency, proprietary data or source pin is introduced.

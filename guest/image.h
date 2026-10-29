@@ -2,6 +2,7 @@
 #ifndef TSFP_IMAGE_H
 #define TSFP_IMAGE_H
 #include "execution.h"
+#include "tls.h"
 #define TSFP_IMAGE_READ 1u
 #define TSFP_IMAGE_WRITE 2u
 #define TSFP_IMAGE_EXECUTE 4u
@@ -21,11 +22,13 @@ typedef struct TsfpImageDescription {
     size_t import_count;
     uint32_t tib, tls_template, tls_size, thread_data_size;
     uint32_t object, object_template;
+    TsfpTlsSpec tls;
+    enum TsfpTlsIndexPolicy tls_index_policy;
     TsfpImageResolver resolve; /* Pure trusted compiled registry; never a RAM cast. */
 } TsfpImageDescription;
 enum TsfpImageError { TSFP_IMAGE_OK, TSFP_IMAGE_BUSY, TSFP_IMAGE_METADATA,
     TSFP_IMAGE_RANGE, TSFP_IMAGE_OVERLAP, TSFP_IMAGE_ENTRY, TSFP_IMAGE_IMPORT,
-    TSFP_IMAGE_THREAD, TSFP_IMAGE_ALLOCATION };
+    TSFP_IMAGE_THREAD, TSFP_IMAGE_ALLOCATION, TSFP_IMAGE_TLS, TSFP_IMAGE_TLS_CALLBACKS };
 /* Quiescent, exclusive memory bindings; host input buffers live until return.
  * Synthetic low-RAM image contract, not an XBE parser. Invalid input leaves RAM,
  * CPU, installed imports and published image unchanged. One active image only. */

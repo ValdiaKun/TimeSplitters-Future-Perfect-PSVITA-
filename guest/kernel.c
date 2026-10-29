@@ -10,9 +10,11 @@
 #define THUNK_BASE 0xfe000000u
 static uint32_t ordinals[16];
 static size_t slot_count;
-int tsfp_thread_object_prepare(uint32_t object, uint32_t source, uint32_t tib, uint32_t id) {
+int tsfp_thread_object_prepare_tls(uint32_t object,uint32_t source,uint32_t tib,uint32_t id,uint32_t tls_block) {
     if (!id || !tsfp_guest_range_valid(object,THREAD_SIZE) || !tsfp_guest_range_valid(source,THREAD_SIZE) ||
         !tsfp_guest_range_valid(tib,0x40)) return 0;
+    if (!tsfp_guest_access_allowed(object,THREAD_SIZE,2) || !tsfp_guest_access_allowed(tib,0x40,2) ||
+        !tsfp_guest_access_allowed(source,THREAD_SIZE,1) || (tls_block && ((uint64_t)tib+64>UINT32_MAX || tls_block!=tib+64 || !tsfp_guest_range_valid(tls_block,4) || !tsfp_guest_access_allowed(tls_block,4,2)))) return 0;
     /* Require single physical spans so aliases can be checked for overlap. */
     TsfpGuestSpan a=tsfp_guest_classify(object), b=tsfp_guest_classify(tib);
     if (a.available<THREAD_SIZE || b.available<0x40) return 0;
@@ -20,8 +22,12 @@ int tsfp_thread_object_prepare(uint32_t object, uint32_t source, uint32_t tib, u
     if (x<=y ? y-x<THREAD_SIZE : x-y<0x40) return 0;
     unsigned char image[THREAD_SIZE];
     tsfp_guest_read(source,image,sizeof(image)); memcpy(image+THREAD_ID,&id,4);
+    if (tls_block) memcpy(image+0x28,&tls_block,4);
     tsfp_guest_write(object,image,sizeof(image)); tsfp_guest_store_u32(tib+0x28,object);
     return 1;
+}
+int tsfp_thread_object_prepare(uint32_t object,uint32_t source,uint32_t tib,uint32_t id) {
+    return tsfp_thread_object_prepare_tls(object,source,tib,id,0);
 }
 uint32_t tsfp_current_thread_object(void) {
     if (!tsfp_guest_thread_id() || g_fs_base>UINT32_MAX-0x28u)

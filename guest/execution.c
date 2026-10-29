@@ -4,6 +4,7 @@
 #include "execution.h"
 #include "memory.h"
 #include "string_ops.h"
+#include "tls.h"
 #include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
@@ -63,7 +64,9 @@ uint32_t tsfp_guest_thread_id(void) { return thread_id; }
 int tsfp_guest_thread_enter(uint32_t id, uint32_t base, size_t size, uint32_t fs, size_t tls_size) {
     if (attached || boundary || !id || size<16 || (base&3u) || (size&3u) ||
         (uint64_t)base+size>UINT32_MAX || !tsfp_guest_range_valid(base,size) ||
-        !tls_size || !tsfp_guest_range_valid(fs,tls_size)) return 0;
+        !tls_size || !tsfp_guest_range_valid(fs,tls_size) ||
+        !tsfp_guest_access_allowed(base,size,2) || !tsfp_guest_access_allowed(fs,tls_size,3) ||
+        (tsfp_guest_policy_active() && tsfp_tls_ranges_overlap(base,size,fs,tls_size))) return 0;
     g_eax=g_ecx=g_edx=g_ebx=g_ebp=g_esi=g_edi=0;
     g_esp=base+(uint32_t)size; g_seh_ebp=g_esp; g_fs_base=fs;
     g_df=g_fp_top=g_fp_cmp=0; g_fp_control_word=0x37f; g_fp_cc=0;
@@ -86,19 +89,32 @@ int tsfp_guest_thread_leave(void) {
 _Noreturn void tsfp_guest_thread_exit(uint32_t status) {
     tsfp_guest_raise(TSFP_THREAD_EXIT,0,0,status);
 }
-int tsfp_guest_tls_prepare(uint32_t destination, uint32_t source, size_t template_size, size_t data_size) {
+static int prepare_tls(uint32_t destination,uint32_t source,size_t raw_size,size_t template_size,size_t data_size) {
     const size_t limit=65536;
     if (template_size<4 || template_size>limit-64 || data_size>limit-64-template_size) return 0;
     size_t total=64+template_size+data_size;
-    if (!tsfp_guest_range_valid(destination,total) || !tsfp_guest_range_valid(source,template_size)) return 0;
+    if (!tsfp_guest_range_valid(destination,total) || (raw_size && !tsfp_guest_range_valid(source,raw_size))) return 0;
+    if (!tsfp_guest_access_allowed(destination,total,2) || (raw_size && !tsfp_guest_access_allowed(source,raw_size,1))) return 0;
     unsigned char *image=calloc(1,total);
     if (!image) return 0;
     /* All guest spans are prevalidated before resources are acquired; memory
      * bindings must not change. Staging handles physically aliased templates. */
-    tsfp_guest_read(source,image+64,template_size);
+    if (raw_size) tsfp_guest_read(source,image+64,raw_size);
     uint32_t end=destination+64u+(uint32_t)template_size, seh=UINT32_MAX;
     memcpy(image,&seh,4); memcpy(image+4,&end,4); memcpy(image+64,&end,4);
     tsfp_guest_write(destination,image,total);
     free(image);
     return 1;
+}
+
+int tsfp_guest_tls_prepare(uint32_t destination,uint32_t source,size_t template_size,size_t data_size) {
+    return prepare_tls(destination,source,template_size,template_size,data_size);
+}
+int tsfp_guest_tls_prepare_xbe(uint32_t destination,uint32_t source,uint32_t raw_size,uint32_t zero_fill,size_t data_size) {
+    uint32_t total,index;
+    if (!tsfp_tls_layout(raw_size,zero_fill,&total,&index) || data_size>65536u-64u-total ||
+        (uint64_t)destination+64u+total+data_size>0x74000000u ||
+        (raw_size && ((uint64_t)source+raw_size>0x74000000u ||
+         tsfp_tls_ranges_overlap(destination,64u+total+data_size,source,raw_size)))) return 0;
+    return prepare_tls(destination,source,raw_size,total,data_size);
 }

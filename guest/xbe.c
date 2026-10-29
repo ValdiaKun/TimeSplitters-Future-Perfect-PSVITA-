@@ -14,7 +14,8 @@ static int guest_word(const TsfpXbeImage *x,uint32_t address,uint32_t *value) {
     }
     return 0;
 }
-int tsfp_xbe_normalize(const void *file,size_t size,TsfpXbeImage *output) {
+int tsfp_xbe_normalize_ex(const void *file,size_t size,TsfpXbeImage *output,enum TsfpTlsError *tls_error) {
+    if (tls_error) *tls_error=TSFP_TLS_OK;
     if (!file || !output || size<0x178 || size-1>UINTPTR_MAX-(uintptr_t)file) return 0;
     uintptr_t input=(uintptr_t)file,out=(uintptr_t)output;
     if (sizeof(*output)-1>UINTPTR_MAX-out || (out<=input ? input-out<sizeof(*output) : out-input<size)) return 0;
@@ -66,10 +67,11 @@ int tsfp_xbe_normalize(const void *file,size_t size,TsfpXbeImage *output) {
     if (matches!=1) return 0;
     x.tls_directory=word(bytes+0x12c); x.stack_commit=word(bytes+0x130);
     if (!x.stack_commit || (x.stack_commit&3u) || x.stack_commit>TSFP_IMAGE_MAX_BYTES) return 0;
-    if (x.tls_directory) {
-        uint32_t ignored;
-        for (unsigned i=0;i<6;++i)
-            if ((uint64_t)x.tls_directory+i*4>UINT32_MAX || !guest_word(&x,x.tls_directory+i*4,&ignored)) return 0;
-    }
+    enum TsfpTlsError error=tsfp_tls_parse(x.sections,x.count,x.tls_directory,&x.tls);
+    if (error!=TSFP_TLS_OK) { if (tls_error) *tls_error=error; return 0; }
     *output=x; return 1;
+}
+
+int tsfp_xbe_normalize(const void *file,size_t size,TsfpXbeImage *output) {
+    return tsfp_xbe_normalize_ex(file,size,output,NULL);
 }

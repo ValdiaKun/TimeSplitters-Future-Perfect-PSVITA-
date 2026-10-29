@@ -96,6 +96,10 @@ FIXTURES[0x13340] = ('fixture_kernel_call', 'ff16c3')
 
 FIXTURES[0x13400] = ('fixture_image_entry', 'be00800800e9f6feffff')
 
+FIXTURES[0x13500] = ('fixture_tls_entry', 'a144c008002b0540c00800030550c0080083c00f83e0f083c004c1e802f7d8a320c0080089c1648b15040000008b5c8a04891d200009008b5c8a14891d24000900648b1d280000008b5b28891d28000900e9aafeffff')
+
+FIXTURES[0x13600] = ('fixture_tls_worker', '8b0d20c00800648b1504000000648b1d280000008b73288d3c8a8b832c01000089448a088b448a04c3')
+
 def main():
     runtime = prepare()
     from guest_codegen import configure
@@ -140,7 +144,7 @@ def main():
         table.append(f'if (kind == {kind} && width == {width} && mode == {mode}) return {name};')
     table.append('return 0; }')
     table.insert(0,'#include <stddef.h>')
-    for address in (0x12660,0x13280,0x13300,0x13400):
+    for address in (0x12660,0x13280,0x13300,0x13400,0x13500,0x13600):
         name,raw=FIXTURES[address]
         data=bytes.fromhex(raw)
         table.append(f'const unsigned char {name}_bytes[] = {{'+','.join(str(b) for b in data)+'};')
