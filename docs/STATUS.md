@@ -136,3 +136,7 @@ menu, diagnostic or synthetic CPU test as proof of gameplay.
   references now sequence real single elements; ordinary REP remains native.
   See VALIDATION.md for failing run, addresses and byte evidence. Generated
   guest behavior and the complete byte-model assertions remain unchanged.
+
+Final implementation `180a0a7`: [CPU/ARM/Vita CI 40800471487](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40800471487)
+passed both jobs; input CI 40800476515 passed. Includes the alias-oracle fix.
+No physical Vita execution or performance measurement was performed.

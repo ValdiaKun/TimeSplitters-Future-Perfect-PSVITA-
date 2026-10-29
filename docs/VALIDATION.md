@@ -273,3 +273,7 @@ ordinary ranges continue to execute actual REP. All generated cross-view cases
 still compare every byte and register against the independent sequential model,
 and retain the pinned PC shared mappings. This is an oracle portability fix,
 not a guest-runtime fast path, disabled assertion or Xbox hardware validation.
+
+Final implementation `180a0a7`: [CPU/ARM/Vita CI 40800471487](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40800471487)
+passed both jobs; input CI 40800476515 passed. Includes the alias-oracle fix.
+No physical Vita execution or performance measurement was performed.
