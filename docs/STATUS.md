@@ -369,3 +369,13 @@ and Vita hardware are still missing; no performance measurements exist.
 - Heap-resident kernel output pointers remain rejected until safe publication
   lifetimes exist. No retail files/analysis or physical console is present.
   No boot, gameplay, GPU behavior, production budget or FPS is established.
+
+## Follow-up: heap-resident event outputs
+
+Added generation-checked output references and durable event-call cleanup.
+Translated NtCreateEvent/NtSetEvent can publish into committed heap allocations,
+including RAM mirror pointers. Concurrent release/decommit fail unchanged while
+a result is pinned; stale/double unpins and the64-reference limit are tested.
+A native test gate pauses actual translated creation and races actual translated
+free/decommit; injected post-pin faults verify cleanup and cancellation restoration.
+Thread-create/VM outputs in the heap remain unsupported. No retail/device/FPS claim.

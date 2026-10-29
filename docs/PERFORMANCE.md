@@ -144,3 +144,7 @@ layout adapter copies compressed blocks without decoding pixels and allocates
 no buffer itself; throughput and actual GPU correctness remain unmeasured.
 No host/QEMU time is presented as Vita performance. The synthetic160MiB heap
 and successful VPK cross-build still do not prove production fit or FPS.
+
+Event publication adds64 static two-word native reference records and shared
+ownership-lock operations. It introduces no host allocation or new RAM backing.
+Reference and lock cost are not benchmarked; no performance gain is claimed.

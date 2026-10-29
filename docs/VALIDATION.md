@@ -861,3 +861,24 @@ three host guest executables passed three further complete runs. Independent
 read-only review found no blocking ownership/arithmetic/recovery defect within
 the explicit quiescent-lifecycle profile; its suggested cross-page, second-output
 and cross-owner tests were added and passed. Hardware and FPS remain unavailable.
+
+Reuse/allocation commit69bb224c3db4451f29afb60fa56664b28e3ece11 passed push
+[40970033730](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40970033730)
+and PR[40970041590](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40970041590),
+both CPU/graphics and Vita jobs, before the output-reference follow-up.
+
+Output-reference tests retain127 translated functions and the independent
+seven-row VM comparison. Actual translated create/set publish through canonical
+and mirrored heap outputs. A test-only event-create linker gate pauses after
+reference acquisition, then translated release/decommit must return UNSUCCESSFUL
+with unchanged in/out words. Both succeed after completion/cleanup. Native tests
+cover64 pins, exhaustion, stale/double release and slot-generation reuse. Guest
+metadata/output faults and an injected post-pin fault release bookkeeping; native
+cancellation state is explicitly checked afterward. No production failure hooks.
+
+Final output-reference source passed PC-header/shared-map, portable host,
+ASan/UBSan and Cortex-A9 QEMU with matching transcripts and the original VM
+comparison. Both VitaSDK Release VPKs cross-built; strict controller, Python
+and whitespace checks passed. Each host mode passed three further full repeats.
+Read-only review found no blocking generation/lifetime/recovery defect under the
+explicit profile; no general native cancellation unwinding or hardware claim.

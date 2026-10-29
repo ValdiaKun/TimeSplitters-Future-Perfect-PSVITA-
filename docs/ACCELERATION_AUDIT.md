@@ -47,3 +47,8 @@ Existing retail-generation verification remains mandatory. Ceded arenas cannot
 be inferred from zero-filled retail BSS; an authenticated layout/ownership plan
 is required before enabling allocation in the real title. No source audit,
 synthetic test or VPK establishes retail boot, GPU rendering or Vita FPS.
+
+Follow-up reuse: event publication reuses this project's existing durable C-scope
+guard design from thread_service.c; it does not introduce a second recovery or
+thread engine. Generation-checked native allocation references protect event
+outputs. Thread-create/VM output integration remains separate.

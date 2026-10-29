@@ -50,10 +50,16 @@ hash-pinned xboxrecomp VM differential gate. Missing sources fail closed unless
 validates the isolated Xita BC layout adapter; no GPU or device run is implied.
 See ACCELERATION_AUDIT.md and NOTICE for exact revisions/licenses.
 
-Next: lifetime-safe heap-resident kernel output pointers. The current profile
-rejects them, including event results and thread handles. Add per-call allocation
-references/pins so free/decommit cannot revoke an output between probing and
-publication; test concurrent free, error rollback and protected recovery paths.
-Do not simply remove the output guard. Then integrate an authenticated retail
-layout/entry trace once supported user-owned XBE and matching metadata exist.
-Physical Vita, retail boot, gameplay and performance remain unverified.
+Event outputs now use tsfp_heap_pin_output/unpin_output plus a durable TLS
+scope guard in kernel.c. Their64 bounded generation records retain the allocation
+through result and EAX/ESP publication, releasing on normal/fault paths. Native
+cancellation is deferred. Release/decommit returns UNSUCCESSFUL unchanged while
+an event output is pinned; retry after the call. Guest code cannot forge pins.
+
+Next: heap-resident PsCreateSystemThreadEx handle/ID outputs. Extend the existing
+thread-service CallGuard to own allocation references through probes/RPC/result
+publication and fault cleanup; test concurrent free, failed native create and
+multiple outputs. Do not add another scope guard atop the single-slot contract
+or remove the checks. VM in/out words still remain outside the managed heap.
+Then integrate an authenticated retail layout/entry trace once supported files
+and matching metadata exist. Physical Vita/retail/gameplay/FPS remain unverified.

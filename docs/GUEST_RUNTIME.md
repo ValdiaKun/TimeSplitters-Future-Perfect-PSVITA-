@@ -813,11 +813,31 @@ pretended for plain VM addresses: a stale pointer after a released address is
 reallocated cannot be distinguished from its new owner, as with raw guest VAs.
 Callers must synchronize access/free and retain exclusive arena ownership.
 
-Important bounded limitation: kernel outputs in this heap are currently rejected,
-including event handle/previous-state and thread-create outputs. Supporting them
-requires per-call lifetime pins across guest output publication; do not bypass
-the checks. General Xbox VM, guard/read-only/executable pages, MEM_TOP_DOWN,
+Important bounded limitation: VM in/out words and thread-create outputs in this
+heap remain rejected. Event output words now have lifetime pins, described below;
+do not remove the other guards before their own publication lifetime is proven. General Xbox VM, guard/read-only/executable pages, MEM_TOP_DOWN,
 allocation queries/protection changes and automatic retail heap discovery remain
 unsupported. The raw PC-header oracle does not implement software page policy;
 checked helper faults run in all modes, translated policy faults specifically
 run in portable host/sanitizer/ARM modes. No retail compatibility is claimed.
+
+### Pinned event outputs
+
+NtCreateEvent handles and NtSetEvent previous-state words may now reside in a
+committed heap allocation. After non-mutating guest probes, native pin acquisition
+revalidates page ownership/permissions under the shared ownership mutex. It uses
+64 bounded generation-checked native reference records; guest code never receives
+these tokens. A stale/double unpin fails and exhausted generations never wrap.
+Reference acquisition publishes no event on failure. Pins cover one allocation;
+release/decommit of that allocation returns STATUS_UNSUCCESSFUL unchanged until
+references are released. This conservative transient-failure profile is not a
+claim about a complete Xbox VM locking implementation.
+
+The existing C-only durable scope-guard contract is reused: one TLS event guard,
+native cancellation deferred, no guest access or callbacks under ownership locks.
+It spans probes, event state mutation, result writes and EAX/ESP publication.
+Normal return unregisters then releases; a captured fault releases from the
+execution boundary's cleanup path. No callback-stack local survives longjmp and
+no resource-owning native thread creation is added. Setup/teardown still require
+external quiescence and guest data/free races remain caller-owned. Thread-create
+and VM output profiles retain their stricter checks pending separate integration.

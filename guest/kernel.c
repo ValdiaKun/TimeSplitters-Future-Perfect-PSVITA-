@@ -3,6 +3,8 @@
 #include "recomp_types.h"
 #include "kernel.h"
 #include "heap.h"
+#include <pthread.h>
+#include <stdlib.h>
 #include "handles.h"
 #include "storage.h"
 #include "thread_service.h"
@@ -81,6 +83,33 @@ static uint32_t create_thread(const uint32_t *frame) {
     }
     return result.status;
 }
+/* Durable bookkeeping outlives a guest callback-frame fault. No native object
+ * creation/join is performed here, and no lock crosses guest access. */
+typedef struct EventOutputGuard { int active,old_cancel; uint32_t pin; } EventOutputGuard;
+static _Thread_local EventOutputGuard event_guard;
+static void event_cleanup(void *context) {
+    EventOutputGuard *g=context;
+    if (!g->active || !tsfp_heap_unpin_output(g->pin)) abort();
+    g->active=0; g->pin=0;
+    if (pthread_setcancelstate(g->old_cancel,NULL)) abort();
+}
+static int event_enter(void) {
+    if (event_guard.active || !tsfp_guest_recovery_active() || pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,&event_guard.old_cancel)) return 0;
+    event_guard.active=1; event_guard.pin=0;
+    if (!tsfp_guest_scope_guard(event_cleanup,&event_guard)) { event_cleanup(&event_guard); return 0; }
+    return 1;
+}
+static void event_leave(void) {
+    if (!tsfp_guest_scope_unguard(event_cleanup,&event_guard)) abort();
+    event_cleanup(&event_guard);
+}
+static uint32_t pin_event_output(uint32_t address) {
+    if (!tsfp_guest_range_valid(address,4) || !tsfp_guest_access_allowed(address,4,2)) {
+        g_tsfp_access=TSFP_ACCESS_WRITE; tsfp_guest_memory_fault(address,4);
+    }
+    if (!tsfp_storage_event_output_allowed(address,4)) return TSFP_STATUS_INVALID_PARAMETER;
+    return tsfp_heap_pin_output(address,4,&event_guard.pin);
+}
 static uint32_t event_attributes(uint32_t address) {
     if (!address) return 0;
     /* Pinned bridge: Xbox OBJECT_ATTRIBUTES is three 32-bit fields, not the
@@ -120,6 +149,9 @@ static void dispatch(uint32_t ordinal) {
         g_eax=create_thread(frame); g_esp=stack+44;
         tsfp_thread_service_call_leave(); return;
     }
+    if ((ordinal==189 || ordinal==225) && !event_enter()) {
+        g_eax=UINT32_C(0xc0000001); g_esp=stack+(arguments+1)*4; return;
+    }
     if (ordinal==258) tsfp_guest_thread_exit(frame[1]);
     uint32_t result=0;
     if (ordinal==104) result=tsfp_current_thread_object();
@@ -138,16 +170,15 @@ static void dispatch(uint32_t ordinal) {
         result=event_attributes(frame[2]);
         if (!result) {
             if (frame[3]>1) result=TSFP_STATUS_INVALID_PARAMETER;
-            else if (!event_output(frame[1])) result=TSFP_STATUS_INVALID_PARAMETER;
-            else {
+            else if ((result=pin_event_output(frame[1]))==0) {
                 uint32_t handle; result=tsfp_event_create(frame[3],(uint8_t)frame[4]!=0,&handle);
                 if (!result) tsfp_guest_store_u32(frame[1],handle);
             }
         }
     }
     else if (ordinal==225) {
-        if (frame[2] && !event_output(frame[2])) result=TSFP_STATUS_INVALID_PARAMETER;
-        else {
+        result=frame[2] ? pin_event_output(frame[2]) : 0;
+        if (!result) {
             uint32_t previous; result=tsfp_event_set(frame[1],&previous);
             if (!result && frame[2]) tsfp_guest_store_u32(frame[2],previous);
         }
@@ -173,6 +204,7 @@ static void dispatch(uint32_t ordinal) {
         }
     }
     g_eax=result; g_esp=stack+(arguments+1)*4;
+    if (ordinal==189 || ordinal==225) event_leave();
 }
 static void allocate_memory(void) { dispatch(184); }
 static void free_memory(void) { dispatch(199); }

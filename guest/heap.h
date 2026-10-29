@@ -10,6 +10,10 @@ int tsfp_heap_disable(void);
 int tsfp_heap_configured(void);
 uint32_t tsfp_heap_allocate(uint32_t *base,uint32_t *size,uint32_t zero_bits,uint32_t type,uint32_t protect);
 uint32_t tsfp_heap_free(uint32_t *base,uint32_t *size,uint32_t type);
+/* Native generation-checked output references. Zero token means a validated
+ * non-heap range. Held references make release/decommit fail without mutation. */
+uint32_t tsfp_heap_pin_output(uint32_t address,size_t size,uint32_t *token);
+int tsfp_heap_unpin_output(uint32_t token);
 /* Lock-free permission filter; binding/configuration changes are quiescent.
  * Configuration pins image policy/backing. All aliases share physical state. */
 int tsfp_heap_access_allowed(uint32_t address,size_t size,unsigned mode);

@@ -256,3 +256,8 @@ int tsfp_storage_range_allowed_locked(uint32_t address,size_t size) {
          !tsfp_tls_ranges_overlap(source.tls.raw_start,source.tls.raw_size,address,size) &&
          !tsfp_tls_ranges_overlap(source.object_template,512,address,size));
 }
+
+int tsfp_storage_event_output_allowed(uint32_t address,size_t size) {
+    tsfp_storage_lock(); int ok=tsfp_storage_range_allowed_locked(address,size);
+    tsfp_storage_unlock(); return ok;
+}

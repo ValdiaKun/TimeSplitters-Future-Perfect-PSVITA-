@@ -138,3 +138,8 @@ publication-lifetime pins; address reuse does not provide stale-pointer identity
 The next testable dependency is reference-safe heap-resident outputs before
 normal event/thread allocations can use heap-allocated result structures.
 See ACCELERATION_AUDIT.md for pinned source candidates and rejected assumptions.
+
+Heap-resident event result words now have retained output references across
+translated create/set publication. Thread-create handle/ID and VM in/out words
+remain rejected in this heap; extend their existing guard contracts next rather
+than removing checks. This is still synthetic boot preparation without retail data.

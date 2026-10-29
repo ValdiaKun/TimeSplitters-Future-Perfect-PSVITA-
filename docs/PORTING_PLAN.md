@@ -216,3 +216,8 @@ compatibility proof. Neither establishes title boot or renderer choice.
 Next priority: lifetime-safe heap-resident kernel outputs, with allocation pins
 across event/thread publication and deterministic close/free/rollback tests.
 Then use an authenticated retail layout/trace to select further services.
+
+Heap-resident event result publication is now reference-protected and tested.
+Next: extend the existing thread-creation service's durable guard to retain its
+heap-resident handle/ID output allocations, with native-create failure, publication
+fault and concurrent free tests. VM in/out words remain a separate guarded profile.

@@ -23,6 +23,8 @@ static unsigned char *backing;
 static uint32_t owner[PAGES];
 static _Atomic unsigned char committed[PAGES];
 static atomic_int enabled;
+typedef struct OutputPin { uint32_t generation,owner; } OutputPin;
+static OutputPin pins[64];
 int tsfp_heap_configured(void) { return atomic_load(&enabled); }
 int tsfp_heap_overlaps(uint32_t address,size_t size) {
     return tsfp_heap_configured() && tsfp_tls_ranges_overlap(arena,extent,address,size);
@@ -62,6 +64,7 @@ int tsfp_heap_disable(void) {
     if (tsfp_guest_recovery_active() || tsfp_guest_thread_id()) return 0;
     tsfp_storage_lock(); int ok=!tsfp_thread_handles_busy() && !tsfp_worker_range_busy_locked(0,TSFP_XBOX_RAM_SIZE);
     for (unsigned i=0;i<PAGES;++i) if (owner[i]) ok=0;
+    for (unsigned i=0;i<64;++i) if (pins[i].owner) ok=0;
     if (ok) { atomic_store(&enabled,0); backing=NULL; arena=extent=0; }
     tsfp_storage_unlock(); return ok;
 }
@@ -126,6 +129,7 @@ uint32_t tsfp_heap_free(uint32_t *base,uint32_t *size,uint32_t type) {
         last=(unsigned)((end-arena)/PAGE);
         if (!owned(first,last,allocation)) goto done;
     }
+    for (unsigned i=0;i<64;++i) if (pins[i].owner==allocation) { status=UINT32_C(0xc0000001); goto done; }
     for (unsigned p=first;p<last;++p) {
         atomic_store(&committed[p],0);
         if (type==0x8000u) owner[p]=0;
@@ -135,4 +139,32 @@ uint32_t tsfp_heap_free(uint32_t *base,uint32_t *size,uint32_t type) {
     status=0;
 done:
     tsfp_storage_unlock(); return status;
+}
+
+uint32_t tsfp_heap_pin_output(uint32_t address,size_t size,uint32_t *token) {
+    if (!token || !size) return INVALID;
+    tsfp_storage_lock(); uint32_t result=INVALID,value=0;
+    if (!tsfp_guest_range_valid(address,size) || !tsfp_guest_access_allowed(address,size,2)) goto finish;
+    if (!tsfp_heap_overlaps(address,size)) { result=0; goto finish; }
+    uint32_t offset=address%TSFP_XBOX_RAM_SIZE;
+    if (offset<arena || offset>=arena+extent || size>arena+extent-offset) goto finish;
+    unsigned first=(offset-arena)/PAGE,last=(unsigned)((offset-arena+size-1)/PAGE)+1;
+    if (!owned(first,last,owner[first])) goto finish;
+    for (unsigned p=first;p<last;++p) if (!atomic_load(&committed[p])) goto finish;
+    result=UINT32_C(0xc000009a);
+    for (unsigned i=0;i<64;++i) if (!pins[i].owner && pins[i].generation<UINT32_C(0x1ffff)) {
+        ++pins[i].generation; pins[i].owner=owner[first];
+        value=UINT32_C(0x50000000)|(pins[i].generation<<7)|(i+1); result=0; break;
+    }
+finish:
+    tsfp_storage_unlock(); if (!result) *token=value; return result;
+}
+int tsfp_heap_unpin_output(uint32_t token) {
+    if (!token) return 1;
+    unsigned slot=token&127u;
+    if ((token&0xff000000u)!=UINT32_C(0x50000000) || !slot || slot>64) return 0;
+    tsfp_storage_lock(); OutputPin *p=&pins[slot-1];
+    int ok=p->owner && p->generation==((token&0xffffffu)>>7);
+    if (ok) p->owner=0;
+    tsfp_storage_unlock(); return ok;
 }

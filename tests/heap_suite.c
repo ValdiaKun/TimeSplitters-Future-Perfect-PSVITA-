@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 void fixture_fault_store(void);
 void fixture_thread_args(void);
 static TsfpImageFunction resolve(uint32_t address) { return address==0x13200 ? fixture_thread_args : NULL; }
@@ -66,6 +67,63 @@ static void *parallel(void *context) {
     }
     assert(tsfp_guest_thread_leave()); return NULL;
 }
+static _Thread_local int fail_after_pin;
+static struct { pthread_mutex_t mutex; pthread_cond_t condition; int armed,entered,release; } output_gate={.mutex=PTHREAD_MUTEX_INITIALIZER,.condition=PTHREAD_COND_INITIALIZER};
+uint32_t __real_tsfp_event_create(unsigned,int,uint32_t *);
+uint32_t __wrap_tsfp_event_create(unsigned type,int initial,uint32_t *handle) {
+    assert(!pthread_mutex_lock(&output_gate.mutex));
+    if (output_gate.armed) {
+        output_gate.armed=0; output_gate.entered=1; assert(!pthread_cond_broadcast(&output_gate.condition));
+        while (!output_gate.release) assert(!pthread_cond_wait(&output_gate.condition,&output_gate.mutex));
+    }
+    assert(!pthread_mutex_unlock(&output_gate.mutex));
+    if (fail_after_pin) { fail_after_pin=0; g_tsfp_access=TSFP_ACCESS_WRITE; tsfp_guest_memory_fault(0xfd000000,4); }
+    return __real_tsfp_event_create(type,initial,handle);
+}
+static void *event_output_worker(void *context) {
+    uint32_t b=(uint32_t)(uintptr_t)context;
+    assert(tsfp_guest_thread_enter(700,0x91000,0x1000,0x89100,164)); stack_top=0x92000;
+    uint32_t args[]={b+0x04000000,0,0,0}; TsfpFault fault;
+    assert(!call(2,4,args,&fault)); uint32_t handle=tsfp_guest_load_u32(b);
+    uint32_t set_args[]={handle,b+4}; assert(!call(3,2,set_args,&fault) && !tsfp_guest_load_u32(b+4));
+    assert(!tsfp_handle_close(handle) && tsfp_guest_thread_leave()); return NULL;
+}
+static void test_output_pins(void) {
+    uint32_t b=0,s=4096; assert(!operation(0,&b,&s,0x3000));
+    uint32_t refs[64],extra=0xdeadbeef;
+    for (unsigned i=0;i<64;++i) assert(!tsfp_heap_pin_output(b+0x04000000,4,&refs[i]) && refs[i]);
+    assert(tsfp_heap_pin_output(b,4,&extra)==0xc000009au && extra==0xdeadbeef);
+    uint32_t full_args[]={b,0,0,0};TsfpFault full_fault;
+    assert(call(2,4,full_args,&full_fault)==0xc000009au && !tsfp_thread_handles_busy());
+    s=0; uint32_t copy=b; assert(operation(1,&copy,&s,0x8000)==0xc0000001u && copy==b && !s);
+    for (unsigned i=0;i<64;++i) assert(tsfp_heap_unpin_output(refs[i]));
+    assert(!tsfp_heap_unpin_output(refs[0]));
+    assert(!tsfp_heap_pin_output(b,4,&extra) && extra!=refs[0] && !tsfp_heap_unpin_output(refs[0]));
+    assert(tsfp_heap_unpin_output(extra));
+    assert(!pthread_mutex_lock(&output_gate.mutex)); output_gate.armed=1; output_gate.entered=output_gate.release=0;
+    assert(!pthread_mutex_unlock(&output_gate.mutex));
+    pthread_t thread; assert(!pthread_create(&thread,NULL,event_output_worker,(void *)(uintptr_t)b));
+    assert(!pthread_mutex_lock(&output_gate.mutex));
+    struct timespec deadline; assert(!clock_gettime(CLOCK_REALTIME,&deadline)); deadline.tv_sec+=5;
+    while (!output_gate.entered) assert(!pthread_cond_timedwait(&output_gate.condition,&output_gate.mutex,&deadline));
+    assert(!pthread_mutex_unlock(&output_gate.mutex));
+    s=0;copy=b;assert(operation(1,&copy,&s,0x8000)==0xc0000001u && copy==b);
+    s=1;copy=b;assert(operation(1,&copy,&s,0x4000)==0xc0000001u && s==1);
+    assert(!pthread_mutex_lock(&output_gate.mutex)); output_gate.release=1;
+    assert(!pthread_cond_broadcast(&output_gate.condition) && !pthread_mutex_unlock(&output_gate.mutex));
+    assert(!pthread_join(thread,NULL));
+    /* Unsupported attributes and faulting output probes clean the durable guard. */
+    uint32_t args[]={b,0x13300,0,0};TsfpFault fault;
+    assert(call(2,4,args,&fault)==0xc00000bbu);
+    args[1]=0xfd000000; assert(call(2,4,args,&fault)==UINT32_MAX && fault.access==TSFP_ACCESS_READ);
+    args[1]=0;args[0]=0x93ffe;assert(call(2,4,args,&fault)==UINT32_MAX && fault.access==TSFP_ACCESS_WRITE);
+    args[0]=b;fail_after_pin=1;assert(call(2,4,args,&fault)==UINT32_MAX && fault.address==0xfd000000 && !fail_after_pin);
+    uint32_t invalid_set[]={0xdeadbeef,b+4};assert(call(3,2,invalid_set,&fault)==TSFP_STATUS_INVALID_HANDLE);
+    s=0;assert(!operation(1,&b,&s,0x8000)); /* all event references released */
+    int old_cancel;assert(!pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,&old_cancel) && old_cancel==PTHREAD_CANCEL_ENABLE);
+    assert(!pthread_setcancelstate(old_cancel,NULL));
+    puts("heap-outputs-v1: event-create=pass set=pass mirror=pass free-race=pass decommit-race=pass stale=pass quota=64 cleanup=pass");
+}
 void test_heap(void) {
     assert(!tsfp_heap_configured());
     unsigned char *raw=tsfp_guest_pointer(0x100000,0x40000); memset(raw,0x5a,0x40000);
@@ -76,8 +134,8 @@ void test_heap(void) {
     TsfpStorageConfig overlap={0x04100000,0x1400,3,256*1024,resolve};
     assert(tsfp_storage_configure(&overlap)!=TSFP_STORAGE_OK);
     assert(!tsfp_guest_thread_enter(123,0x100000,0x1000,0x89000,164));
-    const uint32_t markers[]={0x800000b8,0x800000c7};
-    tsfp_guest_write(0x900e0,markers,sizeof(markers)); assert(tsfp_kernel_imports_prepare(0x900e0,2));
+    const uint32_t markers[]={0x800000b8,0x800000c7,0x800000bd,0x800000e1};
+    tsfp_guest_write(0x900e0,markers,sizeof(markers)); assert(tsfp_kernel_imports_prepare(0x900e0,4));
     assert(tsfp_guest_thread_enter(41,0x8d000,0x1000,0x89000,164)); stack_top=0x8e000; output=0x90100;
     inaccessible(0x100000); inaccessible(0x04100000);
     trace();
@@ -137,6 +195,7 @@ void test_heap(void) {
     TsfpImageFunction fn=fixture_allocation_sequence;
     assert(tsfp_guest_run(invoke,&fn,&fault)==0 && g_esp==stack_top);
     assert(!tsfp_guest_load_u32(0x90120) && tsfp_guest_load_u32(0x90124)==0x12345678 && !tsfp_guest_load_u32(0x90128));
+    test_output_pins();
     assert(tsfp_guest_thread_leave());
     pthread_t threads[2]; for (unsigned i=0;i<2;++i) assert(!pthread_create(&threads[i],NULL,parallel,(void *)(uintptr_t)i));
     for (unsigned i=0;i<2;++i) assert(!pthread_join(threads[i],NULL));
