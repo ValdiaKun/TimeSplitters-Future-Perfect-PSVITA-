@@ -81,3 +81,8 @@ is retained. Standalone worker preparation uses one bounded temporary (at most
 64 KiB) and frees it before guest execution. Tests use 36-byte TLS blocks and
 64-byte thread-data buffers. These are synthetic configuration, not measured
 production capacity or throughput. Vita performance/allocation data unavailable.
+
+The thread registry uses 32 static records and one native mutex, without per-record
+heap allocation. Closing does not free guest memory; native owners release after
+stopping/joining. No throughput or Vita synchronization cost has been measured.
+This bounded ownership implementation is not a claimed performance optimization.

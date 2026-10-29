@@ -97,3 +97,11 @@ add overflow, permissions, alias and callback checks. Worker object+0x28 is patc
 to its own block instead of inheriting the main pointer; this is an explicit
 isolation correction rather than blindly copying the Win32 worker path. No
 foreign code, new dependency, proprietary data or source pin is introduced.
+
+Thread-handle contract audit at the existing PC/runtime pins: `src/kernel/
+kernel_bridge.c` defines BRIDGE_HANDLE_TAG 0x48000000 and ordinal 187 NtClose
+with 4-byte arguments. `src/kernel/kernel_file.c` provides STATUS_INVALID_HANDLE
+for invalid file handles; the bridge also accepts special fake handles. The
+Vita adapter independently implements a strict registered-thread subset and
+generation retirement, with no copied source or fake-handle success behavior.
+Generator guards retain the pinned tag/ordinal/argument contract.

@@ -574,3 +574,34 @@ Strict input tests, Python syntax, whitespace and staged-content checks pass.
 No new warnings suppressed or assertions disabled. No hardware, supported retail
 XBE/analysis, game execution or performance measurements; non-empty callbacks
 are explicitly rejected. Final push and PR CI evidence follows the push.
+
+## 2026-10-29 — thread-owner and NtClose subset
+
+TLS source commit `75c88313980d040ccdc042f0028f7e85e51d3155` passed push
+CPU/Vita run [40814706110](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40814706110),
+PR CPU/Vita [40814711797](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40814711797),
+and input [40814711841](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40814711841).
+
+The following ownership change retains 122 actual translated functions, extending
+the TLS entry with an ordinal-187 stdcall and a fourth import. Assertions cover
+close during translated execution, exit 37, retained owner after close, blocked
+teardown, stale generation, duplicate object/identity, physical alias collision,
+32-record exhaustion without output mutation, startup cancellation, competing
+close/finish, and two native joined TLS workers with owner records.
+
+Local validation uses the exact ARM command above (`tools/test_guest.py`): pinned
+PC shared-map reference, portable host, ASan/UBSan and static Cortex-A9 QEMU.
+Release VitaSDK uses `cmake --build build/vita-locked`. Input tests use the strict
+C11 command above; Python uses `python3 -m py_compile tools/*.py`; whitespace uses
+`git diff --check`. Final command outcomes and CI links are appended after runs.
+No native platform scheduler, Xbox waits, retail boot or physical device behavior
+is established by this subset. Performance remains unavailable.
+
+Local results: all four CPU modes and PC XBE/TLS parser comparison passed;
+both Release VPKs cross-built. Strict input, Python and whitespace checks passed.
+Pristine, portable and sanitized binaries each passed three additional runs.
+The repeat command initially used nonexistent `pc-baseline`/`host-pc` names
+(exit 127); corrected to the runner's `host-pristine`, then all repeats passed.
+`handles-v1: close=pass ownership=pass stale=pass race=pass quota=32`.
+Native creation/join remains explicit, and the test closes/releases only after
+joining the two guest workers. No physical Vita or FPS measurement available.

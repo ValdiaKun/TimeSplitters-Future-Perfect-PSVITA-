@@ -268,3 +268,19 @@ cross-compilation, with no physical device or retail/performance evidence.
   sections, zero characteristics, no callback execution or production scheduler.
   No retail title, physical Vita or measured performance. Next: thread lifecycle/
   handle ownership contracts before broader kernel thread/wait imports.
+
+## 2026-10-29 — bounded thread ownership and NtClose
+
+Implemented a fixed 32-record generation-checked thread-owner registry and
+ordinal 187 `NtClose` for its registered handles. Created/running/terminated
+state, exit status, close and owner release are distinct. Live owners block
+image initialization/reset; stale/double/unknown closes return INVALID_HANDLE.
+The actual translated TLS title entry now closes its registered handle before
+termination. Native workers remain caller-created/joined; this is not a guest
+thread scheduler or PsCreateSystemThread implementation. Waits remain unsupported.
+
+TLS commit `75c8831` passed push CPU/Vita [40814706110](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40814706110),
+PR CPU/Vita [40814711797](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40814711797),
+and input [40814711841](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40814711841).
+Next: waitable thread completion with explicit timeout and ownership contracts,
+then a platform creation/join adapter. Retail files/metadata and Vita unavailable.

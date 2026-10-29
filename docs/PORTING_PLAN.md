@@ -135,3 +135,9 @@ TLS directory extraction, bounded allocation/index/zero-fill policy and worker
 isolation now have synthetic source/PC/ARM coverage. This does not complete B/D:
 non-empty callbacks, guest lifecycle/handles/waits, full flags/SEH, retail entry
 and hardware checks remain open. Proceed to explicit thread ownership contracts.
+
+Thread ownership now has a bounded generation-checked registry, strict NtClose
+and live-image teardown protection, including close/finish races and exhaustion
+coverage. This completes only the ownership prerequisite, not guest thread
+creation or synchronization. Next acceptance: waitable completion and explicit
+platform launch/join integration, preserving independent TLS and rollback.

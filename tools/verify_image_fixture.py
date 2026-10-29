@@ -14,7 +14,7 @@ for kind in ('retail','debug'):
     assert len(x.sections)==8 and x.sections[0].raw_size==68 and x.sections[0].virtual_size==64
     assert x.tls.raw_data_start==0x8c080 and x.tls.raw_data_end==0x8c094
     assert x.tls.zero_fill_size==5 and x.tls.tls_index_addr==0x8c020 and x.tls.callbacks_addr==0x8c060
-    assert [item.ordinal for item in x.kernel_imports]==[104,320,258]
+    assert [item.ordinal for item in x.kernel_imports]==[104,320,258,187]
     raw=parser.at(x.tls.raw_data_start,x.tls.raw_data_end-x.tls.raw_data_start)
     total=((len(raw)+x.tls.zero_fill_size+15)&~15)+4
     assert total==36 and (-(total//4)&0xffffffff)==0xfffffff7

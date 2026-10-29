@@ -51,6 +51,7 @@ if(TSFP_BUILD_GUEST_TESTS)
         "${TSFP_ROOT}/guest/image.c"
         "${TSFP_ROOT}/guest/xbe.c"
         "${TSFP_ROOT}/guest/tls.c"
+        "${TSFP_ROOT}/guest/handles.c"
         "${TSFP_ROOT}/tests/image_suite.c"
         "${TSFP_ROOT}/tests/kernel_suite.c"
         "${TSFP_ROOT}/tests/execution_suite.c"

@@ -96,7 +96,7 @@ FIXTURES[0x13340] = ('fixture_kernel_call', 'ff16c3')
 
 FIXTURES[0x13400] = ('fixture_image_entry', 'be00800800e9f6feffff')
 
-FIXTURES[0x13500] = ('fixture_tls_entry', 'a144c008002b0540c00800030550c0080083c00f83e0f083c004c1e802f7d8a320c0080089c1648b15040000008b5c8a04891d200009008b5c8a14891d24000900648b1d280000008b5b28891d28000900e9aafeffff')
+FIXTURES[0x13500] = ('fixture_tls_entry', 'a144c008002b0540c00800030550c0080083c00f83e0f083c004c1e802f7d8a320c0080089c1648b15040000008b5c8a04891d200009008b5c8a14891d24000900648b1d280000008b5b28891d28000900be00800800ff3540000900ff560ca344000900e997feffff')
 
 FIXTURES[0x13600] = ('fixture_tls_worker', '8b0d20c00800648b1504000000648b1d280000008b73288d3c8a8b832c01000089448a088b448a04c3')
 
@@ -155,8 +155,10 @@ def main():
     kernel = (runtime / 'src/kernel/kernel.h').read_text()
     layout = (runtime / 'src/kernel/xbox_memory_layout.h').read_text()
     bridge = (runtime / 'src/kernel/kernel_bridge.c').read_text()
+    if '#define BRIDGE_HANDLE_TAG  0x48000000u' not in bridge:
+        raise RuntimeError('Pinned opaque handle tag changed')
     memory_layout = (runtime / 'src/kernel/xbox_memory_layout.c').read_text()
-    for ordinal, size, name in ((104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
+    for ordinal, size, name in ((187,4,'NtClose'),(104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
         if not re.search(rf'case {ordinal}: return\s+{size};',bridge) or not re.search(rf'case {ordinal}: return bridge_{name};',bridge):
             raise RuntimeError(f'Pinned kernel ordinal/ABI changed: {ordinal} {name}')
     for name,value in (('XBOX_THREAD_OBJ_SIZE','0x200u'),('XBOX_THREAD_ID_OFF','0x12Cu')):

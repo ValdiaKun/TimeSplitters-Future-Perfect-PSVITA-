@@ -7,6 +7,7 @@
 #include "image.h"
 #include "xbe.h"
 #include "kernel.h"
+#include "handles.h"
 #include "memory.h"
 #include "string_ops.h"
 #include <assert.h>
@@ -96,7 +97,7 @@ static void tls_negative_cases(size_t size,uint32_t directory_raw,const TsfpXbeI
         case 12: put(directory_raw+32,0x13300); break; /* valid but unsupported callback */
         case 13: put(directory_raw+32,0xfd000000); break;
         case 14: put(directory_raw+20,1); break;
-        case 15: put(0x200+2*56+16,0x4044); break;
+        case 15: put(0x200+2*56+16,0x4040); break;
         case 16: put(directory_raw,0x8c0f8); put(directory_raw+4,0x8c10c); break;
         case 17: put(directory_raw+8,0x04089000); break;
         case 18: put(directory_raw,0x89000); put(directory_raw+4,0x89014); break;
@@ -128,8 +129,70 @@ static void tls_negative_cases(size_t size,uint32_t directory_raw,const TsfpXbeI
     }
     memcpy(xbe,saved,sizeof(xbe));
 }
+static int run_owned_image(TsfpFault *fault) {
+    uint32_t owner=0;
+    assert(tsfp_thread_owner_create(0x8a000,41,&owner) && tsfp_thread_owner_start(owner));
+    assert(!tsfp_thread_owner_start(owner) && !tsfp_thread_owner_release(owner));
+    tsfp_guest_store_u32(0x90040,owner);
+    int result=tsfp_image_run(fault);
+    TsfpThreadInfo info;
+    assert(result==1 && fault->kind==TSFP_THREAD_EXIT && fault->detail==37);
+    assert(tsfp_guest_load_u32(0x90044)==0); /* actual translated NtClose call */
+    assert(tsfp_thread_owner_query(owner,&info) && info.state==TSFP_THREAD_RUNNING && !info.handle_open);
+    assert(!tsfp_image_reset()); /* close is not termination/storage release */
+    assert(tsfp_thread_owner_finish(owner,fault->detail) && !tsfp_thread_owner_finish(owner,0));
+    assert(tsfp_thread_owner_query(owner,&info) && info.state==TSFP_THREAD_TERMINATED && info.status==37);
+    assert(tsfp_thread_owner_release(owner) && !tsfp_thread_owner_query(owner,&info));
+    assert(tsfp_thread_handle_close(owner)==TSFP_STATUS_INVALID_HANDLE);
+    return result;
+}
+typedef struct CloseRace { uint32_t handle,result; } CloseRace;
+static void *close_race(void *context) {
+    CloseRace *c=context; c->result=tsfp_thread_handle_close(c->handle); return NULL;
+}
+static void *finish_race(void *context) {
+    CloseRace *c=context; c->result=(uint32_t)tsfp_thread_owner_finish(c->handle,23); return NULL;
+}
+static void test_handles(void) {
+    uint32_t owner,canary=0x12345678;
+    assert(tsfp_thread_owner_create(0x8a000,41,&owner));
+    assert(!tsfp_thread_owner_create(0x8a000,41,&canary) && canary==0x12345678);
+    assert(!tsfp_thread_owner_create(0x0408a000,41,&canary) && canary==0x12345678);
+    assert(!tsfp_thread_owner_create(0x8a000,42,&canary) && canary==0x12345678);
+    tsfp_guest_store_u32(0x8a004+0x12c,42);
+    assert(!tsfp_thread_owner_create(0x0408a004,42,&canary) && canary==0x12345678);
+    CloseRace race[2]={{owner,99},{owner,99}}; pthread_t threads[2];
+    for (unsigned i=0;i<2;++i) assert(!pthread_create(&threads[i],NULL,close_race,&race[i]));
+    for (unsigned i=0;i<2;++i) assert(!pthread_join(threads[i],NULL));
+    assert((race[0].result==0 && race[1].result==TSFP_STATUS_INVALID_HANDLE) ||
+           (race[1].result==0 && race[0].result==TSFP_STATUS_INVALID_HANDLE));
+    assert(!tsfp_image_reset() && !tsfp_thread_owner_release(owner));
+    race[0].result=race[1].result=99;
+    for (unsigned i=0;i<2;++i) assert(!pthread_create(&threads[i],NULL,finish_race,&race[i]));
+    for (unsigned i=0;i<2;++i) assert(!pthread_join(threads[i],NULL));
+    assert(race[0].result+race[1].result==1);
+    TsfpThreadInfo ended; assert(tsfp_thread_owner_query(owner,&ended) && ended.status==23);
+    assert(tsfp_thread_owner_release(owner));
+    uint32_t next; assert(tsfp_thread_owner_create(0x8a000,41,&next) && next!=owner);
+    assert(!tsfp_thread_owner_start(owner) && tsfp_thread_handle_close(owner)==TSFP_STATUS_INVALID_HANDLE);
+    assert(tsfp_thread_handle_close(next)==0 && tsfp_thread_owner_finish(next,0) && tsfp_thread_owner_release(next));
+    uint32_t quota[TSFP_THREAD_HANDLES];
+    for (unsigned i=0;i<TSFP_THREAD_HANDLES;++i) {
+        uint32_t object=0x90000+i*0x200,id=1000+i;
+        tsfp_guest_store_u32(object+0x12c,id);
+        assert(tsfp_thread_owner_create(object,id,&quota[i]));
+    }
+    tsfp_guest_store_u32(0x8b200+0x12c,2000);
+    assert(!tsfp_thread_owner_create(0x8b200,2000,&canary) && canary==0x12345678);
+    for (unsigned i=0;i<TSFP_THREAD_HANDLES;++i)
+        assert(tsfp_thread_handle_close(quota[i])==0 && tsfp_thread_owner_finish(quota[i],0) && tsfp_thread_owner_release(quota[i]));
+    assert(!tsfp_thread_handles_busy());
+    const uint32_t invalid[]={0,0xffffffff,0xfffffffe,0x48000000,0xdead0001,0xbeef0010};
+    for (unsigned i=0;i<sizeof(invalid)/sizeof(invalid[0]);++i) assert(tsfp_thread_handle_close(invalid[i])==TSFP_STATUS_INVALID_HANDLE);
+}
 static void test_xbe(void) {
     TsfpImageSection sections[8]; TsfpImageDescription d=description(sections);
+    write_word(12,0x800000bb);
     write_word(0x4020,0x12345678); /* title-owned TLS index until guest entry */
     write_word(0x4040,0x8c080); write_word(0x4044,0x8c094); write_word(0x4048,0x8c020);
     write_word(0x404c,0x8c060); write_word(0x4050,5); write_word(0x4054,0);
@@ -139,8 +202,8 @@ static void test_xbe(void) {
     sections[6]=(TsfpImageSection){0x13500,0x100,5,fixture_tls_entry_bytes,fixture_tls_entry_size};
     sections[7]=(TsfpImageSection){0x13600,0x40,5,fixture_tls_worker_bytes,fixture_tls_worker_size};
     d.thread_data_size=64;
-    sections[5]=(TsfpImageSection){0x88000,16,1,data,16};
-    sections[2]=(TsfpImageSection){0x88010,sizeof(data)-16,3,data+16,sizeof(data)-16};
+    sections[5]=(TsfpImageSection){0x88000,20,1,data,20};
+    sections[2]=(TsfpImageSection){0x88014,sizeof(data)-20,3,data+20,sizeof(data)-20};
     for (unsigned debug=0;debug<2;++debug) {
         memset(xbe,0,sizeof(xbe)); memcpy(xbe,"XBEH",4);
         put(0x104,0x10000); put(0x108,0x1000); put(0x10c,0x84000); put(0x110,0x178);
@@ -165,7 +228,7 @@ static void test_xbe(void) {
 #endif
         uint32_t import_raw; memcpy(&import_raw,xbe+0x200+5*56+12,4);
         TsfpXbeImage parsed;
-        assert(tsfp_xbe_normalize(xbe,cursor,&parsed) && parsed.entry==0x13500 && parsed.import_count==3 && parsed.sections[0].file_size==64);
+        assert(tsfp_xbe_normalize(xbe,cursor,&parsed) && parsed.entry==0x13500 && parsed.import_count==4 && parsed.sections[0].file_size==64);
         unsigned char parsed_before[sizeof(parsed)]; memcpy(parsed_before,&parsed,sizeof(parsed));
         for (unsigned variant=0;variant<14;++variant) {
             unsigned char *saved=xbe_backup; memcpy(saved,xbe,sizeof(xbe));
@@ -182,7 +245,7 @@ static void test_xbe(void) {
             case 9: put(import_raw,0x80000000); break;
             case 10: put(0x12c,UINT32_MAX); break;
             case 11: put(0x200+56+12,0x1000); break;
-            case 12: put(0x200+5*56+16,12); break; /* terminator only in BSS */
+            case 12: put(0x200+5*56+16,16); break; /* terminator only in BSS */
             case 13: put(0x12c,0x90000); break; /* directory only in BSS */
             }
 #ifdef TSFP_PC_MAPPED_ORACLE
@@ -199,7 +262,7 @@ static void test_xbe(void) {
         d.sections=parsed.sections; d.count=parsed.count; d.entry=parsed.entry;
         d.import_table=parsed.import_table; d.import_count=parsed.import_count; d.stack_size=parsed.stack_commit; d.tls=parsed.tls;
         uint32_t data_raw; memcpy(&data_raw,xbe+0x200+2*56+12,4);
-        tls_negative_cases(cursor,data_raw+(0x8c040-0x88010),&parsed,d);
+        tls_negative_cases(cursor,data_raw+(0x8c040-0x88014),&parsed,d);
         assert(tsfp_image_initialize(&d)==TSFP_IMAGE_OK);
         TsfpCpuState enter_before,enter_after; tsfp_cpu_capture(&enter_before);
         assert(!tsfp_guest_thread_enter(999,0x13300,16,0x89100,164));
@@ -227,25 +290,36 @@ static void test_xbe(void) {
 #endif
         assert(tsfp_guest_load_u32(0x89004)==0x89064 && tsfp_guest_load_u32(0x8a028)==0x89040);
         for (unsigned i=20;i<36;++i) assert(tsfp_guest_load_u8(0x89040+i)==0);
-        TsfpFault f; assert(tsfp_image_run(&f)==1 && f.kind==TSFP_THREAD_EXIT && f.detail==37);
+        TsfpFault f; assert(run_owned_image(&f)==1 && f.kind==TSFP_THREAD_EXIT && f.detail==37);
         assert(tsfp_guest_load_u32(0x8c020)==0xfffffff7 && tsfp_guest_load_u32(0x90020)==99);
         assert(tsfp_guest_load_u32(0x90024)==0 && tsfp_guest_load_u32(0x90028)==0x89040);
         uint32_t main_eax=g_eax;
-        pthread_t workers[2];
-        for (uintptr_t slot=0;slot<2;++slot) assert(!pthread_create(&workers[slot],NULL,tls_worker,(void *)slot));
-        for (unsigned slot=0;slot<2;++slot) assert(!pthread_join(workers[slot],NULL));
+        pthread_t workers[2]; uint32_t owners[2];
+        for (uintptr_t slot=0;slot<2;++slot) {
+            assert(tsfp_thread_owner_create(0x8a200+(uint32_t)slot*0x200,101+(uint32_t)slot,&owners[slot]));
+            assert(tsfp_thread_owner_start(owners[slot]));
+            assert(!pthread_create(&workers[slot],NULL,tls_worker,(void *)slot));
+        }
+        assert(!tsfp_image_reset());
+        for (unsigned slot=0;slot<2;++slot) {
+            assert(!pthread_join(workers[slot],NULL));
+            assert(tsfp_thread_owner_finish(owners[slot],99));
+            TsfpThreadInfo info; assert(tsfp_thread_owner_query(owners[slot],&info) && info.status==99);
+            assert(tsfp_thread_handle_close(owners[slot])==0 && tsfp_thread_owner_release(owners[slot]));
+        }
         assert(g_eax==main_eax && tsfp_guest_load_u32(0x89048)==0xdeadbeef);
         assert(tsfp_guest_load_u32(0x8c088)==0xdeadbeef && tsfp_guest_load_u32(0x8c020)==0xfffffff7);
+        test_handles();
         assert(tsfp_guest_run(readonly_import,NULL,&f)==1 && f.access==TSFP_ACCESS_WRITE);
         assert(tsfp_guest_load_u32(0x88000)==0xfe000000);
         assert(tsfp_image_reset());
         /* Explicit loader-owned index policy: default remains title-owned. */
         d.tls_index_policy=TSFP_TLS_WRITE_INDEX;
         assert(tsfp_image_initialize(&d)==TSFP_IMAGE_OK && tsfp_guest_load_u32(0x8c020)==0xfffffff7);
-        assert(tsfp_image_run(&f)==1 && f.kind==TSFP_THREAD_EXIT && f.detail==37);
+        assert(run_owned_image(&f)==1 && f.kind==TSFP_THREAD_EXIT && f.detail==37);
         assert(tsfp_image_reset()); d.tls_index_policy=TSFP_TLS_TITLE_INDEX;
         /* Empty raw ranges and null callback pointers are valid. */
-        uint32_t directory_raw=data_raw+(0x8c040-0x88010);
+        uint32_t directory_raw=data_raw+(0x8c040-0x88014);
         unsigned char *saved=xbe_backup; memcpy(saved,xbe,sizeof(xbe));
         for (unsigned zero=0;zero<2;++zero) {
             put(directory_raw,0); put(directory_raw+4,0); put(directory_raw+12,0); put(directory_raw+16,zero ? 5 : 0);
@@ -254,12 +328,13 @@ static void test_xbe(void) {
             d.sections=parsed.sections; d.tls=parsed.tls;
             assert(tsfp_image_initialize(&d)==TSFP_IMAGE_OK);
             assert(tsfp_guest_load_u32(0x89004)==0x89040+parsed.tls.block_size);
-            assert(tsfp_image_run(&f)==1 && f.kind==TSFP_THREAD_EXIT && f.detail==37);
+            assert(run_owned_image(&f)==1 && f.kind==TSFP_THREAD_EXIT && f.detail==37);
             assert(tsfp_guest_load_u32(0x8c020)==parsed.tls.index_value && tsfp_guest_load_u32(0x90020)==0);
             assert(tsfp_image_reset());
         }
         memcpy(xbe,saved,sizeof(xbe));
     }
+    puts("handles-v1: close=pass ownership=pass stale=pass race=pass quota=32");
     puts("tls-v1: malformed=38 rollback=pass index=title,loader zero-fill=pass workers=2 callbacks=reject");
     puts("xbe-v1: keys=retail,debug malformed=28 rollback=pass entry=37");
 }

@@ -2,6 +2,7 @@
 #include "image.h"
 #include "memory.h"
 #include "kernel.h"
+#include "handles.h"
 #include <stdlib.h>
 #include <string.h>
 /* One image per guest address space. Setup/teardown require exclusive ownership. */
@@ -62,7 +63,7 @@ static int overlap(uint32_t a,size_t na,uint32_t b,size_t nb) {
 }
 
 enum TsfpImageError tsfp_image_initialize(const TsfpImageDescription *description) {
-    if (ready || tsfp_guest_policy_active() || tsfp_guest_thread_id() || tsfp_guest_recovery_active()) return TSFP_IMAGE_BUSY;
+    if (ready || tsfp_thread_handles_busy() || tsfp_guest_policy_active() || tsfp_guest_thread_id() || tsfp_guest_recovery_active()) return TSFP_IMAGE_BUSY;
     if (!description || !description->sections || !description->count || description->count>TSFP_IMAGE_MAX_SECTIONS || !description->resolve)
         return TSFP_IMAGE_METADATA;
     Plan p={0}; p.d=*description;
@@ -177,7 +178,7 @@ int tsfp_image_run(TsfpFault *fault) {
 }
 int tsfp_image_active(void) { return ready; }
 int tsfp_image_reset(void) {
-    if (tsfp_guest_thread_id() || tsfp_guest_recovery_active()) return 0;
+    if (tsfp_guest_thread_id() || tsfp_guest_recovery_active() || tsfp_thread_handles_busy()) return 0;
     if (ready) { tsfp_guest_set_policy(NULL); tsfp_kernel_imports_reset(); memset(&image,0,sizeof(image)); ready=0; }
     return 1;
 }

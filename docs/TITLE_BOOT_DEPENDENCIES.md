@@ -57,3 +57,10 @@ entry and two workers execute negative-index fs:[4] accesses and private object
 TlsData links. Next dependency: ownership-safe guest thread handles/lifecycle,
 then validated wait/thread imports. Non-empty callbacks, full TLS characteristics,
 retail metadata and physical hardware remain separate gates.
+
+Bounded ownership prerequisite implemented: managed thread tokens, lifecycle
+state/exit status, strict NtClose and teardown pins. The translated TLS entry
+closes a registered token and terminates through real imports. Native worker
+creation/join remains explicit test/platform ownership. Next gate: waitable
+thread completion, timeout/reference semantics, then a bounded creation/join
+adapter; do not claim guest scheduler support from these registry tests.

@@ -556,3 +556,26 @@ and worker isolation are checked separately; no byte-identical Win32 scheduler
 claim is made. Thread entry checks permissions and active-image stack/TLS physical
 alias conflicts before resetting CPU state. Native creation/join remains explicit
 platform ownership, outside guest recovery scopes.
+
+## Bounded thread ownership and close boundary
+
+`guest/handles.c` owns 32 fixed records. Tokens use the PC bridge's opaque
+0x48000000 namespace, a slot and monotonic generation; exhausted generations
+retire rather than wrap. Object/id validation precedes locking. Duplicate IDs
+and physically overlapping object storage (including mirrors) are rejected.
+Caller-owned guest storage stays pinned until termination, handle close and
+explicit owner release. Created-to-terminated cancellation permits native
+startup rollback. Completion status is immutable after the first finish.
+
+NtClose (187, one stdcall argument) invalidates guest access without terminating
+native execution or dropping owner storage. Invalid/stale/double closes return
+0xc0000008, using the PC file-kernel invalid-handle status; permissive bridge fake
+handles are deliberately unsupported. This is only the managed-thread subset.
+Imports prefetch checked stack arguments before any side effects. Mutex-protected
+operations never access guest memory or invoke recovery while holding the lock.
+
+Native owners create/join outside guest recovery, and finish only after execution
+has stopped. They serialize image setup/reset with owner creation. Image teardown
+checks all owner records, including closed guest handles. This does not enforce
+OS joining automatically, create native threads, implement duplication/waits,
+or adapt PsCreateSystemThread. Concurrent close/finish/query are supported.
