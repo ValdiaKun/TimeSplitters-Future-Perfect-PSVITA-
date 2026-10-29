@@ -130,3 +130,6 @@ stack-local grant/deadline nodes (maximum 64 references per object) and the
 existing monotonic condition. Broadcast wakes can cause unrelated waiters to
 recheck predicates; no performance improvement is claimed. Real Vita memory,
 contention cost, FPS and latency remain unmeasured.
+
+Empty event-attribute decoding uses a fixed three-word stack snapshot; no
+allocation or additional resident pool is introduced. Cost is not benchmarked.

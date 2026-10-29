@@ -32,8 +32,21 @@ drives translated 189/225/186/233/187, including grants, deadlines, reference
 retention and mixed event/thread quota rollback. The thirteenth authored XBE
 section adds function 0x13b00; there are 126 translated functions.
 
-Next: inspect the pinned guest OBJECT_ATTRIBUTES layout and accept validated
-empty unnamed event descriptors. Do not infer guest widths from native host
-structs. Names/root directories/unsupported flags must fail explicitly. A
-supported user-owned XBE plus matching analysis metadata is still missing for
-a real entry trace. No physical Vita or performance measurements are available.
+Empty unnamed ObjectAttributes are now supported through explicit checked
+12-byte guest decoding. Nonzero names, root directories and flags remain errors.
+All 126 translated functions and existing regression suites remain enabled.
+
+Next: inspect pinned Xbox allocation entry paths in xbox_memory_layout.c and
+kernel_bridge.c and define a bounded, explicitly ceded guest-heap service profile
+with alias/permission checks and transactional allocation/free tests. Do not
+allocate from arbitrary retail BSS or add success stubs. Supported user-owned
+XBE and matching analysis metadata are still missing for an actual entry trace.
+Physical Vita execution, gameplay and performance remain unverified.
+
+Allocator inspection: pinned bridge ordinals 184 (20-byte allocate) and 199
+(12-byte free) use in/out guest pointers. PC bridge uses an immediately-backed
+heap, no-op commit/decommit and a large-reserve clamp; these are implementation
+limitations, not Xbox VM semantics to silently copy. Establish exact supported
+reserve/commit/release behavior, zeroing, returned rounded extents and output
+rollback before binding imports. A reserve must not obtain fresh RAM by aliasing
+a different live range. Keep unsupported modes explicit.

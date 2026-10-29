@@ -796,3 +796,20 @@ commit-specific draft PR checks; local testing alone is not remote verification.
 Final event source also passed both hash-locked VitaSDK Release VPK cross-builds,
 strict controller tests, Python compilation and git whitespace checks. Pristine,
 portable and sanitized host executables each passed three additional full runs.
+
+Event-core commit 86bfe314a504236618ace5de4b27d4dce5104034 passed both CPU/Vita
+workflows: [push 40888112505](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40888112505)
+and [PR 40888123844](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40888123844).
+PR controller workflow 40888123741 passed.
+
+The follow-up attribute profile tests aligned, unaligned and mirrored empty
+descriptors, input/output aliasing, each nonzero unsupported field, MMIO, 32-bit
+overflow, truncated section extents and an unpermitted mirror-boundary span.
+Failures preserve the output canary and registry. The generator checks the pinned
+OBJECT_ATTRIBUTES field order; guest decoding never uses a host sizeof(struct).
+
+Final attribute-source matrix passed PC-header/shared-map, portable host,
+ASan/UBSan, Cortex-A9 QEMU, both VitaSDK Release VPK cross-builds, strict
+controller, Python and whitespace checks. All three host executables passed
+three additional repeats, including the complete event suite. The event output
+now also reports `attributes=pass`. No test expectations were weakened.

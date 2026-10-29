@@ -139,3 +139,8 @@ third-party event code. Wrong-kind Set/Clear uses the pinned invalid-handle stat
 Unlike the PC previous-state placeholder, this implementation tracks state.
 Bridge notification-generation comments motivate retaining grants across a
 subsequent clear; test schedules verify both event types.
+
+Pinned bridge file-I/O layout comments explicitly define Xbox OBJECT_ATTRIBUTES
+as 12 bytes with RootDirectory/ObjectName/Attributes at offsets 0/4/8. Its event
+implementation ignores the native descriptor; this port only accepts null or a
+checked empty descriptor and fails closed for names/directories/flags.

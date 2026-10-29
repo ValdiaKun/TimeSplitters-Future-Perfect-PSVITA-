@@ -121,8 +121,8 @@ remain required to identify title-specific blockers and measure gameplay.
 
 Ordinals 189/225/186 and event waits through 233 execute through the actual
 translated import path with typed, retained handles. The profile supports
-unnamed events with null attributes, manual/auto reset, polling and non-alertable
+unnamed events with null or validated empty attributes, manual/auto reset, polling and non-alertable
 relative/infinite waits. Named objects, multi-object waits, KeEvent addresses and
-absolute/alertable modes remain missing. Next inspect empty unnamed
-ObjectAttributes descriptors before extending additional services. Supported
+absolute/alertable modes remain missing. Empty unnamed
+ObjectAttributes descriptors are now validated before allocation/publication. Supported
 retail XBE and matching analysis metadata are still unavailable for an entry trace.

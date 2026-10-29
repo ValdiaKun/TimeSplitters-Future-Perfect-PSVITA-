@@ -196,7 +196,32 @@ void test_events(void) {
     uint32_t create_bad[]={0x93ffe,0,0,0}; assert(call(0,4,create_bad,&fault)==UINT32_MAX && !tsfp_thread_handles_busy());
     create_bad[0]=0x90100; create_bad[2]=2; tsfp_guest_store_u32(0x90100,0x12345678);
     assert(call(0,4,create_bad,&fault)==0xc000000du && tsfp_guest_load_u32(0x90100)==0x12345678);
-    create_bad[2]=0; create_bad[1]=0xfd000000; assert(call(0,4,create_bad,&fault)==0xc00000bbu);
+    create_bad[2]=0;
+    /* Guest layout is 12 bytes; unaligned and mirrored descriptors are safe.
+     * Snapshot before writing an output that aliases the input descriptor. */
+    const uint32_t empty[3]={0};
+    const uint32_t locations[]={0x90140,0x90141,0x04090141};
+    for (unsigned i=0;i<3;++i) {
+        tsfp_guest_write(locations[i],empty,sizeof(empty)); create_bad[1]=locations[i];
+        assert(call(0,4,create_bad,&fault)==0); h=tsfp_guest_load_u32(0x90100);
+        assert(poll(h)==0x102 && one(4,h)==0);
+    }
+    create_bad[0]=create_bad[1]=0x90140; tsfp_guest_write(0x90140,empty,sizeof(empty));
+    assert(call(0,4,create_bad,&fault)==0); h=tsfp_guest_load_u32(0x90140); assert(one(4,h)==0);
+    create_bad[0]=0x90100; create_bad[1]=0x90140;
+    for (unsigned field=0;field<3;++field) {
+        tsfp_guest_write(0x90140,empty,sizeof(empty)); tsfp_guest_store_u32(0x90140+field*4,1);
+        tsfp_guest_store_u32(0x90100,0x12345678);
+        assert(call(0,4,create_bad,&fault)==TSFP_STATUS_NOT_SUPPORTED && !tsfp_thread_handles_busy());
+        assert(tsfp_guest_load_u32(0x90100)==0x12345678);
+    }
+    const uint32_t invalid_attrs[]={0xfd000000,0xfffffffc,0x93ff8,0x03fffffc};
+    for (unsigned i=0;i<4;++i) {
+        create_bad[1]=invalid_attrs[i];
+        assert(call(0,4,create_bad,&fault)==UINT32_MAX && fault.kind==TSFP_FAULT_MEMORY &&
+            fault.access==TSFP_ACCESS_READ && fault.address==invalid_attrs[i] && fault.width==12);
+        assert(!tsfp_thread_handles_busy() && tsfp_guest_load_u32(0x90100)==0x12345678);
+    }
     /* Shared quota, cross-kind reuse and stale generation rejection. */
     TsfpStorageConfig config={0x90400,0x1400,3,256*1024,resolve};
     assert(tsfp_storage_configure(&config)==TSFP_STORAGE_OK && tsfp_thread_service_start(0x1000,NULL));
@@ -217,5 +242,5 @@ void test_events(void) {
     assert(tsfp_guest_thread_leave() && !tsfp_thread_handles_busy());
     const uint32_t restore[]={0x80000068,0x80000140,0x80000102,0x800000bb};
     tsfp_guest_write(0x900e0,restore,sizeof(restore)); assert(tsfp_kernel_imports_prepare(0x900e0,4));
-    puts("event-v1: manual=pass auto=pass grants=pass close-refs=pass deadlines=pass types=pass quota=32 repeats=32");
+    puts("event-v1: manual=pass auto=pass grants=pass close-refs=pass deadlines=pass types=pass quota=32 repeats=32 attributes=pass");
 }

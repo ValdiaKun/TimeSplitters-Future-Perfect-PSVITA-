@@ -345,5 +345,11 @@ Implemented typed, generation-checked manual/auto-reset events sharing the
 closed objects and block image reset. Per-waiter grants survive clear, and late
 signals do not get consumed by expired waiters. All 126 translated functions pass
 the local PC/portable/sanitizer/ARM matrix. No retail boot or hardware claim.
-Non-null ObjectAttributes, alertable/absolute waits, named events, guest-address
+Nonempty ObjectAttributes, alertable/absolute waits, named events, guest-address
 KeEvent objects and multiple-object waits remain unsupported.
+
+Empty unnamed event ObjectAttributes now accept checked aligned, unaligned and
+mirrored descriptors, including output/input aliasing. Nonempty metadata fails
+closed; malformed reads leave handles/output unchanged. Next inspect bounded
+guest heap services against the pinned PC allocation path. Retail XBE/analysis
+and Vita hardware are still missing; no performance measurements exist.

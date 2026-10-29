@@ -201,3 +201,8 @@ now pass local host/reference/sanitizer/ARM testing, including lifetime and
 timeout races. This does not establish a complete Xbox synchronization subsystem.
 Next bounded compatibility task: validate empty unnamed ObjectAttributes without
 adding speculative named-object support. Retail boot remains a separate gate.
+
+Empty unnamed event attributes are now supported through checked 12-byte guest
+decoding; named attributes remain unsupported. Next boot prerequisite to inspect:
+bounded guest heap/allocation services using explicitly ceded storage and the
+pinned allocator/import contracts. Retail traces remain unavailable.

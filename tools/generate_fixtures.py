@@ -166,6 +166,8 @@ def main():
     if '#define BRIDGE_HANDLE_TAG  0x48000000u' not in bridge:
         raise RuntimeError('Pinned opaque handle tag changed')
     memory_layout = (runtime / 'src/kernel/xbox_memory_layout.c').read_text()
+    if not re.search(r'typedef struct _XBOX_OBJECT_ATTRIBUTES\s*\{\s*HANDLE\s+RootDirectory;\s*PXBOX_ANSI_STRING\s+ObjectName;\s*ULONG\s+Attributes;\s*\}',kernel):
+        raise RuntimeError('Pinned Xbox OBJECT_ATTRIBUTES field order changed')
     for name,value in (('XboxNotificationEvent',0),('XboxSynchronizationEvent',1)):
         if not re.search(rf'\b{name}\s*=\s*{value}\b',kernel):
             raise RuntimeError(f'Pinned event type changed: {name}')

@@ -769,6 +769,13 @@ not cancel existing references; the final closed-event reference retires its cel
 
 Create/set output spans are checked before mutation and cannot target managed
 storage/templates. Event exhaustion maps to insufficient resources, including
-thread creation through the shared registry, with storage rollback. Non-null
+thread creation through the shared registry, with storage rollback. Nonempty
 ObjectAttributes and unknown event types fail explicitly. Unsupported alertable,
 absolute, named, pulse and multiple-object semantics remain outside this subset.
+
+NtCreateEvent also accepts a non-null, readable 12-byte guest descriptor only
+when RootDirectory, ObjectName and Attributes are all zero. The full descriptor
+is read before output validation/allocation; unaligned and low-RAM mirror aliases
+use checked transfers. Names, directories and all flags return NOT_SUPPORTED;
+malformed descriptors fault with a 12-byte read and publish no object. Output may
+alias an empty descriptor because the input snapshot precedes publication.

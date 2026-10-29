@@ -80,6 +80,14 @@ static uint32_t create_thread(const uint32_t *frame) {
     }
     return result.status;
 }
+static uint32_t event_attributes(uint32_t address) {
+    if (!address) return 0;
+    /* Pinned bridge: Xbox OBJECT_ATTRIBUTES is three 32-bit fields, not the
+     * native host struct. Snapshot the whole readable descriptor before any
+     * allocation/output mutation; names and directory/flag semantics are absent. */
+    uint32_t fields[3]; tsfp_guest_read(address,fields,sizeof(fields));
+    return (fields[0] || fields[1] || fields[2]) ? TSFP_STATUS_NOT_SUPPORTED : 0;
+}
 static int event_output(uint32_t address) {
     if (!tsfp_guest_range_valid(address,4) || !tsfp_guest_access_allowed(address,4,2)) {
         g_tsfp_access=TSFP_ACCESS_WRITE; tsfp_guest_memory_fault(address,4);
@@ -114,12 +122,14 @@ static void dispatch(uint32_t ordinal) {
     if (ordinal==104) result=tsfp_current_thread_object();
     else if (ordinal==187) result=tsfp_handle_close(frame[1]);
     else if (ordinal==189) {
-        if (frame[2]) result=TSFP_STATUS_NOT_SUPPORTED; /* named/object attributes */
-        else if (frame[3]>1) result=TSFP_STATUS_INVALID_PARAMETER;
-        else if (!event_output(frame[1])) result=TSFP_STATUS_INVALID_PARAMETER;
-        else {
-            uint32_t handle; result=tsfp_event_create(frame[3],(uint8_t)frame[4]!=0,&handle);
-            if (!result) tsfp_guest_store_u32(frame[1],handle);
+        result=event_attributes(frame[2]);
+        if (!result) {
+            if (frame[3]>1) result=TSFP_STATUS_INVALID_PARAMETER;
+            else if (!event_output(frame[1])) result=TSFP_STATUS_INVALID_PARAMETER;
+            else {
+                uint32_t handle; result=tsfp_event_create(frame[3],(uint8_t)frame[4]!=0,&handle);
+                if (!result) tsfp_guest_store_u32(frame[1],handle);
+            }
         }
     }
     else if (ordinal==225) {
