@@ -160,3 +160,7 @@ No physical Vita execution or performance measurement was performed.
   recorded in VALIDATION.md. No hardware, retail boot or performance measurement.
 - The overall exception/thread milestone remains partial. Next: thread-object and
   kernel-import contracts from the boot dependency map; SEH delivery is separate.
+
+Execution implementation `a8e96ec`: [CPU/ARM/Vita CI 40802669954](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40802669954)
+passed both jobs. Input CI 40802669848 passed. Push CI 40802663739 also passed.
+Scope remains synthetic execution and cross-compilation; no hardware/game/FPS evidence.

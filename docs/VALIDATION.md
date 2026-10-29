@@ -326,3 +326,7 @@ compile/run, Python syntax and whitespace checks passed. No assertions disabled
 or new warning suppressions. Commands/revisions/hashes remain captured by the
 existing ignored `build/guest/report.json`. No physical Vita, title boot, Xbox SEH,
 GPU benchmark or measured performance. Remote CI evidence follows the push.
+
+Execution implementation `a8e96ec`: [CPU/ARM/Vita CI 40802669954](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40802669954)
+passed both jobs. Input CI 40802669848 passed. Push CI 40802663739 also passed.
+Scope remains synthetic execution and cross-compilation; no hardware/game/FPS evidence.
