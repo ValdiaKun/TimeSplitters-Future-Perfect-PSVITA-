@@ -74,7 +74,7 @@ static void test_xbe(void) {
         TsfpXbeImage parsed;
         assert(tsfp_xbe_normalize(xbe,cursor,&parsed) && parsed.entry==0x13400 && parsed.import_count==3 && parsed.sections[0].file_size==64);
         unsigned char parsed_before[sizeof(parsed)]; memcpy(parsed_before,&parsed,sizeof(parsed));
-        for (unsigned variant=0;variant<12;++variant) {
+        for (unsigned variant=0;variant<14;++variant) {
             unsigned char saved[0x8000]; memcpy(saved,xbe,sizeof(xbe));
             switch (variant) {
             case 0: xbe[0]=0; break;
@@ -89,7 +89,15 @@ static void test_xbe(void) {
             case 9: put((unsigned)cursor-16,0x80000000); break;
             case 10: put(0x12c,UINT32_MAX); break;
             case 11: put(0x200+56+12,0x1000); break;
+            case 12: put(0x200+5*56+16,12); break; /* terminator only in BSS */
+            case 13: put(0x12c,0x90000); break; /* directory only in BSS */
             }
+#ifdef TSFP_PC_MAPPED_ORACLE
+            if (variant==12 || variant==13) {
+                FILE *bad=fopen(variant==12 ? "build/guest/synthetic-bss-import.xbe" : "build/guest/synthetic-bss-tls.xbe","wb");
+                assert(bad && fwrite(xbe,1,cursor,bad)==cursor && fclose(bad)==0);
+            }
+#endif
             assert(!tsfp_xbe_normalize(xbe,cursor,&parsed) && !memcmp(parsed_before,&parsed,sizeof(parsed)));
             memcpy(xbe,saved,sizeof(xbe));
         }
@@ -103,7 +111,7 @@ static void test_xbe(void) {
         assert(tsfp_guest_load_u32(0x88000)==0xfe000000);
         assert(tsfp_image_reset());
     }
-    puts("xbe-v1: keys=retail,debug malformed=24 rollback=pass entry=37");
+    puts("xbe-v1: keys=retail,debug malformed=28 rollback=pass entry=37");
 }
 static void *out_of_memory(size_t size) { assert(size<=TSFP_IMAGE_MAX_BYTES); return NULL; }
 static void invoke(void *context) { (*(recomp_func_t *)context)(); }

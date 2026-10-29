@@ -483,7 +483,7 @@ The same complete host/ASan/UBSan/ARMv7 command and Vita Release cross-build pas
 New matching cross-target transcript:
 
 ```
-xbe-v1: keys=retail,debug malformed=24 rollback=pass entry=37
+xbe-v1: keys=retail,debug malformed=28 rollback=pass entry=37
 ```
 
 `tools/verify_image_fixture.py` independently runs pinned PC XBEParser on the
@@ -502,3 +502,15 @@ REP, concurrency, 27 image rollback and permission tests remain enabled.
 The normalizer does not verify signatures/certificates or authenticate retail
 compatibility. TLS contents/index/callback initialization remain caller-supplied
 rather than extracted. No physical Vita, real title or measured performance.
+
+Parser review follow-up: the first C decoder synthesized zero bytes in virtual
+BSS for metadata reads, whereas pinned XBEParser requires file-backed import/TLS
+words. Tightened that rule and added two negative cases per encoding: an import
+terminator only in BSS and a TLS directory only in BSS. Both parsers now reject
+those authored files, while ordinary BSS section initialization remains supported.
+This raises raw-header mutation coverage from 24 to 28. The independent PC oracle
+also asserts both rejections (`malformed-metadata=pass`). No check was weakened.
+
+At `9d26dd4`, push 40811013395 and PR 40811019637 passed CPU/ARM/Vita jobs;
+input 40811019561 passed. The file-backed-metadata correction is validated by the
+same complete local matrix and gets its own final CI evidence after push.

@@ -8,10 +8,8 @@ static uint32_t word(const unsigned char *p) {
 static int guest_word(const TsfpXbeImage *x,uint32_t address,uint32_t *value) {
     for (size_t i=0;i<x->count;++i) {
         const TsfpImageSection *s=&x->sections[i];
-        if (address>=s->address && (uint64_t)(address-s->address)+4<=s->size) {
-            unsigned char bytes[4]={0}; size_t offset=address-s->address;
-            for (unsigned j=0;j<4;++j) if (offset+j<s->file_size) bytes[j]=((const unsigned char *)s->data)[offset+j];
-            *value=word(bytes); return 1;
+        if (address>=s->address && (uint64_t)(address-s->address)+4<=s->file_size) {
+            *value=word((const unsigned char *)s->data+(address-s->address)); return 1;
         }
     }
     return 0;

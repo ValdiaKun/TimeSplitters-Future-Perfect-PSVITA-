@@ -496,7 +496,7 @@ inserted/head/tail flags are explicitly rejected. Empty sections are unsupported
 Canonical retail/debug entry and thunk keys come from pinned PC xbe_image.py.
 A key pair must produce a file-backed executable entry and a bounded, terminated,
 valid ordinal table. The decoder reports TLS directory address and stack commit;
-TLS directory range is checked, but its contents are not yet normalized into
+TLS directory words must be file-backed, but their contents are not yet normalized into
 initial-thread allocations/index/callback policy. Caller still supplies the
 validated thread/stack/object/TLS configuration used by image_initialize.
 

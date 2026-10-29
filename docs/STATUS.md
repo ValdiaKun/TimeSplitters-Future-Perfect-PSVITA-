@@ -236,7 +236,7 @@ Image commit `06f876b` passed push CPU/Vita CI 40809921287 and PR CPU/Vita CI
 - Authored retail/debug-encoded byte buffers both normalize, initialize and execute
   the real translated synthetic entry to exit 37. Read-only imports patch before
   policy publication and remain read-only during guest execution.
-- 24 malformed raw-header cases plus truncation/host-output-alias rejection pass;
+- 28 malformed raw-header cases plus truncation/host-output-alias rejection pass;
   all earlier 27 image rollback cases and CPU suites remain enabled.
 - Structural subset only: no retail/certificate authentication, full TLS directory
   extraction, callbacks/index allocation, handles/scheduling or real game boot.
