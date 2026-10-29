@@ -730,3 +730,43 @@ extra full repeats after final source changes. The calloc wrapper is armed only
 after main and avoids test TLS access during static-libc bootstrap. No assertion
 was disabled, no previous fixture dropped and no dependency pin changed.
 Physical Vita/retail/FPS validation remains unavailable.
+
+Storage commit `132f4d31f6e411c67d485af9f6606a700d1fd8c3` passed push CPU/Vita
+[40863128451](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40863128451),
+PR CPU/Vita [40863135107](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40863135107),
+and input [40863135152](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-PSVITA-/actions/runs/40863135152).
+The thread-creation import was implemented only after these checks passed.
+
+Three authored fixtures (parent/child/indirect service call) extend the pipeline
+from 122 to 125 functions. Parent executes actual ordinal-255 creation followed
+by ordinal-233 wait and ordinal-187 close. Child reads both start contexts and
+its own fs:[0x28] thread identity. Two simultaneous native guest callers perform
+eight request cycles with independent stacks/TLS/output words and preserved
+flags; their children run real translated code. Kernel ordinal/40-byte ABI
+lookup is guarded against the pinned bridge source. Authored XBE has twelve
+sections; independent parser checks the added byte views. No retail input used.
+
+Tests cover 44-byte full-frame faults, null/MMIO/readonly/cross-boundary output
+probes, output alias/pool rejection, unsupported flags/TLS sizes, invalid entries/
+stack sizes, native EAGAIN with byte-exact arena rollback, capacity exhaustion,
+optional ThreadId, scope-guard cleanup on normal/fault/nested/unregister paths
+and cancellation-state restoration. A test-only pthread-start gate holds a
+real child live; shutdown refuses it without closing its handle, then succeeds
+after actual translated execution. Failed server join EINVAL retains the pool
+pin and a later stop joins successfully. Explicit shutdown closes a completed
+open managed handle only after callers are quiescent.
+
+Development failures were corrected without relaxing checks: -Werror rejected
+misleading indentation; a pristine-header test used an unavailable internal
+flags symbol (changed to public CPU capture). An added call fixture overlapped
+the original section's padded raw extent; retained the overlap/padding tests and
+placed a separately translated call fixture at 0x13a00. Header/parser assertions
+now check the twelve-section authored layout. Pure C guards do not claim SEH.
+
+Final creation-service local matrix passed: pristine PC-header/shared-map and
+independent parser, portable host, ASan/UBSan, static ARMv7 Cortex-A9 QEMU,
+both VitaSDK Release VPK cross-builds, strict input, Python and whitespace checks.
+All three host executables passed three additional full repeats on final source.
+`thread-service-v1: create=pass args=11,22 wait-close=pass faults=pass
+rollback=pass clients=2 repeats=8 shutdown=pass`. No physical Vita, retail title,
+gameplay, memory-capacity or FPS measurement is established.

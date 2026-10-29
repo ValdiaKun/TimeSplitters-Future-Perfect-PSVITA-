@@ -17,6 +17,24 @@ typedef struct Boundary {
     TsfpFault *output;
 } Boundary;
 static _Thread_local Boundary *boundary;
+/* Outside setjmp's automatic storage: callbacks mutate this TLS record, not
+ * non-volatile automatic locals whose values longjmp would make indeterminate. */
+typedef struct NativeGuard { Boundary *owner; void (*cleanup)(void *); void *context; } NativeGuard;
+static _Thread_local NativeGuard guard;
+static _Thread_local int cleaning;
+int tsfp_guest_scope_guard(void (*cleanup)(void *),void *context) {
+    if (!boundary || cleaning || guard.owner || !cleanup) return 0;
+    guard=(NativeGuard){boundary,cleanup,context}; return 1;
+}
+int tsfp_guest_scope_unguard(void (*cleanup)(void *),void *context) {
+    if (!boundary || guard.owner!=boundary || guard.cleanup!=cleanup || guard.context!=context) return 0;
+    guard=(NativeGuard){0}; return 1;
+}
+static void cleanup_scope(Boundary *scope) {
+    if (guard.owner!=scope) return;
+    NativeGuard copy=guard; guard=(NativeGuard){0}; cleaning=1;
+    copy.cleanup(copy.context); cleaning=0;
+}
 void tsfp_guest_instruction(uint32_t address) {
     g_tsfp_guest_pc=address;
     g_tsfp_access=TSFP_ACCESS_EXECUTE;
@@ -38,22 +56,22 @@ void tsfp_cpu_capture(TsfpCpuState *s) {
     s->fp_control=g_fp_control_word; s->fp_cc=g_fp_cc;
 }
 int tsfp_guest_run(void (*callback)(void *), void *context, TsfpFault *fault) {
-    if (!callback || !fault) abort();
+    if (!callback || !fault || cleaning) abort();
     Boundary scope;
     scope.previous=boundary; scope.output=fault;
     memset(fault,0,sizeof(*fault));
     boundary=&scope;
     if (setjmp(scope.jump)) {
-        boundary=scope.previous;
+        boundary=scope.previous; cleanup_scope(&scope);
         return 1;
     }
     callback(context);
-    boundary=scope.previous;
+    boundary=scope.previous; cleanup_scope(&scope);
     return 0;
 }
 int tsfp_guest_recovery_active(void) { return boundary!=NULL; }
 _Noreturn void tsfp_guest_raise(enum TsfpFaultKind kind, uint32_t address, size_t width, uint32_t detail) {
-    if (!boundary) abort(); /* No implicit skip or continuation. */
+    if (!boundary || cleaning) abort(); /* No implicit skip or continuation. */
     TsfpFault *f=boundary->output;
     f->kind=kind; f->address=address; f->width=width; f->detail=detail;
     f->thread_id=thread_id; f->access=kind==TSFP_FAULT_MEMORY ? g_tsfp_access : TSFP_ACCESS_UNKNOWN;

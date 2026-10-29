@@ -19,7 +19,7 @@ static Reservation records[TSFP_THREAD_HANDLES];
 static pthread_mutex_t ownership=PTHREAD_MUTEX_INITIALIZER;
 static TsfpStorageConfig config;
 static TsfpImageThreadTemplate source;
-static int configured;
+static int configured,service_pin;
 static void *(*allocate)(size_t)=malloc;
 static void (*release)(void *)=free;
 void tsfp_storage_lock(void) { if (pthread_mutex_lock(&ownership)) abort(); }
@@ -67,7 +67,7 @@ enum TsfpStorageError tsfp_storage_configure(const TsfpStorageConfig *input) {
 }
 int tsfp_storage_disable(void) {
     if (tsfp_guest_recovery_active()) return 0;
-    tsfp_storage_lock(); int ok=!any();
+    tsfp_storage_lock(); int ok=!any() && !service_pin;
     if (ok) { memset(&config,0,sizeof(config)); memset(&source,0,sizeof(source)); configured=0; }
     tsfp_storage_unlock(); return ok;
 }
@@ -212,5 +212,33 @@ int tsfp_storage_release(uint32_t lease) {
     r->state=TSFP_STORAGE_RELEASING; tsfp_storage_unlock();
     int ok=tsfp_worker_release(&r->worker);
     tsfp_storage_lock(); if (ok) clear(r); else r->state=TSFP_STORAGE_JOINED;
+    tsfp_storage_unlock(); return ok;
+}
+
+int tsfp_storage_service_pin(TsfpStorageProfile *out) {
+    if (!out || tsfp_guest_recovery_active()) return 0;
+    tsfp_storage_lock(); int ok=configured && !service_pin;
+    uint32_t block,index;
+    if (ok && tsfp_tls_layout(source.tls.raw_size,source.tls.zero_fill,&block,&index)) {
+        size_t metadata=(64u+block+source.thread_data_size+63u)&~(size_t)63u;
+        if (metadata+512u>=config.stride) ok=0;
+        else {
+            *out=(TsfpStorageProfile){source.initial_id,(uint32_t)(config.stride-metadata-512u)&~63u,source.thread_data_size,config.native_stack_size};
+            service_pin=1;
+        }
+    } else ok=0;
+    tsfp_storage_unlock(); return ok;
+}
+int tsfp_storage_service_unpin(void) {
+    if (tsfp_guest_recovery_active()) return 0;
+    tsfp_storage_lock(); int ok=service_pin;
+    if (ok) service_pin=0;
+    tsfp_storage_unlock(); return ok;
+}
+int tsfp_storage_output_allowed(uint32_t address,size_t size) {
+    tsfp_storage_lock(); int ok=configured && service_pin &&
+        !tsfp_tls_ranges_overlap(config.base,(size_t)config.stride*config.slots,address,size) &&
+        !tsfp_tls_ranges_overlap(source.tls.raw_start,source.tls.raw_size,address,size) &&
+        !tsfp_tls_ranges_overlap(source.object_template,512,address,size);
     tsfp_storage_unlock(); return ok;
 }

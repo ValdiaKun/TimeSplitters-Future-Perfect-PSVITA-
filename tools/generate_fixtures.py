@@ -100,6 +100,12 @@ FIXTURES[0x13500] = ('fixture_tls_entry', 'a144c008002b0540c00800030550c0080083c
 
 FIXTURES[0x13600] = ('fixture_tls_worker', '8b0d20c00800648b1504000000648b1d280000008b73288d3c8a8b832c01000089448a088b448a04c3')
 
+
+# Authored PsCreateSystemThreadEx -> wait -> close, and its two-context worker.
+FIXTURES[0x13900] = ('fixture_service_parent', 'bea000090068a03901006a006a006a166a0b68880009006a006a006a006884000900ff16a38c00090085c075206a006a00ff3584000900ff5604a394000900ff3584000900ff5608a398000900c3')
+FIXTURES[0x13a00] = ('fixture_service_call', 'ff16c3')
+FIXTURES[0x139a0] = ('fixture_service_child', '8b442404a3b00009008b5424088915b4000900648b0d280000008b812c010000a3b8000900c20800')
+
 def main():
     runtime = prepare()
     from guest_codegen import configure
@@ -144,7 +150,7 @@ def main():
         table.append(f'if (kind == {kind} && width == {width} && mode == {mode}) return {name};')
     table.append('return 0; }')
     table.insert(0,'#include <stddef.h>')
-    for address in (0x12660,0x13200,0x13280,0x132a0,0x13300,0x13400,0x13500,0x13600):
+    for address in (0x12660,0x13200,0x13280,0x132a0,0x13300,0x13400,0x13500,0x13600,0x13900,0x139a0,0x13a00):
         name,raw=FIXTURES[address]
         data=bytes.fromhex(raw)
         table.append(f'const unsigned char {name}_bytes[] = {{'+','.join(str(b) for b in data)+'};')
@@ -158,7 +164,7 @@ def main():
     if '#define BRIDGE_HANDLE_TAG  0x48000000u' not in bridge:
         raise RuntimeError('Pinned opaque handle tag changed')
     memory_layout = (runtime / 'src/kernel/xbox_memory_layout.c').read_text()
-    for ordinal, size, name in ((233,12,'NtWaitForSingleObject'),(187,4,'NtClose'),(104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
+    for ordinal, size, name in ((255,40,'PsCreateSystemThreadEx'),(233,12,'NtWaitForSingleObject'),(187,4,'NtClose'),(104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
         if not re.search(rf'case {ordinal}: return\s+{size};',bridge) or not re.search(rf'case {ordinal}: return bridge_{name};',bridge):
             raise RuntimeError(f'Pinned kernel ordinal/ABI changed: {ordinal} {name}')
     for name,value in (('XBOX_THREAD_OBJ_SIZE','0x200u'),('XBOX_THREAD_ID_OFF','0x12Cu')):

@@ -30,6 +30,14 @@ void tsfp_cpu_capture(TsfpCpuState *state);
  * Returns 0 normally, 1 for a captured event. Does NOT resume Xbox SEH. */
 int tsfp_guest_run(void (*callback)(void *), void *context, TsfpFault *fault);
 int tsfp_guest_recovery_active(void);
+/* One durable native bookkeeping guard per native thread. Context must outlive
+ * callback-frame unwind (static/TLS, never a callback stack local). This does
+ * not handle forced pthread exit/cancellation; guard users must defer native
+ * cancellation through their critical section. Cleanup runs
+ * on scope exit, outside the guest callback, and must not fault, execute guest
+ * code, allocate resources or unwind. This is not Xbox SEH or C++ unwinding. */
+int tsfp_guest_scope_guard(void (*cleanup)(void *),void *context);
+int tsfp_guest_scope_unguard(void (*cleanup)(void *),void *context);
 _Noreturn void tsfp_guest_raise(enum TsfpFaultKind kind, uint32_t address, size_t width, uint32_t detail);
 /* Initialize already-owned stack/TIB/TLS state on the CURRENT native thread.
  * Caller initializes/owns TIB data following the title's layout; this API does

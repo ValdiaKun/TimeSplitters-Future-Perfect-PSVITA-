@@ -121,3 +121,10 @@ Vita stack sizes. The adapter keeps private stack/TLS/object ownership and
 existing 0x200/+0x12c/+0x28 layouts, independently implementing bounded slot
 reuse and rollback. It does not copy the PC heap allocator or its 512 KiB/eight
 stack policy. Production title allocation remains a separate integration gate.
+
+Creation-service audit at unchanged PC/runtime pins: kernel_bridge.c documents
+PsCreateSystemThreadEx ordinal 255, ten arguments/40 bytes and two start contexts;
+the generator checks its ABI/lookup. Its fake initial handle and unconditional
+success are not reused. The new request service, durable C bookkeeping guard,
+strict argument/output profile and shutdown ownership are original adapters,
+not copied Win32 scheduler code or a full Xbox kernel implementation.

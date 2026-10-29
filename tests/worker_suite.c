@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
+#define _POSIX_C_SOURCE 200809L
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -9,12 +10,50 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdatomic.h>
+#include <time.h>
 static _Thread_local int fail_create,fail_join;
+static atomic_int fail_any_create,gate_next;
+static struct {
+    pthread_mutex_t mutex; pthread_cond_t changed;
+    int started,released,finished; void *(*entry)(void *); void *context;
+} gate={.mutex=PTHREAD_MUTEX_INITIALIZER,.changed=PTHREAD_COND_INITIALIZER};
+void test_fail_any_native_create(void) { atomic_store(&fail_any_create,1); }
+void test_gate_next_native_create(void) {
+    assert(!pthread_mutex_lock(&gate.mutex));
+    gate.started=gate.released=gate.finished=0; atomic_store(&gate_next,1);
+    assert(!pthread_mutex_unlock(&gate.mutex));
+}
+static void *gated_entry(void *unused) {
+    (void)unused; assert(!pthread_mutex_lock(&gate.mutex));
+    gate.started=1; assert(!pthread_cond_broadcast(&gate.changed));
+    while (!gate.released) assert(!pthread_cond_wait(&gate.changed,&gate.mutex));
+    void *(*entry)(void *)=gate.entry; void *context=gate.context;
+    assert(!pthread_mutex_unlock(&gate.mutex));
+    void *result=entry(context);
+    assert(!pthread_mutex_lock(&gate.mutex)); gate.finished=1;
+    assert(!pthread_cond_broadcast(&gate.changed) && !pthread_mutex_unlock(&gate.mutex)); return result;
+}
+void test_gate_native_wait(int finished) {
+    struct timespec deadline; assert(!clock_gettime(CLOCK_REALTIME,&deadline)); deadline.tv_sec+=5;
+    assert(!pthread_mutex_lock(&gate.mutex));
+    while (!(finished ? gate.finished : gate.started)) assert(!pthread_cond_timedwait(&gate.changed,&gate.mutex,&deadline));
+    assert(!pthread_mutex_unlock(&gate.mutex));
+}
+void test_gate_native_release(void) {
+    assert(!pthread_mutex_lock(&gate.mutex)); gate.released=1;
+    assert(!pthread_cond_broadcast(&gate.changed) && !pthread_mutex_unlock(&gate.mutex));
+}
 void test_fail_native_create(void) { fail_create=1; }
 void test_fail_native_join(void) { fail_join=1; }
 int __real_pthread_create(pthread_t *,const pthread_attr_t *,void *(*)(void *),void *);
 int __wrap_pthread_create(pthread_t *t,const pthread_attr_t *a,void *(*entry)(void *),void *context) {
-    if (fail_create) { fail_create=0; return EAGAIN; }
+    if (fail_create || atomic_exchange(&fail_any_create,0)) { fail_create=0; return EAGAIN; }
+    if (atomic_exchange(&gate_next,0)) {
+        assert(!pthread_mutex_lock(&gate.mutex)); gate.entry=entry; gate.context=context;
+        assert(!pthread_mutex_unlock(&gate.mutex));
+        return __real_pthread_create(t,a,gated_entry,NULL);
+    }
     return __real_pthread_create(t,a,entry,context);
 }
 int __real_pthread_join(pthread_t,void **);

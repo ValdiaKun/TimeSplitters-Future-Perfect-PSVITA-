@@ -113,3 +113,11 @@ launch immediately frees its backup. Tests cede three 5 KiB slots, request 4 KiB
 guest/256 KiB native stacks, and use 164-byte TIB/TLS/thread-data spans. These
 settings are not measured production budgets; native latency, fragmentation,
 hardware allocation capacity and FPS remain unmeasured. No optimization claimed.
+
+Thread creation now adds one native service thread (256 KiB explicit native
+stack in tests) and bounded scalar packet/lease records. A synchronous create
+introduces a native request/reply scheduling round trip; this is a safety design,
+not a claimed speedup. There is no per-frame request, queue spin or packet heap
+allocation. Parent test threads use platform-default native stacks, also not a
+production budget. CPU dispatch/scheduling latency and real Vita memory/high-water
+use remain unmeasured; 30/60 FPS targets remain entirely provisional.

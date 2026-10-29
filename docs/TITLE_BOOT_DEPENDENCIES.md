@@ -101,3 +101,18 @@ This is not automatic allocation from arbitrary retail BSS. Next: a controlled
 thread-creation outcall/import boundary with checked ABI and output publication,
 without longjmp across native resource owners. Retail files/metadata and hardware
 remain unavailable; no game boot or gameplay/performance claim is made.
+
+### Guest thread-creation import subset — 2026-10-29
+
+Implemented ordinal 255 with checked 40-byte argument ABI and a bounded native
+service thread owning reservation/create/join work off the guest recovery stack.
+A durable C-scope bookkeeping guard releases service references on probe faults;
+valid outputs/EAX/ESP publish before guard release. Real translated parent/child
+fixtures create, validate contexts/identity, wait and close. Two concurrent
+callers, native resource errors, exhaustion and safe shutdown/retry are tested.
+125 authored translated functions now exist. Unsupported suspension/debug/extra
+bytes/TLS-size modes return errors; this is not full Xbox threading or retail
+boot. See HANDOFF.md for setup/teardown and restrictions. Next independent gate:
+bounded event handles and NtCreateEvent/Set/Clear plus event waits, using the
+pinned synchronization contract. Verified retail input/analysis and Vita hardware
+remain required to identify title-specific blockers and measure gameplay.

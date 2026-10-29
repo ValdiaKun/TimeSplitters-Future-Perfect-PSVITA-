@@ -3,6 +3,8 @@
 #include "recomp_types.h"
 #include "kernel.h"
 #include "handles.h"
+#include "storage.h"
+#include "thread_service.h"
 #include "execution.h"
 #include "memory.h"
 #include <string.h>
@@ -58,9 +60,30 @@ int tsfp_kernel_imports_prepare(uint32_t table, size_t count) {
     memcpy(ordinals,next,count*4); slot_count=count;
     return 1;
 }
+static uint32_t create_thread(const uint32_t *frame) {
+    /* Complete frame was prefetched before acquiring the durable service guard. */
+    uint32_t outputs[]={frame[1],frame[5]};
+    for (unsigned i=0;i<2;++i) if (!i || outputs[i]) {
+        if (!tsfp_guest_range_valid(outputs[i],4) || !tsfp_guest_access_allowed(outputs[i],4,2)) {
+            g_tsfp_access=TSFP_ACCESS_WRITE; tsfp_guest_memory_fault(outputs[i],4);
+        }
+        if (!tsfp_storage_output_allowed(outputs[i],4)) return TSFP_STATUS_INVALID_PARAMETER;
+    }
+    if (outputs[1] && tsfp_tls_ranges_overlap(outputs[0],4,outputs[1],4)) return TSFP_STATUS_INVALID_PARAMETER;
+    TsfpThreadCreateRequest request={frame[3],frame[4],frame[10],frame[6],frame[7]};
+    TsfpThreadCreateResult result=tsfp_thread_service_create(&request);
+    if (!result.status) {
+        /* Service/image pins keep both validated spans and permissions stable.
+         * No queue/native-create frame is on this stack during these stores. */
+        tsfp_guest_store_u32(outputs[0],result.handle);
+        if (outputs[1]) tsfp_guest_store_u32(outputs[1],result.id);
+    }
+    return result.status;
+}
 static void dispatch(uint32_t ordinal) {
     unsigned arguments;
     switch (ordinal) {
+    case 255: arguments=10; break; /* PsCreateSystemThreadEx */
     case 233: arguments=3; break; /* NtWaitForSingleObject, non-alertable relative/infinite subset */
     case 187: arguments=1; break; /* NtClose, managed thread handles */
     case 104: arguments=0; break; /* KeGetCurrentThread */
@@ -68,8 +91,15 @@ static void dispatch(uint32_t ordinal) {
     case 258: arguments=1; break; /* PsTerminateSystemThread */
     default: tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
     }
-    uint32_t stack=g_esp, frame[4];
+    uint32_t stack=g_esp, frame[11];
     tsfp_guest_read(stack,frame,(arguments+1)*4); /* all args before side effects */
+    if (ordinal==255) {
+        if (frame[2] || frame[8] || frame[9] || !tsfp_thread_service_call_enter()) {
+            g_eax=TSFP_STATUS_NOT_SUPPORTED; g_esp=stack+44; return;
+        }
+        g_eax=create_thread(frame); g_esp=stack+44;
+        tsfp_thread_service_call_leave(); return;
+    }
     if (ordinal==258) tsfp_guest_thread_exit(frame[1]);
     uint32_t result=0;
     if (ordinal==104) result=tsfp_current_thread_object();
@@ -95,6 +125,7 @@ static void dispatch(uint32_t ordinal) {
     }
     g_eax=result; g_esp=stack+(arguments+1)*4;
 }
+static void create_system_thread(void) { dispatch(255); }
 static void poll_thread(void) { dispatch(233); }
 static void close_handle(void) { dispatch(187); }
 static void current_thread(void) { dispatch(104); }
@@ -117,6 +148,7 @@ void (*tsfp_kernel_lookup(uint32_t address))(void) {
     if (address<THUNK_BASE || (address&3u) || (address-THUNK_BASE)/4>=slot_count) return NULL;
     uint32_t slot=(address-THUNK_BASE)/4;
     switch (ordinals[slot]) {
+    case 255: return create_system_thread;
     case 233: return poll_thread;
     case 187: return close_handle;
     case 104: return current_thread;

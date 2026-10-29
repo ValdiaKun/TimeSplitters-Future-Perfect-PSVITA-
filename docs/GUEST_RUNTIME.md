@@ -699,3 +699,51 @@ existing worker adapter and native pins; initialization holds no guest recovery
 boundary. Bindings/permissions/templates remain stable while configured, and
 allocator callbacks must be native, non-reentrant and non-unwinding. No title
 thread-creation import or production allocator is implied by this host API.
+
+## PsCreateSystemThreadEx controlled service boundary
+
+Ordinal 255 decodes ten 32-bit stdcall arguments (40 bytes); the complete frame
+is checked before any service ownership. ThreadExtraSize, CreateSuspended and
+DebugStack must be zero. KernelStackSize zero selects an explicit host default;
+positive sizes must be 16-byte aligned and fit the configured slot. TlsDataSize
+zero selects the image profile; a nonzero value must match its thread-data size.
+Unsupported modes return NOT_SUPPORTED, invalid entries/sizes return
+INVALID_PARAMETER and exhausted/failed native resource creation returns a failing
+status. The pinned bridge's fake handles/unconditional success are not copied.
+
+`guest/thread_service.c` is a bounded synchronous native request service. It
+starts outside guest recovery and owns up to 32 created leases before replying.
+Guest output pointers never enter the packet: only native scalar copies of
+stack/TLS sizes, compiled entry and two opaque contexts are transferred. Actual
+reservation, native creation and completed-worker join/release run on the
+service thread's separate C stack. The translated caller waits on condition
+predicates, retains its C continuation and resumes with exact stdcall cleanup.
+No resource-owning creation/join frame can be unwound by that caller's longjmp.
+One request executes at a time; clients/references are bounded to 32, no spin or
+per-request packet allocation is introduced. The service uses public pthreads.
+
+`tsfp_guest_scope_guard` provides one durable native bookkeeping guard per native
+thread, associated with its exact C execution boundary. Contexts must be static/
+TLS, not unwound callback locals. Registration lives in TLS outside setjmp's
+automatic storage, avoiding indeterminate modified-local values after longjmp.
+Cleanup runs once on scope exit after the guest callback has unwound. It cannot
+raise faults, execute guest code or allocate/join native resources. Nested
+boundaries do not run an outer guard; extra guard registration fails explicitly.
+This is neither Xbox SEH nor general C++/pthread cancellation unwinding.
+
+The creation call defers native cancellation and holds a guarded service
+reference through output probes, request/reply, stores and CPU/stack publication.
+Probe faults release that reference in scope cleanup; the reply packet and any
+created worker remain service-owned. Both outputs are fully validated before
+creation. Invalid memory faults; physical output overlap or writes into the
+managed arena/templates are rejected. Checked stores occur only after successful
+creation. Service/image pins keep mappings and permissions immutable throughout.
+The guard is removed only after EAX/ESP and valid outputs are published.
+
+The service pin prevents pool disable through server join. Normal reaping joins
+only completed, closed guest handles and retains referenced objects. Explicit
+native shutdown requires quiescent guest callers, refuses live/referenced
+workers, then closes completed managed handles and joins/releases them. A failed
+server join retains STOPPING/pins and can be retried. Shutdown is not a guest
+thread-kill operation. Root/controller ownership and image lifecycle remain
+explicit; no full Xbox scheduler or PsCreateSystemThread alternative is supplied.

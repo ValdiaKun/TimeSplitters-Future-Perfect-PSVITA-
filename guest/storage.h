@@ -27,6 +27,11 @@ int tsfp_storage_query(uint32_t lease,TsfpStorageInfo *);
 enum TsfpWorkerError tsfp_storage_join(uint32_t lease,TsfpWorkerResult *);
 int tsfp_storage_release(uint32_t lease);
 int tsfp_storage_configured(void);
+typedef struct TsfpStorageProfile { uint32_t initial_id,max_stack; size_t thread_data_size,native_stack_size; } TsfpStorageProfile;
+/* Native service pin protects pool/configuration through service-thread join. */
+int tsfp_storage_service_pin(TsfpStorageProfile *);
+int tsfp_storage_service_unpin(void);
+int tsfp_storage_output_allowed(uint32_t address,size_t size);
 /* Internal ownership guard shared with raw worker/handle creation. Never call
  * guest-faulting APIs while locked; all ranges/policies must already be stable.
  * Lock order: ownership -> handle registry. No guest callbacks under this lock. */
