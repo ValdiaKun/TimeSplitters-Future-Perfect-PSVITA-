@@ -4,6 +4,13 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "address_space.h"
+/* Optional image access policy: mode READ=1, WRITE=2, EXECUTE=4.
+ * Install/remove only with guest execution and bindings quiescent. */
+typedef int (*TsfpMemoryPolicy)(uint32_t address, size_t width, unsigned mode);
+int tsfp_guest_policy_active(void);
+void tsfp_guest_set_policy(TsfpMemoryPolicy policy);
+int tsfp_guest_access_allowed(uint32_t address, size_t width, unsigned mode);
+void tsfp_guest_check_access(uint32_t address, size_t width, unsigned mode);
 /* Retained bounded fixture mode; replaces any previous Xbox binding. */
 void tsfp_guest_bind(void *storage, size_t size, uint32_t base);
 /* Side-effect-free whole-range probe; binding must remain stable during use. */

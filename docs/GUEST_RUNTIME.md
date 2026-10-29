@@ -428,3 +428,54 @@ ordinal. Cached handlers must be discarded when the quiescent import table is
 replaced/reset. `tsfp_kernel_imports_reset` removes bindings before image teardown.
 The entry fixture also executes actual FS-relative x86 loads of fs:[0x28] and
 fs:[4]/thread data; these pass through the real scalar lowering pipeline.
+
+## Bounded image contract
+
+`guest/image.h` accepts normalized host descriptors, not arbitrary native pointers
+from an XBE. The host caller provides accessible buffers for file-backed bytes,
+a pure trusted compiled-function resolver, and exclusive/quiescent guest binding
+ownership (including released borrowed pointers). There is one image per address
+space. Limits are 16 sections and 1 MiB total initialized virtual size; these
+are synthetic-test limits, not a retail title capacity claim.
+
+Initialization validates nonempty sizes, source lengths/pointers, address overflow,
+RAM classification, flags and canonical physical overlap, including mirror wraps.
+Only low RAM and its explicit aliases are accepted; contiguous/tiled/kernel/device
+placement is rejected. All sections must be readable; writable/executable mixtures
+are rejected until self-modifying code semantics are established. File bytes are
+copied and the rest zero-filled in one bounded temporary. Allocation has an
+injectable paired platform interface; allocation failure changes no guest state.
+
+Thread/TLS/object/import/stack ranges must be contained in writable declared
+sections, physically disjoint and bounded; template sources must not overlap the
+mutated regions. TIB/TLS/thread-object initialization follows existing PC layout.
+Stack bytes are zeroed. Import markers are checked before commit; unknown bounded
+ordinals may bind but execution produces the existing explicit import fault.
+Entry must lie in file-backed executable bytes and resolve to trusted compiled C;
+RAM bytes are never cast to native function pointers. All fallible validation and
+allocation precede guest writes. Commit assumes stable bindings/exclusive ownership;
+an unexpected internal inconsistency aborts rather than pretending to roll back.
+Successful publication installs imports and the immutable image access policy.
+
+Checked byte/scalar/atomic/string accesses enforce image read/write permissions
+using physical offsets, so mirror aliases cannot bypass them. Borrowed lvalues
+must have write permission because the adapter cannot know their use direction;
+read-only data must use explicit read helpers. The original raw PC lvalue oracle
+is intentionally not a software-permission implementation. Actual translated
+read-only store assertions run portable/sanitized/ARM; common checked helper and
+instruction-guard assertions run every mode. Software guards are not host MMU
+permissions and cannot contain arbitrary malicious native adapters.
+
+`tsfp_guest_instruction` records and checks each emitted instruction address.
+Execute checks allow file-backed executable spans only, including direct-call
+callees. Repeated comparisons restore Intel entry flags on both mapping and
+software-permission faults. Physical range probes remain separate from permissions.
+Bind/unbind is rejected while a policy is installed; teardown removes the policy
+and import bindings without clearing RAM or touching files/saves.
+
+`tsfp_image_run` attaches/reset the initial CPU context, pushes a root return
+marker, enters the captured C execution scope, and detaches after return/event.
+Entry is one-shot until reset/reinitialization; nested runs/reset are rejected.
+The test image uses actual translated FS/TLS/import instructions and exits 37.
+No XBE parsing/signature validation, production section capacity, native page
+protection, retail dispatch catalog or complete Xbox title boot is implemented.

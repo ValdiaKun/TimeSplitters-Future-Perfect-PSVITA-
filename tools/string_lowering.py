@@ -94,7 +94,7 @@ def install(module, translator_module):
         def visit_Assign(self, node):
             if len(node.targets) == 1 and isinstance(node.targets[0],ast.Name) and node.targets[0].id == 'curr':
                 anchors[0] += 1
-                return [node, *ast.parse('stmts.extend(_tsfp_seed(curr, last_flag_setter, last_flag_ops)); stmts.append(f"g_tsfp_guest_pc = 0x{curr.address:x}u;")').body]
+                return [node, *ast.parse('stmts.extend(_tsfp_seed(curr, last_flag_setter, last_flag_ops)); stmts.append(f"tsfp_guest_instruction(0x{curr.address:x}u);")').body]
             return self.generic_visit(node)
         def visit_If(self,node):
             if any(isinstance(n,ast.Call) and isinstance(n.func,ast.Name) and n.func.id == '_is_rep_compare' for n in ast.walk(node.test)):

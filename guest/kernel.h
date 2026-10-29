@@ -10,6 +10,7 @@ uint32_t tsfp_current_thread_object(void);
 /* Canonical ordinal markers, bounded to 16 function slots. No remapped or data
  * exports. Caller must stop all guest threads before replacing the table. */
 void tsfp_kernel_imports_reset(void);
+int tsfp_kernel_imports_validate(const uint32_t *markers, size_t count);
 int tsfp_kernel_imports_prepare(uint32_t table, size_t count);
 void (*tsfp_kernel_lookup(uint32_t address))(void);
 #endif

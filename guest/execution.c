@@ -16,6 +16,11 @@ typedef struct Boundary {
     TsfpFault *output;
 } Boundary;
 static _Thread_local Boundary *boundary;
+void tsfp_guest_instruction(uint32_t address) {
+    g_tsfp_guest_pc=address;
+    g_tsfp_access=TSFP_ACCESS_EXECUTE;
+    tsfp_guest_check_access(address,1,4);
+}
 void tsfp_cpu_capture(TsfpCpuState *s) {
     memset(s,0,sizeof(*s));
     uint32_t r[]={g_eax,g_ecx,g_edx,g_ebx,g_esp,g_ebp,g_esi,g_edi};

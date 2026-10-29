@@ -13,7 +13,7 @@ typedef struct TsfpCpuState {
     uint16_t fp_control, fp_cc;
 } TsfpCpuState;
 enum TsfpFaultKind { TSFP_FAULT_MEMORY=1, TSFP_FAULT_DIVIDE, TSFP_FAULT_DISPATCH, TSFP_THREAD_EXIT, TSFP_FAULT_IMPORT };
-enum TsfpAccess { TSFP_ACCESS_UNKNOWN, TSFP_ACCESS_READ, TSFP_ACCESS_WRITE, TSFP_ACCESS_ATOMIC };
+enum TsfpAccess { TSFP_ACCESS_UNKNOWN, TSFP_ACCESS_READ, TSFP_ACCESS_WRITE, TSFP_ACCESS_ATOMIC, TSFP_ACCESS_EXECUTE };
 typedef struct TsfpFault {
     enum TsfpFaultKind kind;
     enum TsfpAccess access;
@@ -23,6 +23,7 @@ typedef struct TsfpFault {
 } TsfpFault;
 extern _Thread_local uint32_t g_tsfp_guest_pc;
 extern _Thread_local enum TsfpAccess g_tsfp_access;
+void tsfp_guest_instruction(uint32_t address);
 void tsfp_cpu_capture(TsfpCpuState *state);
 /* C-only boundary. Callback must hold no resources requiring unwinding, no
  * locks, VLAs, cleanup attributes, C++ objects or foreign-language frames.

@@ -48,6 +48,8 @@ if(TSFP_BUILD_GUEST_TESTS)
         "${TSFP_ROOT}/guest/memory.c"
         "${TSFP_ROOT}/guest/execution.c"
         "${TSFP_ROOT}/guest/kernel.c"
+        "${TSFP_ROOT}/guest/image.c"
+        "${TSFP_ROOT}/tests/image_suite.c"
         "${TSFP_ROOT}/tests/kernel_suite.c"
         "${TSFP_ROOT}/tests/execution_suite.c"
         "${TSFP_ROOT}/guest/address_space.c"

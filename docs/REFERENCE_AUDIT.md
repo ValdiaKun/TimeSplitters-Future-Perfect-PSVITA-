@@ -67,3 +67,13 @@ records canonical ordinals 104/320/258, argument bytes 0/8/4, and per-slot
 FE000000+4*i function targets. New adapters are original GPL-3.0-only code behind
 checked memory and C execution boundaries, not copied Win32 lifecycle code.
 Generator checks these exact anchors. No third-party pin/license changes.
+
+## Synthetic image initialization
+
+At the unchanged PC pin, inspected prepared `src/kernel/xbox_memory_layout.c`
+section loading: virtual sizes zeroed, initialized bytes copied, executable flag
+0x04 used for dispatch ranges. Existing TIB/template/import contracts remain the
+source of field layouts. New `guest/image.c` is original GPL-3.0-only checked
+normalization/publication logic, not copied Win32 mapping code. It rejects raw
+file lengths above virtual size; a future XBE parser must normalize raw padding
+(the PC clamps copy size). No XBE parser or retail source is copied here.

@@ -13,6 +13,15 @@ static unsigned char *bytes, *contiguous_bytes;
 static size_t length;
 static uint32_t origin;
 static int xbox_mode;
+static TsfpMemoryPolicy access_policy;
+int tsfp_guest_policy_active(void) { return access_policy!=NULL; }
+void tsfp_guest_set_policy(TsfpMemoryPolicy policy) { access_policy=policy; }
+int tsfp_guest_access_allowed(uint32_t address, size_t width, unsigned mode) {
+    return !access_policy || access_policy(address,width,mode);
+}
+void tsfp_guest_check_access(uint32_t address, size_t width, unsigned mode) {
+    if (!tsfp_guest_access_allowed(address,width,mode)) tsfp_guest_memory_fault(address,width);
+}
 static int valid_storage(const void *storage, size_t size) {
     return storage && size && size - 1 <= UINTPTR_MAX - (uintptr_t)storage;
 }
@@ -21,12 +30,16 @@ static int overlaps(const void *a, size_t a_size, const void *b, size_t b_size) 
     return left <= right ? right - left < a_size : left - right < b_size;
 }
 void tsfp_guest_unbind(void) {
+    g_tsfp_access=TSFP_ACCESS_UNKNOWN;
+    if (access_policy) tsfp_guest_memory_fault(0,0);
     bytes = contiguous_bytes = NULL;
     length = 0;
     origin = 0;
     xbox_mode = 0;
 }
 void tsfp_guest_bind(void *storage, size_t size, uint32_t base) {
+    g_tsfp_access=TSFP_ACCESS_UNKNOWN;
+    if (access_policy) tsfp_guest_memory_fault(0,0);
     if (!valid_storage(storage, size) || (uint64_t)size > UINT64_C(0x100000000) - base)
         tsfp_guest_memory_fault(base, size);
     bytes = storage;
@@ -36,6 +49,8 @@ void tsfp_guest_bind(void *storage, size_t size, uint32_t base) {
     xbox_mode = 0;
 }
 void tsfp_guest_bind_xbox(void *ram, size_t ram_size, void *contiguous, size_t contiguous_size) {
+    g_tsfp_access=TSFP_ACCESS_UNKNOWN;
+    if (access_policy) tsfp_guest_memory_fault(0,0);
     if (ram_size != TSFP_XBOX_RAM_SIZE || !valid_storage(ram, ram_size) ||
         (contiguous ? contiguous_size != TSFP_XBOX_RAM_SIZE ||
                       !valid_storage(contiguous, contiguous_size) ||
@@ -81,6 +96,7 @@ int tsfp_guest_range_valid(uint32_t address, size_t width) {
 }
 void *tsfp_guest_pointer(uint32_t address, size_t width) {
     g_tsfp_access=TSFP_ACCESS_UNKNOWN;
+    tsfp_guest_check_access(address,width,2); /* borrowed lvalues may write */
     size_t available = 0;
     unsigned char *pointer = resolve(address, &available);
     /* A borrowed native pointer cannot represent a wrapped physical span. */
@@ -107,6 +123,7 @@ static void validate_transfer(uint32_t address, const void *host, size_t width) 
 }
 static void transfer(uint32_t address, void *host, size_t width, int write) {
     g_tsfp_access=write ? TSFP_ACCESS_WRITE : TSFP_ACCESS_READ;
+    tsfp_guest_check_access(address,width,write ? 2u : 1u);
     validate_transfer(address, host, width);
     unsigned char *host_bytes = host;
     while (width) {
@@ -155,6 +172,8 @@ TSFP_DEFINE_SCALAR_ACCESS(f64, double)
 
 
 void *tsfp_guest_atomic_pointer(uint32_t address) {
+    g_tsfp_access=TSFP_ACCESS_ATOMIC;
+    tsfp_guest_check_access(address,sizeof(uint32_t),2);
     size_t available=0;
     void *pointer=resolve(address,&available);
     g_tsfp_access=TSFP_ACCESS_ATOMIC;

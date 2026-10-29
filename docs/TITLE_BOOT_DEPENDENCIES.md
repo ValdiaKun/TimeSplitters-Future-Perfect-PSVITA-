@@ -35,3 +35,10 @@ termination. A real translated synthetic entry exercises all three services and
 TLS memory. This does not complete thread objects/handles/waits or a title loader.
 Next concrete gate is bounded image section/permission/import/entry initialization
 with synthetic input; the retail XBE and metadata are still unavailable.
+
+Bounded synthetic image gate now implemented: normalized sections, physical alias
+conflict checks, staged file/BSS state, initial thread/TLS/object/import setup,
+software permissions and compiled entry resolution. One-shot entry and teardown
+are tested through real translated code. Next dependency is bounded normalization
+of authored XBE headers/section records into this descriptor. Retail hash checking
+and matching generated analysis/dispatch data remain mandatory before real use.

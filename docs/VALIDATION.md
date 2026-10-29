@@ -421,3 +421,53 @@ and PR [40804973727](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-P
 both passed CPU/ARM and Vita jobs. Input CI 40804973827 passed. PC baseline,
 portable and ASan/UBSan executables additionally passed three repeated local runs
 each. Push probe identified AMD a10f11/hypervisor=1, flags44. No device measurements.
+
+## Bounded synthetic image — 2026-10-29
+
+Starting clean `1b656ed5d0ac87499ebb74fe6ac9118b1bc74c7e`, green push/PR CI,
+unchanged PC/runtime/toolchain pins. Added one authored x86 entry wrapper (120
+functions total) and generated asset-free byte arrays from the same fixture
+specifications. Generated output remains ignored; no game data is used.
+
+Full command (same extracted ARM toolchain and locked VitaSDK as above):
+
+```sh
+LD_LIBRARY_PATH=/workspace/toolchains/arm/usr/lib/x86_64-linux-gnu \
+PATH=/workspace/toolchains/arm/usr/bin:$PATH \
+python3 tools/test_guest.py \
+  --arm-cc '/workspace/toolchains/arm/usr/bin/arm-linux-gnueabihf-gcc --sysroot=/workspace/toolchains/arm' \
+  --qemu /workspace/toolchains/arm/usr/bin/qemu-arm
+VITASDK="$PWD/.cache/toolchains/vitasdk" \
+PATH="$PWD/.cache/toolchains/vitasdk/bin:$PATH" \
+/home/agent/.local/bin/cmake --build build/vita-locked
+```
+
+PC baseline, portable host, ASan/UBSan and Cortex-A9 QEMU passed with matching
+transcripts, including all prior suites and 13 source-pass tests:
+
+```
+image-v1: rejected=27 rollback=pass aliases=pass permissions=pass entry=37 unsupported=pass
+```
+
+Adversarial cases cover count/size/flag/source/address errors, overflow/device and
+contiguous placement, virtual and physical overlap, missing/non-executable/BSS
+entry points, unsupported compiled entry, malformed imports, thread/TLS/stack
+conflicts and forced allocation failure. Rejected initialization preserves every
+original section's bytes, CPU snapshots and prior native import dispatch.
+Normal-path tests cover staged file/BSS contents, mirror-edge splits, object/TLS
+fields, import patching, read-only aliases, non-executable/unmapped targets,
+actual translated entry status 37, unsupported import 511, one-shot entry and
+reset preserving RAM while clearing policy/import bindings.
+
+Actual translated permission-store assertions run portable/sanitized/ARM because
+the native PC oracle intentionally uses raw scalar lvalues. Common checked
+helper/execute-policy assertions run all modes. Actual translated REP comparisons
+fault after two successful comparisons at a software-permission boundary and
+retain index/count progress while restoring Intel entry flags. This guards the
+interaction introduced by image permissions; the earlier native REP regression
+remains strictly checked. Active-image unbind and nested teardown are rejected.
+
+No assertions disabled or new warning suppressions. Strict input tests, Python
+syntax, whitespace and staged-content checks pass; VitaSDK Release diagnostic and
+guest VPK cross-build pass. No physical Vita, retail XBE/metadata, game boot,
+GPU measurement or FPS result exists. Remote final-revision checks follow push.

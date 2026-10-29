@@ -64,3 +64,9 @@ Kernel subset uses a fixed 16-slot dispatch table, a 512-byte object staging
 buffer and 256-byte constant zero chunks; no per-call heap allocations. Range
 validation and stdcall marshaling are correctness-first. Throughput and device
 memory/performance remain unmeasured; these bounds are not a title capacity claim.
+
+Image initialization stages at most 1 MiB once, releases it before execution,
+and retains fixed section/permission metadata. Instruction and memory-policy
+guards introduce unmeasured overhead. No throughput, frame-rate, device allocation
+capacity or production budget is established. The transactional startup copy is
+for validation/publication correctness, not a measured loading optimization.

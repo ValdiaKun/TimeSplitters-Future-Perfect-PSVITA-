@@ -94,6 +94,7 @@ FIXTURES[0x132a0] = ('fixture_fault_divide', 'f7f1c3')
 FIXTURES[0x13300] = ('fixture_title_entry', 'ff1689c7648b1d2800000064a1040000008b0868100000006800000900ff56046825000000ff5608c3')
 FIXTURES[0x13340] = ('fixture_kernel_call', 'ff16c3')
 
+FIXTURES[0x13400] = ('fixture_image_entry', 'be00800800e9f6feffff')
 
 def main():
     runtime = prepare()
@@ -138,6 +139,12 @@ def main():
     for (kind,width,mode), name in STRING_FLAG_FIXTURES.items():
         table.append(f'if (kind == {kind} && width == {width} && mode == {mode}) return {name};')
     table.append('return 0; }')
+    table.insert(0,'#include <stddef.h>')
+    for address in (0x12660,0x13280,0x13300,0x13400):
+        name,raw=FIXTURES[address]
+        data=bytes.fromhex(raw)
+        table.append(f'const unsigned char {name}_bytes[] = {{'+','.join(str(b) for b in data)+'};')
+        table.append(f'const size_t {name}_size = {len(data)};')
     (out / 'string_table.c').write_text('\n'.join(table))
     (out / 'fixtures.c').write_text('\n'.join(chunks))
     import re

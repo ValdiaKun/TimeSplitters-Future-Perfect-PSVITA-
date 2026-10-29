@@ -49,6 +49,7 @@ uint32_t tsfp_alu_flags(uint32_t value, uint32_t right, unsigned width,
 }
 static void require_span(uint32_t address, unsigned width, enum TsfpAccess access) {
     g_tsfp_access=access;
+    tsfp_guest_check_access(address,width,access==TSFP_ACCESS_WRITE ? 2u : 1u);
     if (!tsfp_guest_range_valid(address, width)) {
         tsfp_guest_memory_fault(address, width);
     }
@@ -90,8 +91,8 @@ void tsfp_guest_string(unsigned kind, unsigned width, unsigned repeat,
          * completed index/count progress remains visible (Intel SDM REP). */
         if (repeat && (kind == TSFP_CMPS || kind == TSFP_SCAS)) {
             uint32_t bad = *destination;
-            int invalid = !tsfp_guest_range_valid(bad,width);
-            if (kind == TSFP_CMPS && !tsfp_guest_range_valid(*source,width)) {
+            int invalid = !tsfp_guest_range_valid(bad,width) || !tsfp_guest_access_allowed(bad,width,1);
+            if (kind == TSFP_CMPS && (!tsfp_guest_range_valid(*source,width) || !tsfp_guest_access_allowed(*source,width,1))) {
                 bad=*source; invalid=1;
             }
             if (invalid) {

@@ -10,7 +10,7 @@ campaign execution. Physical Vita behavior is unverified.**
 - Pinned PC submodule/source manifest, offline runtime reconstruction and full
   authoritative patch application, reproducible ARM header adaptation.
 - Checked unaligned little-endian guest memory prototype and deterministic
-  generation of 119 synthetic x86 functions using the real PC translator.
+  generation of 120 synthetic x86 functions using the real PC translator.
 - Explicit 64 MiB RAM/28 mirror address views, independent optional contiguous
   backing, tiled alias and kernel-data/MMIO/flash/invalid classification.
   Checked byte transfers support RAM wrap; unsupported device accesses fault.
@@ -205,3 +205,22 @@ and PR [40804973727](https://github.com/ValdiaKun/TimeSplitters-Future-Perfect-P
 both passed CPU/ARM and Vita jobs. Input CI 40804973827 passed. PC baseline,
 portable and ASan/UBSan executables additionally passed three repeated local runs
 each. Push probe identified AMD a10f11/hypervisor=1, flags44. No device measurements.
+
+## 2026-10-29: bounded synthetic image initialization
+
+- Added `guest/image.{h,c}`: up to 16 low-RAM sections and 1 MiB total staging,
+  checked file/BSS initialization, virtual/physical alias overlap rejection,
+  import-table/TLS/object/stack preparation and trusted entry resolution.
+- Input validation and allocation finish before guest publication. Invalid inputs
+  preserve existing RAM/CPU/import state. Memory and import policies publish only
+  after commit; setup/reset require exclusive, quiescent bindings.
+- Added checked R/W/execute permissions, alias-consistent guards, translated
+  instruction-site checks, one-shot entry, teardown and policy-aware REP faults.
+- 120 translated functions; 27 adversarial/OOM rollback cases plus complete
+  initialized-image execution to status 37 pass local host/sanitizer/ARM matrix.
+  Vita cross-build evidence is in VALIDATION.md. Physical hardware unverified.
+- Explicit limits: normalized synthetic metadata, not an XBE parser; low RAM only,
+  no RWX/self-modifying code or executable BSS; no full title services or retail
+  boot. PC raw-lvalue oracle does not enforce Vita software write permissions.
+- Next: a bounded XBE-section/header normalization adapter to this validated
+  descriptor, tested with authored binary headers before retail input is allowed.

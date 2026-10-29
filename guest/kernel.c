@@ -33,12 +33,18 @@ uint32_t tsfp_current_thread_object(void) {
         tsfp_guest_raise(TSFP_FAULT_DISPATCH,object,0,104);
     return object;
 }
+int tsfp_kernel_imports_validate(const uint32_t *markers, size_t count) {
+    if (!markers || !count || count>16) return 0;
+    for (size_t i=0;i<count;++i)
+        if (!(markers[i]&0x80000000u) || !(markers[i]&0x7fffffffu) || (markers[i]&0x7fffffffu)>511) return 0;
+    return 1;
+}
 int tsfp_kernel_imports_prepare(uint32_t table, size_t count) {
     if (!count || count>16 || !tsfp_guest_range_valid(table,count*4)) return 0;
     uint32_t input[16], output[16], next[16];
     tsfp_guest_read(table,input,count*4);
+    if (!tsfp_kernel_imports_validate(input,count)) return 0;
     for (size_t i=0;i<count;++i) {
-        if (!(input[i]&0x80000000u) || !(input[i]&0x7fffffffu) || (input[i]&0x7fffffffu)>511) return 0;
         next[i]=input[i]&0x7fffffffu; output[i]=THUNK_BASE+(uint32_t)i*4;
     }
     tsfp_guest_write(table,output,count*4);
