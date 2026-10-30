@@ -60,7 +60,7 @@ jobs:
           export PATH="$VITASDK/bin:$PATH"
           cmake -S ports/vita -B build/vita -G Ninja -DTSFP_BUILD_GUEST_TESTS=ON
           cmake --build build/vita
-          cmake -S ports/vita -B build/vita -DTSFP_DIAGNOSTIC_TELEMETRY=ON
+          cmake -S ports/vita -B build/vita -DTSFP_DIAGNOSTIC_TELEMETRY=ON -DTSFP_BUILD_GXM_SMOKE=ON
           cmake --build build/vita
           "$VITASDK/bin/arm-vita-eabi-gcc" -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Igraphics -c graphics/xbox_bc_layout.c -o build/vita/bc-layout.o
       # No VPK publication: the guest test needs dependency notices/source when distributed.
