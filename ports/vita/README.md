@@ -68,3 +68,24 @@ The guest-test VPK now includes RAM alias tests with two 64 MiB backings. Its
 and execution remain unverified. Generated scalar accesses crossing RAM wrap
 still fault safely pending split-safe lowering; this is not full guest memory
 or title initialization support.
+
+## Optional native GXM framebuffer smoke target
+
+The isolated `gxm_smoke.c` target exercises basic native GXM initialization,
+two CDRAM-backed display buffers, GPU-accessible memory mapping, sync objects,
+display-queue presentation, queue drain, and cleanup on failures. It paints an
+asset-free gradient **on the CPU**; it does **not** submit a GXM draw, compile a
+shader, or render TimeSplitters. It is independent of the existing vita2d
+diagnostic and synthetic guest test.
+
+Enable it explicitly with
+`-DTSFP_BUILD_GXM_SMOKE=ON` when configuring `ports/vita`.
+The output is `tsfp-gxm-smoke.vpk` (title ID `TFPV00003`).
+It exits after 180 attempted presentations and prints the count. Check both
+VitaSDK compilation and actual on-device display/presentation; neither a
+successful cross-build nor a CI pass proves hardware execution.
+
+The entry point and lifecycle reference the public VitaSDK
+`samples/ime/src/main.c` GXM/display example, but use independently authored
+code and checked cleanup. No game data or compiled shader programs are needed.
+Native GPU draws and precompiled shaders are the **next** renderer milestone.
