@@ -1,0 +1,35 @@
+# Generated toolchains and compiled objects
+/build/
+/out/
+/.cache/
+*.o
+*.obj
+*.elf
+*.velf
+*.vpk
+*.self
+*.bin
+*.sfo
+
+# Game-owned content and generated binaries never enter Git
+/private/
+/game-data/
+/assets-original/
+*.iso
+*.xbe
+*.xiso
+*.pak
+*.c2n
+*.dds
+*.wav
+*.mp4
+*.mkv
+
+# Local machine state
+.vscode/
+.idea/
+.DS_Store
+__pycache__/
+*.log
+.env
+.env.*

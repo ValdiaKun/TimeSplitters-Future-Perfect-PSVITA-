@@ -1,0 +1,66 @@
+name: Guest CPU and Vita cross-build
+on:
+  push:
+    branches: [vita-bootstrap]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  cpu:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned decoder and ARM Linux tools
+        run: |
+          python -m pip install capstone==5.0.9 pycparser==2.23
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf qemu-user
+      - name: Compare PC runtime, portable adapter, sanitizers and ARMv7
+        run: python tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc
+      - name: Validate authenticated title intake without game data
+        run: python -m unittest discover -s tests -p test_title_inputs.py
+      - name: Validate offline guest PC mapping with authored data
+        run: python -m unittest discover -s tests -p test_fault_symbolizer.py
+      - name: Validate bounded telemetry with synthetic timestamps
+        run: python tools/test_telemetry.py --arm-cc arm-linux-gnueabihf-gcc
+      - name: Validate bounded compressed-texture layout
+        run: python tools/test_graphics.py --arm-cc arm-linux-gnueabihf-gcc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guest-cpu-report
+          path: build/guest/report.json
+  vita:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned host build dependencies
+        run: python -m pip install capstone==5.0.9 pycparser==2.23 cmake==4.4.4 ninja==1.13.2
+      - uses: actions/cache@v4
+        with:
+          path: .cache/toolchains
+          key: vitasdk-${{ runner.os }}-${{ hashFiles('sources.lock.json') }}
+      - name: Fetch hash-locked SDK and prepare synthetic code
+        run: |
+          python tools/fetch_vitasdk.py
+          python tools/generate_fixtures.py
+      - name: Build diagnostic and guest fixture VPKs
+        run: |
+          export VITASDK="$PWD/.cache/toolchains/vitasdk"
+          export PATH="$VITASDK/bin:$PATH"
+          cmake -S ports/vita -B build/vita -G Ninja -DTSFP_BUILD_GUEST_TESTS=ON
+          cmake --build build/vita
+          cmake -S ports/vita -B build/vita -DTSFP_DIAGNOSTIC_TELEMETRY=ON
+          cmake --build build/vita
+          "$VITASDK/bin/arm-vita-eabi-gcc" -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Igraphics -c graphics/xbox_bc_layout.c -o build/vita/bc-layout.o
+      # No VPK publication: the guest test needs dependency notices/source when distributed.

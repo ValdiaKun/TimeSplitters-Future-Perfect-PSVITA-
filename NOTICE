@@ -1,0 +1,36 @@
+The guest/ adapter, tests/guest_harness.c, tools/*.py and patches/ added for
+the ARM compatibility harness are licensed under GPL-3.0-only. See their SPDX
+markers and LICENSES/GPL-3.0.txt. This notice does not relicense pre-existing
+bootstrap files, upstream source, generated game code or game-owned content.
+
+The PC dependency is pinned by .gitmodules and sources.lock.json. Its root
+LICENSE/NOTICE and LICENSES/ contain the authoritative GPL, original MIT and
+component LGPL credits. The build uses that dependency in place, preserving
+all notices; no upstream implementation is copied into this source tree.
+The build-local ARM template patch is derived from its recomp_types.h contract
+and is supplied under GPL-3.0-only. Distributing guest test executables requires
+corresponding source including the pinned dependency, local patches and scripts.
+
+Halo CE Vita and MH3 Wii/Vita are GPL-3.0 references; THUG Vita lacks a root
+license grant in the inspected revision. No code from these three references
+is included. See docs/REFERENCE_AUDIT.md for revisions, paths and constraints.
+
+Original Xbox executables, data, music, graphics and mechanically translated
+retail game logic are not licensed by this notice and must not be committed.
+
+AST source emission uses pycparser 2.23 as a host build dependency (BSD license,
+Copyright Eli Bendersky). Its notice is LICENSES/pycparser-BSD.txt.
+No parser code is linked into Vita executables. No additional reference-project
+implementation was copied for memory lowering.
+
+The bounded guest page-owner/rounding model in guest/heap.c is adapted from
+sp00nznet/xboxrecomp guest_vmem.c, revision f0f8a461496a4f23d9b0aeaa284b8d70ba7ab82b,
+Copyright (c) 2026 sp00nz (MIT). See LICENSES/xboxrecomp-MIT.txt. The differential
+reference tool downloads only hash-pinned MIT source/header/LICENSE into ignored
+cache, compiling it with an authored bounded host shim. No xemu code is imported.
+
+graphics/xbox_bc_layout.c adapts Xita runtime/xv_bc_layout.h, revision
+896d6512b6d8c11279de927284e23f86d674bd2d, Copyright (C) 2026 Xita contributors,
+GPL-3.0-only. Original source: https://github.com/Xita-Project/xita. Its hash and
+adaptation limits are in sources.lock.json and docs/ACCELERATION_AUDIT.md.
+No Xita game captures, translated game shaders, assets or binaries are included.

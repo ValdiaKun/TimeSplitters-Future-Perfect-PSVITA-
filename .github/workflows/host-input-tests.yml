@@ -1,0 +1,29 @@
+name: Host input-mapping tests
+
+on:
+  push:
+    branches: [main, vita-bootstrap]
+    paths:
+      - "ports/vita/src/input_map.*"
+      - "ports/vita/tests/**"
+      - ".github/workflows/host-input-tests.yml"
+  pull_request:
+    paths:
+      - "ports/vita/src/input_map.*"
+      - "ports/vita/tests/**"
+      - ".github/workflows/host-input-tests.yml"
+
+jobs:
+  input-mapping:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build mapping tests with C11
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -pedantic \
+            ports/vita/src/input_map.c ports/vita/tests/test_input_map.c \
+            -lm -o /tmp/tsfp-vita-input-test
+      - name: Run mapping tests
+        run: /tmp/tsfp-vita-input-test

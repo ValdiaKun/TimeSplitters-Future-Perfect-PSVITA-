@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "pc": {
+    "url": "https://github.com/ValdiaKun/timesplitters-future-perfect-pc",
+    "revision": "759f7a0ecebc2341cdcedf638fcea68c4a7fbf4e",
+    "runtime_revision": "d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845",
+    "sha256": {
+      "requirements.txt": "3a4d2f79c5c3aa64ee15bd077445673479e96d02db38373c7429cef19bb9cbb0",
+      "AGENTS.md": "cb9e0b5776b371cf84e7a15523b034556c614ca3a0a14d8b445fc4d29e14023f",
+      "tsfp.ps1": "b226d303d381b655cc807bc46f11323afb02f011640bb1ce250e5701b385aa2d",
+      "vendor/ts3FPrecomp/snapshot.json": "4f8134670b1a5955cddcb3786a5ba1e479b2d2220137e776b61bd35ecf04690a",
+      "tools/build/prepare-runtime.py": "9bf42e61718092c6e7aff7dd58159467acd0e0458b4f7731f0028bbd0d2ae744",
+      "tools/build/apply-patches.py": "e8e0ff34340c7b27863381d99dbc7f15b3afe2f2aa8aea80a49463b0be65a639"
+    }
+  },
+  "references": {
+    "halo": {
+      "url": "https://github.com/BirchWoodGod/halo-ce-vita",
+      "revision": "79a3d1c28c7ac5312a85f2e04ab022d86d383a15"
+    },
+    "thug": {
+      "url": "https://github.com/iwannagooutside/thug-vita-port",
+      "revision": "6cb8cbe344f356087a2a7a7f9a7f1b6bf828b8dd"
+    },
+    "mh3": {
+      "url": "https://github.com/Grarak/mh3-wii",
+      "revision": "98a4ef762ab464f2fbdf645b668da15bb42478eb"
+    },
+    "xboxrecomp": {
+      "url": "https://github.com/sp00nznet/xboxrecomp",
+      "revision": "f0f8a461496a4f23d9b0aeaa284b8d70ba7ab82b",
+      "sha256": {
+        "src/kernel/guest_vmem.c": "711b2368326ce1630bdd05ba7244e2ce6a42bbf253bfac8e7d9254be912a5262",
+        "src/kernel/guest_vmem.h": "eaacdcc7d600c5d188929ad2224b4f266286960615588e530e71acac85efad3c",
+        "LICENSE": "de6601cea3a6bf2d821b6b89f59b9d6e719cc017e530bcb4bbe2fcf7306e6dda"
+      }
+    },
+    "xita": {
+      "url": "https://github.com/Xita-Project/xita",
+      "revision": "896d6512b6d8c11279de927284e23f86d674bd2d",
+      "sha256": {
+        "runtime/xv_bc_layout.h": "5b686bd87f30f7ca179b34b32fefa981ead8ccbe28cdf661bcfacffa18aa0b88"
+      }
+    }
+  },
+  "vitasdk": {
+    "url": "https://github.com/vitasdk/autobuilds/releases/download/sdk-snapshot-20261015.850.1/vitasdk-x86_64-linux-gnu-2026-10-15_05-01-16.tar.bz2",
+    "sha256": "801f483928523fe63547faf58a7dfdaca7482b26c33af0064acea96a906f7662",
+    "gcc": "15.2.0",
+    "packages": [
+      {
+        "name": "freetype",
+        "url": "https://github.com/vitasdk/packages/releases/download/master/freetype.tar.xz",
+        "sha256": "ad918e4075822109a61b9a19609ec0524d9b0fdc1878e5b74fc5c8cbc443f763"
+      },
+      {
+        "name": "libjpeg-turbo",
+        "url": "https://github.com/vitasdk/packages/releases/download/master/libjpeg-turbo.tar.xz",
+        "sha256": "87511c384b36f944655e298140f24215f3da8b59821deddca0f6a9c5e3438b78"
+      },
+      {
+        "name": "libpng",
+        "url": "https://github.com/vitasdk/packages/releases/download/master/libpng.tar.xz",
+        "sha256": "e502fac413e17b75a06f8f2a88f87daec13d83a33e9206713a0612ee245b72b8"
+      },
+      {
+        "name": "libvita2d",
+        "url": "https://github.com/vitasdk/packages/releases/download/master/libvita2d.tar.xz",
+        "sha256": "f2688386ca15e030450223812c65beea4d1ce930a79b8a99d04f99b55ab1a455"
+      },
+      {
+        "name": "zlib",
+        "url": "https://github.com/vitasdk/packages/releases/download/master/zlib.tar.xz",
+        "sha256": "f39cea16c176f93dc744597113f093db0d48adf23dd25a14ee0d2ec47df17fa6"
+      }
+    ]
+  },
+  "generator": {
+    "pycparser": "2.23",
+    "license": "BSD-3-Clause",
+    "purpose": "AST-based typed guest memory lowering"
+  }
+}
