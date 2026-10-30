@@ -77,3 +77,13 @@ not a general memory-capacity probe). No code copied or new source pin introduce
 The original GPL recorder adds bounded loss reporting, overflow-safe counters and
 synthetic-clock tests; it does not import Halo memory assumptions or Xita pump
 state. VitaDebugger/Vita3K are not installed or validated by this change.
+
+
+V5 issue #7: REFERENCE pinned prepared runtime src/platform/xbox_winnt.h BOOLEAN
+uint8_t declaration, src/kernel/kernel.h NtWaitForSingleObject BOOLEAN signature,
+and src/kernel/kernel_bridge.c explicit cast/ordinal23312-byte ABI. Existing
+Vita import used a full-width truth test, independently reproduced via a real
+translated CALL with0x100. Adapted the established low-byte marshaling convention
+already used by event InitialState. No foreign source copied or pin changed.
+Added512 positive/negative byte combinations without adding synthetic functions
+or expanding unrelated CPU coverage. Other ABI/FP/title gaps remain separate.

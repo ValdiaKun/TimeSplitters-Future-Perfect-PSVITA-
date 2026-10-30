@@ -994,3 +994,23 @@ telemetry OFF and ON configurations cross-built with the existing hash-locked
 SDK, `cmake -S ports/vita -B build/vita-locked` and `cmake --build build/vita-locked`.
 Final commit/remote CI links are recorded in draft PR #1 after CI completion.
 No physical Vita, game boot, GPU execution or device-performance result exists.
+
+
+## V5 wait BOOLEAN reproduction and correction
+
+Independent scratch reproduction changed only the existing first translated
+poll argument from0 to0x100, reused the portable-host compile command and failed
+its original TIMEOUT/status/ESP assertion. New tracked512-case tests also failed
+on the old dispatcher in host-pristine (`tools/test_guest.py`, SIGABRT). The
+runtime fix truncates the slot to uint8_t as the pinned PC bridge does, retaining
+all real unsupported low-byte/fault checks. No expected result was weakened.
+The source-contract generator additionally guards BOOLEAN=uint8_t, the formal
+wait prototype and the existing bridge cast at unchanged runtime/source pins.
+Exact existing ARM/sysroot/QEMU and locked SDK commands above apply unchanged.
+Final local/CI results are recorded in PR #1 after validation completion.
+
+Corrected dispatcher: complete PC/pristine, portable, ASan/UBSan and Cortex-A9
+QEMU comparisons passed locally, followed by three additional complete runs of
+each host mode. Both locked-SDK VPK targets cross-built successfully. The earlier
+telemetry/layout/input/intake/Python gates remain passed; no unrelated source or
+pins changed. Final remote push/PR evidence follows in the draft PR/issue report.

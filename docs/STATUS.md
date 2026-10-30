@@ -424,3 +424,17 @@ See [TELEMETRY.md](TELEMETRY.md) for exact contracts, build/test commands,
 capture metadata and limits. Guest runtime hooks/device capture are still absent.
 No retail inputs, physical console results or performance measurements exist.
 Issue #4 still requires the seven inputs in TITLE_INPUTS.md before real tracing.
+
+
+## 2026-10-30: wait-import BOOLEAN ABI correction (issue #7)
+
+NtWaitForSingleObject Alertable now decodes only the low8 bits of its four-byte
+stdcall slot, matching pinned BOOLEAN and bridge casts. High bits alone no
+longer cause an unsupported-import fault. Every nonzero low byte still faults
+before reading Timeout; alertable waits are not implemented. The existing real
+translated CALL fixture now exercises512 high/low-byte combinations, completed
+threads, exact EAX/ESP and invalid-timeout fault ordering. Source-generation
+checks pin the authoritative type/signature/cast; source pins remain unchanged.
+This fixes a demonstrated import defect, not full Xbox ABI/runtime compatibility.
+Authentic game-entry tracing still requires the seven missing TITLE_INPUTS.md
+inputs; no retail/hardware/performance behavior has been established.

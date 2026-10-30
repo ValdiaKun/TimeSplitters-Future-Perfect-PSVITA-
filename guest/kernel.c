@@ -187,7 +187,8 @@ static void dispatch(uint32_t ordinal) {
     else if (ordinal==186) result=tsfp_event_clear(frame[1]);
     else if (ordinal==233) {
         TsfpWaitTimeout timeout;
-        if (frame[2]) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
+        /* BOOLEAN occupies the low byte of its four-byte stdcall slot. */
+        if ((uint8_t)frame[2]) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
         uint64_t bits=frame[3] ? tsfp_guest_load_u64(frame[3]) : 0;
         if (!tsfp_thread_timeout_decode(frame[3]!=0,bits,&timeout)) tsfp_guest_raise(TSFP_FAULT_IMPORT,THUNK_BASE,0,ordinal);
         result=tsfp_handle_wait(frame[1],&timeout);

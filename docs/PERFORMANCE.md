@@ -174,3 +174,7 @@ See [TELEMETRY.md](TELEMETRY.md) for exact contracts, build/test commands,
 capture metadata and limits. Guest runtime hooks/device capture are still absent.
 No retail inputs, physical console results or performance measurements exist.
 Issue #4 still requires the seven inputs in TITLE_INPUTS.md before real tracing.
+
+
+V5 wait BOOLEAN correction changes one argument-width conversion, not wait
+scheduling or timing. No optimization or performance measurement is claimed.

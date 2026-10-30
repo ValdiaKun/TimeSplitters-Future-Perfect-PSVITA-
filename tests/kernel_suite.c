@@ -39,6 +39,21 @@ static void test_thread_poll(uint32_t object) {
     TsfpFault f; recomp_func_t fn=fixture_kernel_call;
     poll_call(owner,0,0x90080);
     assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0x102 && g_esp==0x8dfe0);
+    /* Xbox BOOLEAN is one byte even though stdcall reserves a four-byte slot.
+     * Exercise every low-byte value with nonzero high bytes through the real
+     * translated indirect CALL; true remains unsupported BEFORE timeout reads. */
+    for (unsigned high=0;high<2;++high) {
+        for (unsigned low=0;low<256;++low) {
+            uint32_t alertable=(high ? UINT32_C(0xffffff00) : UINT32_C(0x12345600)) | low;
+            poll_call(owner,alertable,low ? 0x73fffffc : 0x90080);
+            if (low) {
+                assert(tsfp_guest_run(invoke,&fn,&f)==1 && f.kind==TSFP_FAULT_IMPORT && f.detail==233);
+                assert(g_eax==77 && g_esp==0x8dfcc);
+            } else {
+                assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0x102 && g_esp==0x8dfe0);
+            }
+        }
+    }
     tsfp_guest_store_u64(0x90080,UINT64_C(0)-10000);
     poll_call(owner,0,0x90080);
     assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0x102 && g_esp==0x8dfe0);
@@ -48,7 +63,7 @@ static void test_thread_poll(uint32_t object) {
     assert(!pthread_join(finisher,NULL));
     tsfp_guest_store_u64(0x90080,0);
     for (unsigned i=0;i<2;++i) {
-        poll_call(owner,0,0x90080);
+        poll_call(owner,i ? UINT32_C(0xffffff00) : UINT32_C(0x100),0x90080);
         assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==0 && g_esp==0x8dfe0);
     }
     assert(tsfp_thread_handle_close(owner)==0);
@@ -63,14 +78,14 @@ static void test_thread_poll(uint32_t object) {
             assert(g_eax==77 && g_esp==0x8dfcc);
         } else assert(tsfp_guest_run(invoke,&fn,&f)==0 && g_eax==TSFP_STATUS_INVALID_HANDLE && g_esp==0x8dfe0);
     }
-    poll_call(owner,0,0x73fffffc);
+    poll_call(owner,UINT32_C(0xffffff00),0x73fffffc);
     assert(tsfp_guest_run(invoke,&fn,&f)==1 && f.kind==TSFP_FAULT_MEMORY);
     assert(f.address==0x73fffffc && f.width==8 && f.access==TSFP_ACCESS_READ && g_eax==77 && g_esp==0x8dfcc);
     g_esi=0x88000; g_esp=0x73fffffc; g_eax=77;
     assert(tsfp_guest_run(invoke,&fn,&f)==1 && f.kind==TSFP_FAULT_MEMORY);
     assert(f.address==0x73fffff8 && f.width==16 && g_eax==77 && g_esp==0x73fffff8);
     assert(!tsfp_thread_handles_busy());
-    puts("thread-poll-v1: running=timeout completion=sticky closed=invalid unsupported=fault bounds=pass");
+    puts("thread-poll-v1: running=timeout completion=sticky closed=invalid unsupported=fault boolean-low-byte=512 bounds=pass");
 }
 void test_kernel(void) {
     const uint32_t table=0x88000,tib=0x89000,object=0x8a000,source=0x8b000;

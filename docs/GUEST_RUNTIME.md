@@ -883,3 +883,17 @@ Published stores cannot fault under the validated binding/permission/lifetime
 contract. Concurrent guest changes to the words are outside that contract.
 Managed thread-pool/template output roles remain excluded; neither this profile
 nor the allocator is complete Xbox virtual-memory/scheduling support.
+
+
+## 2026-10-30: wait-import BOOLEAN ABI correction (issue #7)
+
+NtWaitForSingleObject Alertable now decodes only the low8 bits of its four-byte
+stdcall slot, matching pinned BOOLEAN and bridge casts. High bits alone no
+longer cause an unsupported-import fault. Every nonzero low byte still faults
+before reading Timeout; alertable waits are not implemented. The existing real
+translated CALL fixture now exercises512 high/low-byte combinations, completed
+threads, exact EAX/ESP and invalid-timeout fault ordering. Source-generation
+checks pin the authoritative type/signature/cast; source pins remain unchanged.
+This fixes a demonstrated import defect, not full Xbox ABI/runtime compatibility.
+Authentic game-entry tracing still requires the seven missing TITLE_INPUTS.md
+inputs; no retail/hardware/performance behavior has been established.

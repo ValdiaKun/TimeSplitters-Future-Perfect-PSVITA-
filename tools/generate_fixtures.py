@@ -172,6 +172,11 @@ def main():
     for name,value in (('XboxNotificationEvent',0),('XboxSynchronizationEvent',1)):
         if not re.search(rf'\b{name}\s*=\s*{value}\b',kernel):
             raise RuntimeError(f'Pinned event type changed: {name}')
+    platform_types = (runtime / 'src/platform/xbox_winnt.h').read_text()
+    if (not re.search(r'typedef\s+uint8_t\s+BOOLEAN\b', platform_types) or
+        not re.search(r'xbox_NtWaitForSingleObject\(HANDLE Handle, BOOLEAN Alertable, PLARGE_INTEGER Timeout\)', kernel) or
+        not re.search(r'handle,\s*\(BOOLEAN\)alertable,\s*XBOX_TO_NATIVE\(timeout_ptr\)', bridge)):
+        raise RuntimeError('Pinned NtWaitForSingleObject BOOLEAN width/bridge changed')
     for ordinal, size, name in ((184,20,'NtAllocateVirtualMemory'),(199,12,'NtFreeVirtualMemory'),(189,16,'NtCreateEvent'),(225,8,'NtSetEvent'),(186,4,'NtClearEvent'),(255,40,'PsCreateSystemThreadEx'),(233,12,'NtWaitForSingleObject'),(187,4,'NtClose'),(104,0,'KeGetCurrentThread'),(320,8,'RtlZeroMemory'),(258,4,'PsTerminateSystemThread')):
         if not re.search(rf'case {ordinal}: return\s+{size};',bridge) or not re.search(rf'case {ordinal}: return bridge_{name};',bridge):
             raise RuntimeError(f'Pinned kernel ordinal/ABI changed: {ordinal} {name}')
