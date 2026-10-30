@@ -34,3 +34,14 @@ graphics/xbox_bc_layout.c adapts Xita runtime/xv_bc_layout.h, revision
 GPL-3.0-only. Original source: https://github.com/Xita-Project/xita. Its hash and
 adaptation limits are in sources.lock.json and docs/ACCELERATION_AUDIT.md.
 No Xita game captures, translated game shaders, assets or binaries are included.
+
+ports/vita/src/shaders/clear_v.h and clear_f.h are byte-for-byte copies of the
+precompiled GXP clear programs in Rinnegatamante/vitaGL source/shaders/
+(precompiled_clear_v.h, precompiled_clear_f.h), revision
+3cb7872d6d5808fb1cddf4f643f29306cb53be4e. vitaGL is offered under LGPL-3.0 and
+GPL-3.0 (COPYING, COPYING.LESSER); they are used here under GPL-3.0-only with
+a provenance header prepended. Upstream file SHA-256: precompiled_clear_v.h
+cefef31bd678921a4ef9105ce3382d752ee364c7b128f974113e73a42b51e512,
+precompiled_clear_f.h 62e89dbc60c4162da05034f3fd3ca3949bd88f09e8b46ad0029d56cd31c9fada.
+The Cg source of each program is preserved in the header comment. The compiled
+bytes are pinned by tools/test_gxm_shaders.py. No other vitaGL code is imported.

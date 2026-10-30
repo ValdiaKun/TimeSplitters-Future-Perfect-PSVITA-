@@ -53,6 +53,15 @@ if(TSFP_BUILD_GXM_SMOKE)
     tsfp_create_self(gxm-smoke.bin tsfp_gxm_smoke)
     vita_create_vpk(tsfp-gxm-smoke.vpk "TFPV00003" gxm-smoke.bin
         VERSION ${VITA_VERSION} NAME "TSFP GXM Smoke")
+
+    # Native GPU-executed, shader-driven indexed draw (precompiled vitaGL clear
+    # shaders, see src/shaders/). Cross-built only; physical Vita unverified.
+    add_executable(tsfp_gxm_draw src/gxm_draw.c src/usse_arena.c)
+    target_compile_options(tsfp_gxm_draw PRIVATE -O2 -Wall -Wextra -Werror)
+    target_link_libraries(tsfp_gxm_draw SceGxm_stub SceDisplay_stub SceSysmem_stub SceKernelThreadMgr_stub)
+    tsfp_create_self(gxm-draw.bin tsfp_gxm_draw)
+    vita_create_vpk(tsfp-gxm-draw.vpk "TFPV00004" gxm-draw.bin
+        VERSION ${VITA_VERSION} NAME "TSFP GXM Draw")
 endif()
 
 # Asset-free guest ABI fixture VPK; deliberately separate from the diagnostic.

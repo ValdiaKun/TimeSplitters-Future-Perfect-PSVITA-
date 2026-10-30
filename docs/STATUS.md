@@ -476,3 +476,21 @@ bytes do not truncate. Existing translated creation/wait/close, heap publication
 rollback and two concurrent callers remain the execution path, not new stubs.
 The approved executable/hash, source pins and seven-file intake blocker remain
 unchanged. This is a narrow ABI fix, not retail boot or gameplay evidence.
+
+## 2026-10-30: native GXM shader-driven draw (chatgpt-vita-development)
+
+- Added the opt-in `tsfp_gxm_draw` target (`TSFP_BUILD_GXM_SMOKE=ON`, produces
+  `tsfp-gxm-draw.vpk`): GXM context and ring buffers, render target, two CDRAM
+  color surfaces, shader patcher with bounded USSE arenas, registered vitaGL
+  clear programs, and two indexed `sceGxmDraw` calls per frame inside
+  Begin/EndScene with display-queue submission. The existing CPU-painted
+  `tsfp_gxm_smoke` is unchanged.
+- Added `ports/vita/src/usse_arena.[ch]` (host-tested allocator that fails closed
+  on exhaustion, overflow, bad alignment, foreign pointers and double release) and
+  `tools/test_gxm_shaders.py` (pins the vendored shader blobs).
+- **Status: cross-built only. Never executed on a physical Vita.** Whether the GPU
+  produces the intended pixels is unverified. This is not a TimeSplitters
+  renderer, not a vertex-stream test, and has no depth, texture or blend coverage.
+- Blocker for the next graphics stage: a license-clear, reproducible offline
+  shader build for attribute-stream, textured and blended programs (see
+  REFERENCE_AUDIT.md). Next: that toolchain decision, then a D3D8 vertex-format adapter.

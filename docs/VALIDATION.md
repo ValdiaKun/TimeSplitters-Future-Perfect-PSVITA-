@@ -1083,3 +1083,17 @@ commands above apply unchanged; remote commit/run links follow in draft PR #1.
 No new source pin or foreign code; comparative reference revisions/licenses and
 non-independent ancestry are recorded in ACCELERATION_AUDIT.md. No authenticated
 retail inputs, game execution or physical Vita/FPS measurements are available.
+
+## 2026-10-30: GXM shader-driven draw slice
+
+Environment: pinned VitaSDK via `python3 tools/fetch_vitasdk.py` (all package
+hashes verified), CMake/Ninja from the system. PyPI was unreachable in this
+session, so Python packages for the guest-fixture generator were not installed.
+
+Passed locally:
+- `cc -std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined ports/vita/src/usse_arena.c ports/vita/tests/test_usse_arena.c` then run: all checks passed (the first run caught a real bug: allocation end offset was not range-checked; fixed).
+- `python3 tools/test_gxm_shaders.py`: both blobs match pinned size/hash/parameter names/provenance; negative control rejected.
+- `cmake -S ports/vita -B build/vita-gxm -G Ninja -DTSFP_BUILD_GXM_SMOKE=ON && cmake --build build/vita-gxm`: bootstrap, `tsfp-gxm-smoke.vpk` and `tsfp-gxm-draw.vpk` cross-built with `-Werror`.
+
+Not run: ARM32 QEMU and guest suites (no ARM cross compiler or QEMU here; fixture
+dependencies unavailable), any physical Vita execution, any FPS or GPU timing.
