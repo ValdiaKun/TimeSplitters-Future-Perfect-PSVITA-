@@ -1014,3 +1014,27 @@ QEMU comparisons passed locally, followed by three additional complete runs of
 each host mode. Both locked-SDK VPK targets cross-built successfully. The earlier
 telemetry/layout/input/intake/Python gates remain passed; no unrelated source or
 pins changed. Final remote push/PR evidence follows in the draft PR/issue report.
+
+## 2026-10-30: captured event export and offline mapping
+
+Starting HEAD3d25b9c. `tools/test_guest.py` with the documented local Cortex-A9
+compiler/sysroot/QEMU arguments passed PC/pristine, portable, ASan/UBSan and ARM.
+The runner validates exactly one real translated divide-event JSON per mode,
+including expected PC/address/thread/EAX/ESP/flags and declared-range mapping.
+Missing, duplicate and wrong-PC negative controls fail as intended. No new
+translated functions or generated-source edits were introduced: all127 fixtures,
+1518 string cases,294 atomic cases and prior ownership suites remain enabled.
+
+`python3 -m unittest discover -s tests -p test_fault_symbolizer.py`:10 tests pass.
+Strict schema/uint/bool/range/overlap/bounds/hash/controlled CLI failure cases use
+only authored input. Real load/store/dispatch/divide captures and two workers
+exercise integer export, maximum-width values, exact buffer capacities,
+invalid enums and immutable snapshots. Independent native-formatter review found
+no blocking ownership, recovery or formatting issue.
+
+The162 graphics-layout cases, telemetry host/sanitizer/ARM tests,13 intake tests,
+strict controller build/run, Python compilation and whitespace checks passed.
+Both locked VitaSDK VPK targets cross-built with the new report source.
+`check_title_inputs.py` still returns2/missing_inputs for all seven required files.
+No retail boot, physical device, native GPU execution or performance was measured.
+Final pushed commit and push/PR CI links are recorded in draft PR #1.

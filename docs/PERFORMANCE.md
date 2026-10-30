@@ -178,3 +178,9 @@ Issue #4 still requires the seven inputs in TITLE_INPUTS.md before real tracing.
 
 V5 wait BOOLEAN correction changes one argument-width conversion, not wait
 scheduling or timing. No optimization or performance measurement is claimed.
+
+
+Fault export uses fixed640-byte native scratch only when explicitly requested
+after capture. Offline mapping is host tooling; no per-instruction formatting,
+log I/O or guest-memory probe was added. No throughput, latency, production
+stack budget or real Vita performance was measured.

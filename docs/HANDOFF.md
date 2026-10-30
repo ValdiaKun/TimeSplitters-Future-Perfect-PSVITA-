@@ -109,3 +109,15 @@ checks pin the authoritative type/signature/cast; source pins remain unchanged.
 This fixes a demonstrated import defect, not full Xbox ABI/runtime compatibility.
 Authentic game-entry tracing still requires the seven missing TITLE_INPUTS.md
 inputs; no retail/hardware/performance behavior has been established.
+
+
+## Captured fault export and offline mapping — 2026-10-30
+
+Added bounded integer-only TsfpFault JSON export after the existing recovery
+boundary, with no guest reads or cleanup/recovery changes. The offline mapper
+uses declared end-exclusive function ranges, reports unverified_local_map
+assurance and never guesses nearest symbols or stack frames. See
+[FAULT_TRACING.md](FAULT_TRACING.md) for schema, commands and limits. Real
+translated fixture faults validate this path, not retail execution. Runtime
+timing hooks, actual title inputs, full stacks/SEH and physical Vita captures
+remain incomplete; issue #4's seven-file input gate is unchanged.

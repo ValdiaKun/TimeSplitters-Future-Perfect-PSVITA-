@@ -79,3 +79,15 @@ Use controlled before/after runs and measure instrumentation overhead before
 using telemetry for optimization. Hardware, retail inputs and an actual game
 renderer remain unavailable. Issue #6 stays open for runtime hooks, fault-PC
 symbolization, device capture automation and a genuine hardware baseline.
+
+
+## Captured fault export and offline mapping — 2026-10-30
+
+Added bounded integer-only TsfpFault JSON export after the existing recovery
+boundary, with no guest reads or cleanup/recovery changes. The offline mapper
+uses declared end-exclusive function ranges, reports unverified_local_map
+assurance and never guesses nearest symbols or stack frames. See
+[FAULT_TRACING.md](FAULT_TRACING.md) for schema, commands and limits. Real
+translated fixture faults validate this path, not retail execution. Runtime
+timing hooks, actual title inputs, full stacks/SEH and physical Vita captures
+remain incomplete; issue #4's seven-file input gate is unchanged.

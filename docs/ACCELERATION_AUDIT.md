@@ -87,3 +87,13 @@ translated CALL with0x100. Adapted the established low-byte marshaling conventio
 already used by event InitialState. No foreign source copied or pin changed.
 Added512 positive/negative byte combinations without adding synthetic functions
 or expanding unrelated CPU coverage. Other ABI/FP/title gaps remain separate.
+
+
+Fault trace export REUSEs this project's existing guest/execution.{h,c} captured
+instruction marker/CPU snapshot and strict JSON/address helpers in
+check_title_inputs.py. REFERENCE unchanged PC tools/compiler function metadata
+(start/end hex extents) and existing prepared translator instruction markers.
+Original GPL adapters only; no foreign code, new parser dependency, source pin,
+retail disassembly or game label is imported. Heuristic stack scans/nearest
+symbols are REJECTED as misleading first-fault evidence. Unknown map provenance
+is explicit; no claim of authenticated title execution follows from mapping.

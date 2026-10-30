@@ -24,6 +24,8 @@ jobs:
         run: python tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc
       - name: Validate authenticated title intake without game data
         run: python -m unittest discover -s tests -p test_title_inputs.py
+      - name: Validate offline guest PC mapping with authored data
+        run: python -m unittest discover -s tests -p test_fault_symbolizer.py
       - name: Validate bounded telemetry with synthetic timestamps
         run: python tools/test_telemetry.py --arm-cc arm-linux-gnueabihf-gcc
       - name: Validate bounded compressed-texture layout

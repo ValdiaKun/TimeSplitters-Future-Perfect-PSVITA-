@@ -6,6 +6,8 @@
 #include "recomp_types.h"
 #include "memory.h"
 #include "execution.h"
+#include "fault_report.h"
+#include <inttypes.h>
 #include "string_ops.h"
 #include <assert.h>
 #include <pthread.h>
@@ -14,6 +16,45 @@
 void fixture_thread_args(void); void fixture_flag_call(void);
 void fixture_fault_load(void); void fixture_fault_store(void); void fixture_fault_divide(void);
 void fixture_indirect_mem(void);
+static void verify_report(const TsfpFault *fault) {
+    TsfpFault snapshot;
+    memcpy(&snapshot,fault,sizeof snapshot);
+    char output[TSFP_FAULT_JSON_CAPACITY], small[TSFP_FAULT_JSON_CAPACITY];
+    char expected[96];
+    memset(output, 'x', sizeof output);
+    size_t count = tsfp_fault_json(fault, output, sizeof output);
+    assert(count && count == strlen(output) && output[0] == '{' && output[count-1] == '}');
+    snprintf(expected, sizeof expected, "\"pc\":%" PRIu32 ",", fault->cpu.pc);
+    assert(strstr(output, expected));
+    snprintf(expected, sizeof expected, "\"thread_id\":%" PRIu32 ",", fault->thread_id);
+    assert(strstr(output, expected));
+    snprintf(expected, sizeof expected, "\"width\":%zu,", fault->width);
+    assert(strstr(output, expected));
+    memset(small, 'q', sizeof small);
+    assert(!tsfp_fault_json(fault, small, count));
+    for (size_t i=0;i<sizeof small;++i) assert(small[i]=='q');
+    assert(tsfp_fault_json(fault, small, count+1)==count && !strcmp(output,small));
+    assert(!tsfp_fault_json(fault, NULL, SIZE_MAX));
+    assert(!memcmp(&snapshot,fault,sizeof snapshot));
+}
+static void test_report_bounds(void) {
+    TsfpFault maximum={0};
+    maximum.kind=TSFP_FAULT_IMPORT; maximum.access=TSFP_ACCESS_EXECUTE;
+    maximum.cpu.pc=maximum.address=maximum.detail=maximum.thread_id=UINT32_MAX;
+    maximum.width=SIZE_MAX; maximum.cpu.flags=maximum.cpu.flags_valid=UINT32_MAX;
+    for (unsigned i=0;i<8;++i) maximum.cpu.registers[i]=UINT32_MAX;
+    verify_report(&maximum);
+    char output[TSFP_FAULT_JSON_CAPACITY]; memset(output,'z',sizeof output);
+    maximum.kind=0; assert(!tsfp_fault_json(&maximum,output,sizeof output));
+    maximum.kind=(enum TsfpFaultKind)99;
+    assert(!tsfp_fault_json(&maximum,output,sizeof output));
+    maximum.kind=TSFP_FAULT_IMPORT; maximum.access=(enum TsfpAccess)99;
+    assert(!tsfp_fault_json(&maximum,output,sizeof output));
+    maximum.kind=TSFP_FAULT_IMPORT; maximum.access=(enum TsfpAccess)-1;
+    assert(!tsfp_fault_json(&maximum,output,sizeof output));
+    assert(!tsfp_fault_json(NULL,output,sizeof output));
+    for (size_t i=0;i<sizeof output;++i) assert(output[i]=='z');
+}
 static void invoke(void *p) { (*(recomp_func_t *)p)(); }
 static void checked_read(void *p) { (void)p; (void)tsfp_guest_load_u32(0xfd000000); }
 static void nested(void *p) {
@@ -40,6 +81,7 @@ static void *worker(void *p) {
         g_ecx=0; g_edx=0; recomp_func_t divide=fixture_fault_divide;
         assert(tsfp_guest_run(invoke,&divide,&f)==1);
         assert(f.kind==TSFP_FAULT_DIVIDE && f.cpu.pc==0x132a0);
+        verify_report(&f);
         assert(tsfp_guest_load_u32(g_fs_base+80)==id);
         assert(f.thread_id==id && f.cpu.registers[0]==id && f.cpu.fs_base==tls);
         assert(f.cpu.flags==0x893u+id);
@@ -54,6 +96,7 @@ static void *worker(void *p) {
     return NULL;
 }
 void test_execution(void) {
+    test_report_bounds();
     TsfpCpuState before,after;
     tsfp_cpu_capture(&before);
     assert(!tsfp_guest_thread_enter(0,0x70000,0x1000,0x78000,64));
@@ -65,6 +108,7 @@ void test_execution(void) {
     assert(tsfp_guest_run(normal,NULL,&fault)==0 && fault.kind==0);
     assert(tsfp_guest_run(nested,NULL,&fault)==1 && fault.kind==TSFP_THREAD_EXIT && fault.detail==73);
     assert(!tsfp_guest_recovery_active());
+    verify_report(&fault);
     for (unsigned overflow=0;overflow<2;++overflow) {
         g_eax=overflow ? 0xffffffffu : 10; g_edx=overflow ? 1 : 0; g_ecx=overflow ? 1 : 0;
         g_esp=0x70ff0; g_tsfp_guest_flags=0x893; g_xmm7.q[1]=UINT64_C(0x7ff8000000001234);
@@ -73,6 +117,12 @@ void test_execution(void) {
         assert(fault.kind==TSFP_FAULT_DIVIDE && fault.address==0x132a0 && fault.detail==overflow);
         assert(fault.cpu.pc==0x132a0 && fault.cpu.registers[0]==g_eax && fault.cpu.registers[2]==g_edx);
         assert(fault.cpu.registers[4]==0x70ff0 && fault.cpu.flags==0x893);
+        verify_report(&fault);
+        if (!overflow) {
+            char report[TSFP_FAULT_JSON_CAPACITY];
+            assert(tsfp_fault_json(&fault,report,sizeof report));
+            printf("fault-report-fixture: %s\n",report);
+        }
         uint64_t payload; memcpy(&payload,fault.cpu.xmm[7]+8,8); assert(payload==g_xmm7.q[1]);
     }
 #ifdef TSFP_PORTABLE_GUEST_MEMORY
@@ -84,6 +134,7 @@ void test_execution(void) {
         assert(fault.access==(write ? TSFP_ACCESS_WRITE : TSFP_ACCESS_READ));
         assert(fault.cpu.pc==(write ? 0x13280u : 0x13260u));
         assert(fault.cpu.registers[0]==0x12345678 && fault.cpu.registers[4]==0x70ff0);
+        verify_report(&fault);
     }
 #endif
     for (unsigned invalid=0;invalid<2;++invalid) {
@@ -93,6 +144,7 @@ void test_execution(void) {
         assert(tsfp_guest_run(invoke,&fn,&fault)==1);
         assert(fault.kind==TSFP_FAULT_DISPATCH && fault.address==target && fault.detail==(invalid ? 2u : 1u));
         assert(fault.cpu.registers[0]==77 && fault.cpu.registers[4]==0x70fec);
+        verify_report(&fault);
     }
     /* Actual translated compare -> direct call to flag-preserving MOV -> RET. */
     tsfp_guest_store_u8(0x79000,0x80); tsfp_guest_store_u8(0x79001,1);
@@ -113,5 +165,5 @@ void test_execution(void) {
     assert(pthread_create(&second,NULL,worker,(void *)(uintptr_t)2)==0);
     assert(pthread_join(first,NULL)==0 && pthread_join(second,NULL)==0);
     assert(g_eax==0xabcdef01 && g_tsfp_guest_flags==0xc93 && !tsfp_guest_thread_id());
-    puts("execution-v1: capture=pass divide=pass dispatch=pass nested=pass threads=2 tls=pass call-flags=pass");
+    puts("execution-v1: structured-report=pass capture=pass divide=pass dispatch=pass nested=pass threads=2 tls=pass call-flags=pass");
 }

@@ -55,6 +55,7 @@ if(TSFP_BUILD_GUEST_TESTS)
         "${TSFP_ROOT}/guest/heap.c"
         "${TSFP_ROOT}/tests/heap_suite.c"
         "${TSFP_ROOT}/guest/execution.c"
+        "${TSFP_ROOT}/guest/fault_report.c"
         "${TSFP_ROOT}/guest/kernel.c"
         "${TSFP_ROOT}/guest/image.c"
         "${TSFP_ROOT}/guest/xbe.c"
