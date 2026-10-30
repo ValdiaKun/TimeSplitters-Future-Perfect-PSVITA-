@@ -1038,3 +1038,27 @@ Both locked VitaSDK VPK targets cross-built with the new report source.
 `check_title_inputs.py` still returns2/missing_inputs for all seven required files.
 No retail boot, physical device, native GPU execution or performance was measured.
 Final pushed commit and push/PR CI links are recorded in draft PR #1.
+
+## 2026-10-30: optional outer guest-entry timing
+
+Starting commit0e7eeda. `tsfp_guest_run_profiled` tests use the existing real
+translated divide fixture and the unchanged C-only capture/cleanup boundary.
+Normal callbacks increment an observable counter: disabled, successful, failed
+clock, reversed-clock and full-buffer calls each execute exactly once; rejected
+arguments/nested use execute zero times and preserve outputs. A failed clock
+pair around a translated fault preserves return1 and the complete captured
+snapshot. End-clock observation asserts durable cleanup already ran.
+
+The complete PC/pristine, portable, ASan/UBSan and Cortex-A9 matrix passed with
+the documented local ARM/sysroot/QEMU arguments, including structured-event
+export/mapping gates and all127 translated functions. Each host mode passed
+three additional full runs. Telemetry host/sanitizer/ARM counter/saturation tests,
+ten mapper cases,13 intake cases, Python and whitespace checks passed. Locked
+SDK diagnostic and synthetic guest VPKs cross-built with the adapter included.
+Independent read-only review found no scope/longjmp/lifetime defect and its
+suggested exactly-once/fault-clock regression controls were added before commit.
+
+Deterministic clock values are not measurements. No title input, hardware timing,
+GPU/audio behavior, game boot or FPS evidence is available. Existing generator,
+source/toolchain pins and default guest_run behavior remain unchanged. Final
+commit/remote push and PR CI results are recorded in draft PR #1 after completion.

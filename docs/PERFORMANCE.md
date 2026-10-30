@@ -184,3 +184,11 @@ Fault export uses fixed640-byte native scratch only when explicitly requested
 after capture. Offline mapping is host tooling; no per-instruction formatting,
 log I/O or guest-memory probe was added. No throughput, latency, production
 stack budget or real Vita performance was measured.
+
+
+The explicit guest-entry timing adapter adds two injected monotonic clock reads
+only when opted in and enabled. It allocates no buffer/lock/guard of its own;
+recording uses the caller's existing bounded trace. CLOCK_FAILURE extends the
+counter array by one uint64 slot. Existing guest_run calls are unchanged. Durations
+include waits/capture/cleanup and cannot be called CPU execution time. Test clock
+values are synthetic; real overhead, hardware timing and FPS remain unmeasured.

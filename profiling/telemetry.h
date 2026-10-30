@@ -14,7 +14,8 @@ typedef enum {
 } TsfpTimeKind;
 typedef enum {
     TSFP_COUNT_SIMULATION, TSFP_COUNT_PRESENT_SUBMIT, TSFP_COUNT_DRAW,
-    TSFP_COUNT_TEXTURE_UPLOAD, TSFP_COUNT_AUDIO_UNDERRUN, TSFP_COUNT_COUNT
+    TSFP_COUNT_TEXTURE_UPLOAD, TSFP_COUNT_AUDIO_UNDERRUN, TSFP_COUNT_CLOCK_FAILURE,
+    TSFP_COUNT_COUNT
 } TsfpCounterKind;
 typedef struct { uint64_t begin_us, end_us; TsfpTimeKind kind; } TsfpTraceSample;
 typedef struct {

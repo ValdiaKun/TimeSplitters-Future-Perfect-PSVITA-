@@ -56,6 +56,8 @@ if(TSFP_BUILD_GUEST_TESTS)
         "${TSFP_ROOT}/tests/heap_suite.c"
         "${TSFP_ROOT}/guest/execution.c"
         "${TSFP_ROOT}/guest/fault_report.c"
+        "${TSFP_ROOT}/profiling/telemetry.c"
+        "${TSFP_ROOT}/profiling/guest_run.c"
         "${TSFP_ROOT}/guest/kernel.c"
         "${TSFP_ROOT}/guest/image.c"
         "${TSFP_ROOT}/guest/xbe.c"
@@ -83,7 +85,7 @@ if(TSFP_BUILD_GUEST_TESTS)
         "${TSFP_ROOT}/tests/mmx_state.c"
         "${TSFP_ROOT}/build/guest/fixtures.c")
     target_include_directories(tsfp_guest_test PRIVATE
-        "${TSFP_ROOT}/guest" "${TSFP_ROOT}/tests" "${TSFP_ROOT}/build/guest/include")
+        "${TSFP_ROOT}/guest" "${TSFP_ROOT}/profiling" "${TSFP_ROOT}/tests" "${TSFP_ROOT}/build/guest/include")
     target_compile_definitions(tsfp_guest_test PRIVATE TSFP_PORTABLE_GUEST_MEMORY TSFP_REQUIRE_ARMV7)
     target_compile_options(tsfp_guest_test PRIVATE -O2 -Wall -Wextra -Werror
         -Wno-unused-label -Wno-unused-variable -Wno-unused-but-set-variable

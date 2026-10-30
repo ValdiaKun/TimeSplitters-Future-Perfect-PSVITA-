@@ -91,3 +91,33 @@ assurance and never guesses nearest symbols or stack frames. See
 translated fixture faults validate this path, not retail execution. Runtime
 timing hooks, actual title inputs, full stacks/SEH and physical Vita captures
 remain incomplete; issue #4's seven-file input gate is unchanged.
+
+## Optional outer guest-entry timing
+
+`profiling/guest_run.{h,c}` now provides `tsfp_guest_run_profiled`, an explicit
+host-entry adapter around the unchanged C recovery API. It does not install
+per-instruction clocks or enable global instrumentation. Supply an initialized,
+exclusively owned recorder and a clock returning success plus a monotonic
+microsecond value. The caller must keep recorder configuration stable for the
+entire call; clock callbacks must not run guest code or fault into recovery.
+
+Return values0/1 retain normal/captured-event semantics. Missing required
+arguments, an enabled recorder without a clock, or an already-active guest
+boundary return-1 before any callback, clock read or output mutation. A disabled
+recorder executes normally without reading the clock, which may be null.
+
+Both clock reads run outside the outermost recovery boundary; the second runs
+after all existing durable guard cleanup. Clock-pair failure increments the
+saturating CLOCK_FAILURE counter once and records no interval, while preserving
+the actual guest result. Reversed clocks increment rejected; full buffers retain
+prior samples and increment dropped. No synthetic timing or fake success is
+substituted. No resource owner, lock or new recovery guard is added.
+
+TSFP_TIME_GUEST here measures **whole boundary elapsed time**, including native
+waits, scheduling, fault capture and cleanup. It does not measure CPU execution
+usage, individual kernel/memory calls, simulation ticks or GPU time. Injectable
+clock values make deterministic tests possible; they are not performance data.
+A future authenticated title host can explicitly opt in with its platform clock.
+The current production title host does not exist; ordinary tsfp_guest_run callers
+are unchanged. Physical clock behavior/overhead and real title timing remain
+unavailable. Safe per-service instrumentation and hardware capture are still open.

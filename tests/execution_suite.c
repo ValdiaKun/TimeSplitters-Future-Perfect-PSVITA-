@@ -7,6 +7,7 @@
 #include "memory.h"
 #include "execution.h"
 #include "fault_report.h"
+#include "guest_run.h"
 #include <inttypes.h>
 #include "string_ops.h"
 #include <assert.h>
@@ -95,6 +96,91 @@ static void *worker(void *p) {
     assert(tsfp_guest_thread_leave() && !tsfp_guest_thread_leave());
     return NULL;
 }
+static _Thread_local unsigned timed_runs;
+static void counted_normal(void *context) {
+    (void)context; ++timed_runs; normal(NULL);
+}
+typedef struct FakeClock {
+    uint64_t begin,end;
+    unsigned calls,fail_mask;
+    int expect_cleanup;
+} FakeClock;
+static _Thread_local int timed_cleaned;
+static _Thread_local TsfpTelemetry timed_trace;
+static int fake_clock(void *context,uint64_t *stamp) {
+    FakeClock *clock=context;
+    assert(!tsfp_guest_recovery_active() && clock->calls<2);
+    unsigned index=clock->calls++;
+    if (index && clock->expect_cleanup) assert(timed_cleaned==1);
+    *stamp=index ? clock->end : clock->begin;
+    return !(clock->fail_mask & (1u<<index));
+}
+static void timed_cleanup(void *context) {
+    assert(context==&timed_cleaned);
+    timed_cleaned=1;
+}
+static void timed_fault(void *context) {
+    (void)context;
+    assert(tsfp_guest_scope_guard(timed_cleanup,&timed_cleaned));
+    fixture_fault_divide();
+}
+static void nested_profile(void *context) {
+    FakeClock *clock=context; TsfpFault untouched;
+    memset(&untouched,0x5a,sizeof untouched);
+    TsfpFault before; memcpy(&before,&untouched,sizeof before);
+    assert(tsfp_guest_run_profiled(counted_normal,NULL,&untouched,&timed_trace,fake_clock,clock)==-1);
+    assert(!memcmp(&untouched,&before,sizeof before) && clock->calls==0);
+}
+static void test_profiled_runs(void) {
+    TsfpFault event;
+    timed_runs=0;
+    tsfp_telemetry_reset(&timed_trace,0);
+    FakeClock clock={100,109,0,0,0};
+    assert(tsfp_guest_run_profiled(counted_normal,NULL,&event,&timed_trace,NULL,&clock)==0);
+    assert(!clock.calls && !timed_trace.count && !event.kind && timed_runs==1);
+    tsfp_telemetry_reset(&timed_trace,1);
+    assert(tsfp_guest_run_profiled(counted_normal,NULL,&event,&timed_trace,fake_clock,&clock)==0);
+    TsfpTimeSummary summary;
+    assert(clock.calls==2 && tsfp_telemetry_summary(&timed_trace,TSFP_TIME_GUEST,&summary));
+    assert(summary.count==1 && summary.median_us==9 && !event.kind && timed_runs==2);
+    g_eax=10;g_ecx=0;g_edx=0;g_esp=0x70ff0;
+    timed_cleaned=0;clock=(FakeClock){200,213,0,0,1};
+    assert(tsfp_guest_run_profiled(timed_fault,NULL,&event,&timed_trace,fake_clock,&clock)==1);
+    assert(clock.calls==2 && timed_cleaned && event.kind==TSFP_FAULT_DIVIDE && event.cpu.pc==0x132a0);
+    assert(event.cpu.registers[0]==10 && event.cpu.registers[4]==0x70ff0);
+    assert(timed_trace.count==2 && timed_trace.samples[1].end_us-timed_trace.samples[1].begin_us==13);
+    verify_report(&event);
+    TsfpFault expected_fault; memcpy(&expected_fault,&event,sizeof expected_fault);
+    /* A failed clock pair must not skip guest execution or invent a duration. */
+    for (unsigned fail=1;fail<=3;++fail) {
+        clock=(FakeClock){1,2,0,fail,0};
+        assert(tsfp_guest_run_profiled(counted_normal,NULL,&event,&timed_trace,fake_clock,&clock)==0);
+        assert(clock.calls==2 && !event.kind && timed_trace.count==2 && timed_runs==2+fail);
+    }
+    assert(timed_trace.counters[TSFP_COUNT_CLOCK_FAILURE]==3);
+    timed_cleaned=0;clock=(FakeClock){1,2,0,3,1};
+    assert(tsfp_guest_run_profiled(timed_fault,NULL,&event,&timed_trace,fake_clock,&clock)==1);
+    assert(!memcmp(&expected_fault,&event,sizeof event) && timed_cleaned && timed_runs==5);
+    assert(clock.calls==2 && timed_trace.counters[TSFP_COUNT_CLOCK_FAILURE]==4 && timed_trace.count==2);
+    clock=(FakeClock){10,9,0,0,0};
+    assert(tsfp_guest_run_profiled(counted_normal,NULL,&event,&timed_trace,fake_clock,&clock)==0);
+    assert(timed_trace.rejected==1 && timed_trace.count==2 && timed_runs==6);
+    tsfp_telemetry_reset(&timed_trace,1);
+    for (unsigned i=0;i<TSFP_TRACE_CAPACITY;++i)
+        assert(tsfp_telemetry_interval(&timed_trace,TSFP_TIME_GUEST,0,i));
+    clock=(FakeClock){1,2,0,0,0};
+    assert(tsfp_guest_run_profiled(counted_normal,NULL,&event,&timed_trace,fake_clock,&clock)==0);
+    assert(timed_trace.count==TSFP_TRACE_CAPACITY && timed_trace.dropped==1 && timed_runs==7);
+    tsfp_telemetry_reset(&timed_trace,1);
+    clock=(FakeClock){1,2,0,0,0};
+    assert(tsfp_guest_run(nested_profile,&clock,&event)==0 && !timed_trace.count);
+    memset(&event,0x5a,sizeof event); TsfpFault before; memcpy(&before,&event,sizeof before);
+    assert(tsfp_guest_run_profiled(counted_normal,NULL,&event,&timed_trace,NULL,NULL)==-1);
+    assert(tsfp_guest_run_profiled(counted_normal,NULL,&event,NULL,fake_clock,&clock)==-1);
+    assert(tsfp_guest_run_profiled(NULL,NULL,&event,&timed_trace,fake_clock,&clock)==-1);
+    assert(tsfp_guest_run_profiled(counted_normal,NULL,NULL,&timed_trace,fake_clock,&clock)==-1);
+    assert(!memcmp(&event,&before,sizeof before) && !clock.calls && !timed_trace.count && timed_runs==7);
+}
 void test_execution(void) {
     test_report_bounds();
     TsfpCpuState before,after;
@@ -104,6 +190,7 @@ void test_execution(void) {
     assert(!tsfp_guest_thread_enter(1,0x70000,0x1000,0xfd000000,64));
     tsfp_cpu_capture(&after); assert(memcmp(&before,&after,sizeof(before))==0);
     assert(tsfp_guest_thread_enter(7,0x70000,0x1000,0x78000,64));
+    test_profiled_runs();
     TsfpFault fault;
     assert(tsfp_guest_run(normal,NULL,&fault)==0 && fault.kind==0);
     assert(tsfp_guest_run(nested,NULL,&fault)==1 && fault.kind==TSFP_THREAD_EXIT && fault.detail==73);
@@ -165,5 +252,5 @@ void test_execution(void) {
     assert(pthread_create(&second,NULL,worker,(void *)(uintptr_t)2)==0);
     assert(pthread_join(first,NULL)==0 && pthread_join(second,NULL)==0);
     assert(g_eax==0xabcdef01 && g_tsfp_guest_flags==0xc93 && !tsfp_guest_thread_id());
-    puts("execution-v1: structured-report=pass capture=pass divide=pass dispatch=pass nested=pass threads=2 tls=pass call-flags=pass");
+    puts("execution-v1: outer-run-timing=pass structured-report=pass capture=pass divide=pass dispatch=pass nested=pass threads=2 tls=pass call-flags=pass");
 }

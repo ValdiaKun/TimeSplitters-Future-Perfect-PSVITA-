@@ -97,3 +97,12 @@ Original GPL adapters only; no foreign code, new parser dependency, source pin,
 retail disassembly or game label is imported. Heuristic stack scans/nearest
 symbols are REJECTED as misleading first-fault evidence. Unknown map provenance
 is explicit; no claim of authenticated title execution follows from mapping.
+
+
+Guest-entry timing REUSEs existing execution.c run/capture/cleanup and bounded
+telemetry recording. Original GPL adapter, no foreign source copied, source pin,
+platform privilege or alternate scheduler/recovery engine introduced. Reference
+Xita's previously audited elapsed-not-GPU distinction remains applicable. Native
+clock acquisition is injected outside recovery/resource ownership; failed timing
+is explicit and never replaces real execution. Host/Vita timing is not inferred
+from deterministic fake clock values or QEMU.

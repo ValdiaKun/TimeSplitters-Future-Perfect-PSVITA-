@@ -121,3 +121,16 @@ assurance and never guesses nearest symbols or stack frames. See
 translated fixture faults validate this path, not retail execution. Runtime
 timing hooks, actual title inputs, full stacks/SEH and physical Vita captures
 remain incomplete; issue #4's seven-file input gate is unchanged.
+
+
+## Optional guest-entry elapsed hook — 2026-10-30
+
+Added tsfp_guest_run_profiled in profiling/guest_run.{h,c}, delegating the existing
+outermost recovery boundary without new guards/locks. Disabled mode makes no
+clock calls; invalid/nested use returns-1 unchanged. Failed clock pairs are
+counted without skipping guest code or inventing duration. Capture and guard
+cleanup precede the final clock read. Tests use real translated code and fake
+clock values; they establish semantics, not CPU usage or Vita performance.
+See TELEMETRY.md. No default guest-run behavior, title inputs or source pin
+changed. Next critical gate remains authenticated title input/dispatch/first-entry
+tracing, then actual per-service/hardware instrumentation as evidence permits.
