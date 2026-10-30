@@ -1,7 +1,7 @@
 name: Guest CPU and Vita cross-build
 on:
   push:
-    branches: [vita-bootstrap]
+    branches: [vita-bootstrap, chatgpt-vita-development]
   pull_request:
 permissions:
   contents: read
@@ -17,9 +17,19 @@ jobs:
           python-version: '3.12'
       - name: Install pinned decoder and ARM Linux tools
         run: |
-          python -m pip install capstone==5.0.9 pycparser==2.23
+          python -m pip install capstone==5.0.9 pycparser==2.23 cmake==4.4.4 ninja==1.13.2
           sudo apt-get update
           sudo apt-get install -y gcc-arm-linux-gnueabihf qemu-user
+      - uses: actions/cache@v4
+        with:
+          path: .cache/offline-shaders
+          key: offline-shaders-${{ runner.os }}-${{ hashFiles('tools/shader_compiler.lock.json', 'tools/shader_dependencies.lock.json') }}
+      - name: Build public-source authored shaders and validate failure controls
+        run: |
+          python tools/build_offline_shaders.py --fetch
+          python -m unittest discover -s tests -p test_gxp_validate.py
+          python tools/test_offline_shaders.py
+          python tools/test_gxm_shaders.py
       - name: Compare PC runtime, portable adapter, sanitizers and ARMv7
         run: python tools/test_guest.py --arm-cc arm-linux-gnueabihf-gcc
       - name: Validate authenticated title intake without game data
@@ -50,6 +60,12 @@ jobs:
         with:
           path: .cache/toolchains
           key: vitasdk-${{ runner.os }}-${{ hashFiles('sources.lock.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: .cache/offline-shaders
+          key: offline-shaders-${{ runner.os }}-${{ hashFiles('tools/shader_compiler.lock.json', 'tools/shader_dependencies.lock.json') }}
+      - name: Build public-source offline shader bundle
+        run: python tools/build_offline_shaders.py --fetch
       - name: Fetch hash-locked SDK and prepare synthetic code
         run: |
           python tools/fetch_vitasdk.py
@@ -60,7 +76,7 @@ jobs:
           export PATH="$VITASDK/bin:$PATH"
           cmake -S ports/vita -B build/vita -G Ninja -DTSFP_BUILD_GUEST_TESTS=ON
           cmake --build build/vita
-          cmake -S ports/vita -B build/vita -DTSFP_DIAGNOSTIC_TELEMETRY=ON -DTSFP_BUILD_GXM_SMOKE=ON
+          cmake -S ports/vita -B build/vita -DTSFP_DIAGNOSTIC_TELEMETRY=ON -DTSFP_BUILD_GXM_SMOKE=ON -DTSFP_BUILD_OFFLINE_SHADER_CONTRACT=ON -DTSFP_BUILD_GXM_STREAM=ON
           cmake --build build/vita
           "$VITASDK/bin/arm-vita-eabi-gcc" -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Igraphics -c graphics/xbox_bc_layout.c -o build/vita/bc-layout.o
       # No VPK publication: the guest test needs dependency notices/source when distributed.

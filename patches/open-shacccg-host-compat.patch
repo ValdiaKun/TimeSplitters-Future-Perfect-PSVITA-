@@ -1,0 +1,48 @@
+diff --git a/src/backend/shader_profiles.cpp b/src/backend/shader_profiles.cpp
+index c397dc1..7a9f8ca 100644
+--- a/src/backend/shader_profiles.cpp
++++ b/src/backend/shader_profiles.cpp
+@@ -4,6 +4,7 @@
+ #include "gxp/gxp_writer.hpp"
+ 
+ #include <algorithm>
++#include <array>
+ #include <vector>
+ 
+ namespace vsc::backend {
+diff --git a/src/spirv/spirv_cross_adapter.cpp b/src/spirv/spirv_cross_adapter.cpp
+index 36b5454..c8c7b59 100644
+--- a/src/spirv/spirv_cross_adapter.cpp
++++ b/src/spirv/spirv_cross_adapter.cpp
+@@ -15,6 +15,13 @@ namespace vsc {
+ 
+ #if defined(OPENSHACCG_ENABLE_SPIRV_CROSS)
+ namespace {
++// Debian SPIRV-Cross 1.4.304 exposes ParsedIR as a protected member rather
++// than the newer get_ir accessor. No ownership or IR mutation is changed.
++class CompilerWithIr : public spirv_cross::Compiler {
++public:
++    using spirv_cross::Compiler::Compiler;
++    const spirv_cross::ParsedIR &get_ir() const { return ir; }
++};
+ 
+ bool is_scalar_u32(const spirv_cross::Compiler &compiler, uint32_t type_id) {
+     const auto &type = compiler.get_type(type_id);
+@@ -196,7 +203,7 @@ bool spirv_cross_to_typed_shader(const std::vector<uint32_t> &words,
+     return false;
+ #else
+     try {
+-        spirv_cross::Compiler compiler(words);
++        CompilerWithIr compiler(words);
+         const std::string name = (entrypoint && *entrypoint) ? entrypoint : "main";
+         const spv::ExecutionModel model = stage == backend::TypedStage::Fragment ?
+             spv::ExecutionModelFragment : spv::ExecutionModelVertex;
+@@ -2401,7 +2408,7 @@ bool spirv_cross_to_typed_fragment(const std::vector<uint32_t> &words,
+     return false;
+ #else
+     try {
+-        spirv_cross::Compiler compiler(words);
++        CompilerWithIr compiler(words);
+         const std::string name = (entrypoint && *entrypoint) ? entrypoint : "main";
+         compiler.set_entry_point(name, spv::ExecutionModelFragment);
+         const uint32_t function_id = compiler.get_entry_point(name, spv::ExecutionModelFragment).self;

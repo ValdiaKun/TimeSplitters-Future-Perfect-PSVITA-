@@ -1097,3 +1097,56 @@ Passed locally:
 
 Not run: ARM32 QEMU and guest suites (no ARM cross compiler or QEMU here; fixture
 dependencies unavailable), any physical Vita execution, any FPS or GPU timing.
+
+## 2026-10-30: recovered offline shader/vertex-stream milestone
+
+Independent branch `chatgpt-vita-development`, starting HEAD
+`171a8ecc6c8146e7b8c1d55cc98d4319b08843dc`. Recovered source changes were backed
+up before editing. Original `vita-bootstrap` and `main` remain untouched.
+
+Implemented public-source, MIT open-shacccg offline compilation with locked
+source/dependency hashes, strict warning rejection/zero fast flags, deterministic
+GXP bytes and reflected interface checks. Added a real position/UV vertex-stream,
+texture/depth/blend offscreen GXM fixture, default OFF. See
+[OFFLINE_SHADERS.md](OFFLINE_SHADERS.md) for commands, provenance and exact limits.
+Vertex COLOR is explicitly rejected; UV uses a reflected padded float4 slot.
+
+Local validation: fresh offline shader source rebuild (each positive twice),
+bundle verification, nine GXP validator tests, shader corruption/stale-source
+controls, 55 Python unit tests, strict input mapping, full PC/portable/ASan/UBSan/
+ARMv7 Cortex-A9 guest runner, host graphics and telemetry suites, and pinned
+VitaSDK Release cross-build passed. All five VPKs contain eboot.bin and distinct
+expected title IDs TFPV00001..5. Generated GXP/build outputs are ignored.
+
+Physical Vita execution, shader acceptance/pixels, memory capacity and performance
+are NOT measured. No retail boot or gameplay claim. All seven authenticated title
+inputs remain missing; `check_title_inputs.py` correctly returns missing_inputs
+(exit 2). Next gate: install the opt-in stream fixture on a legitimate Vita/PS TV,
+record GXP acceptance, five readback samples and cleanup results before expanding
+D3D8 semantics. Authentic supported game files/analysis remain a separate blocker.
+
+Recovery-session commands (2026-10-30):
+
+```sh
+python3 tools/build_offline_shaders.py
+python3 tools/build_offline_shaders.py --verify-only
+python3 tools/test_offline_shaders.py
+python3 tools/test_gxm_shaders.py
+python3 -m unittest discover -s tests
+python3 tools/test_guest.py --arm-cc '<ARM GCC with extracted sysroot>' --qemu '<qemu-arm>'
+python3 tools/test_graphics.py --arm-cc '<ARM GCC with extracted sysroot>' --qemu '<qemu-arm>'
+python3 tools/test_telemetry.py --arm-cc '<ARM GCC with extracted sysroot>' --qemu '<qemu-arm>'
+python3 -m py_compile tools/*.py
+cmake -S ports/vita -B build/vita -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DTSFP_BUILD_GUEST_TESTS=ON -DTSFP_BUILD_GXM_SMOKE=ON \
+  -DTSFP_BUILD_OFFLINE_SHADER_CONTRACT=ON -DTSFP_BUILD_GXM_STREAM=ON
+cmake --build build/vita
+```
+
+All above passed locally. ARM GCC used the existing extracted Linux sysroot;
+QEMU was 10.0.13, host GCC 14.2.0, Vita GCC 15.2.0. Graphics and telemetry also
+passed ARMv7 QEMU, separately from host sanitizer tests. Strict C11 controller
+mapping tests passed. Independent read-only correctness review found no blocking
+issue; it required documenting partial publication and hardware limits, now done.
+CI evidence is recorded after the pushed commit is observed; local results alone
+are not a claim that push/PR checks completed.

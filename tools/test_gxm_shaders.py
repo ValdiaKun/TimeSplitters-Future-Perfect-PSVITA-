@@ -11,6 +11,7 @@ import hashlib
 from pathlib import Path
 import re
 import sys
+from gxp_validate import GxpError, parse_gxp
 
 ROOT = Path(__file__).resolve().parents[1]
 SHADERS = ROOT / 'ports/vita/src/shaders'
@@ -19,11 +20,15 @@ SHADERS = ROOT / 'ports/vita/src/shaders'
 PINNED = {
     'clear_v': {
         'size': 408,
+        'stage': 'vertex',
+        'interface': [('position', 'uniform', 'f32', 4, 0), ('u_clear_depth', 'uniform', 'f32', 1, 4)],
         'sha256': 'db475602e9dbf4832615de06377e16d0d135ec5871708a11fb658f8d56758520',
         'names': [b'position\x00', b'u_clear_depth\x00'],
     },
     'clear_f': {
         'size': 236,
+        'stage': 'fragment',
+        'interface': [('u_clear_color', 'uniform', 'f32', 4, 0)],
         'sha256': '46514eb51a937118d740c9a1ac1825745892783b96c4b82bbfe0ca273785969f',
         'names': [b'u_clear_color\x00'],
     },
@@ -36,13 +41,28 @@ def load_blob(name):
     declared = re.search(r'unsigned int size_%s = (\d+);' % name, text)
     if not array or not declared:
         raise AssertionError(f'{name}: array or size declaration not found')
-    data = bytes(int(x, 16) for x in re.findall(r'0x([0-9a-fA-F]{2})', array.group(1)))
+    tokens = array.group(1).strip().rstrip(',').split(',')
+    if any(not re.fullmatch(r'\s*0x[0-9a-fA-F]{2}\s*', token) for token in tokens):
+        raise AssertionError(f'{name}: non-byte C initializer')
+    data = bytes(int(token.strip(), 16) for token in tokens)
     return data, int(declared.group(1)), text
 
 
 def check(name, expected):
     data, declared, text = load_blob(name)
+    return check_blob(name, expected, data, declared, text)
+
+
+def check_blob(name, expected, data, declared, text):
     problems = []
+    try:
+        reflected = parse_gxp(data, expected['stage'])
+        interface = [(p['name'], p['category'], p['type'], p['components'], p['resource_index'])
+                     for p in reflected['parameters']]
+        if interface != expected['interface']:
+            problems.append('unexpected shader interface')
+    except GxpError as error:
+        problems.append('GXP structure: ' + str(error))
     if data[:4] != b'GXP\x00':
         problems.append(f'bad magic {data[:4]!r}')
     if declared != expected['size'] or len(data) != expected['size']:
@@ -71,15 +91,13 @@ def main():
         else:
             print(f'ok   {name} ({expected["size"]} bytes, sha256 pinned)')
     # Negative control: a corrupted blob must be detected by the same checks.
-    data, _, _ = load_blob('clear_f')
-    corrupted = bytearray(data)
-    corrupted[0] ^= 0xFF
-    if hashlib.sha256(bytes(corrupted)).hexdigest() == PINNED['clear_f']['sha256'] or \
-            bytes(corrupted[:4]) == b'GXP\x00':
-        print('FAIL negative control: corruption not detected')
+    data, declared, text = load_blob('clear_f')
+    corrupted = bytearray(data); corrupted[0] ^= 0xFF
+    if not check_blob('clear_f', PINNED['clear_f'], bytes(corrupted), declared, text):
+        print('FAIL negative control: corruption not detected by validation')
         failures += 1
     else:
-        print('ok   negative control (corrupted blob rejected)')
+        print('ok   negative control (corrupted blob rejected by actual validation)')
     return 1 if failures else 0
 
 
