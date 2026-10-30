@@ -5,6 +5,24 @@
 
 #include "input_map.h"
 #include "diagnostics.h"
+#ifdef TSFP_DIAGNOSTIC_TELEMETRY
+#include "telemetry.h"
+#include <inttypes.h>
+#include <stdio.h>
+static TsfpTelemetry diagnostic_trace;
+static void report_diagnostic_trace(void) {
+    TsfpTimeSummary summary;
+    if (!tsfp_telemetry_summary(&diagnostic_trace, TSFP_TIME_DIAGNOSTIC_LOOP, &summary)) return;
+    fprintf(stderr, "tsfp telemetry_scope=diagnostic_loop_elapsed retained=%" PRIu32
+        " dropped=%" PRIu64 " rejected=%" PRIu64 " median_us=%" PRIu64
+        " p95_us=%" PRIu64 " p99_us=%" PRIu64
+        " saturated_counters=%" PRIu32
+        " present_submissions=%" PRIu64 " simulation_steps=0 gpu_us=unavailable displayed_fps=unavailable\n",
+        summary.count, diagnostic_trace.dropped, diagnostic_trace.rejected,
+        summary.median_us, summary.p95_us, summary.p99_us, diagnostic_trace.saturated_counters,
+        diagnostic_trace.counters[TSFP_COUNT_PRESENT_SUBMIT]);
+}
+#endif
 
 static TsfpVitaSample sample_controller(SceCtrlData *pad) {
     TsfpVitaSample sample = {0, 128, 128, 128, 128};
@@ -59,8 +77,14 @@ int main(void) {
     }
     tsfp_diagnostic(sceKernelGetProcessTimeWide(), "info", "diagnostic_ready", 0);
 
+#ifdef TSFP_DIAGNOSTIC_TELEMETRY
+    tsfp_telemetry_reset(&diagnostic_trace, 1);
+#endif
     SceCtrlData pad = {0};
     for (;;) {
+#ifdef TSFP_DIAGNOSTIC_TELEMETRY
+        uint64_t loop_begin_us = sceKernelGetProcessTimeWide();
+#endif
         TsfpVitaSample sample = sample_controller(&pad);
         TsfpVitaInput input = tsfp_vita_translate(sample);
         if ((pad.buttons & (SCE_CTRL_SELECT | SCE_CTRL_START)) ==
@@ -96,7 +120,16 @@ int main(void) {
         }
         vita2d_end_drawing();
         vita2d_swap_buffers();
+#ifdef TSFP_DIAGNOSTIC_TELEMETRY
+        uint64_t loop_end_us = sceKernelGetProcessTimeWide();
+        tsfp_telemetry_interval(&diagnostic_trace, TSFP_TIME_DIAGNOSTIC_LOOP,
+                                loop_begin_us, loop_end_us);
+        tsfp_telemetry_add(&diagnostic_trace, TSFP_COUNT_PRESENT_SUBMIT, 1);
+#endif
     }
+#ifdef TSFP_DIAGNOSTIC_TELEMETRY
+    report_diagnostic_trace();
+#endif
     vita2d_wait_rendering_done();
     if (font) vita2d_free_pgf(font);
     vita2d_fini();

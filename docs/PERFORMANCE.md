@@ -162,3 +162,15 @@ unmeasured. No optimization or hardware performance claim.
 Title intake is a bounded read-only host preflight, not a game-frame path. Its
 256MiB XBE/32MiB per-JSON host limits are validation bounds, not Vita capacity
 measurements. No gameplay, hardware timing or FPS result is inferred.
+
+
+## 2026-10-30: bounded diagnostic telemetry (issue #6, partial)
+
+Added caller-owned fixed256-sample elapsed-time recording, drop/rejection
+accounting, saturating typed counters and non-mutating nearest-rank summaries.
+The diagnostic can opt in via TSFP_DIAGNOSTIC_TELEMETRY (default OFF); reports
+include loop elapsed time and presentation submissions, never game/display FPS.
+See [TELEMETRY.md](TELEMETRY.md) for exact contracts, build/test commands,
+capture metadata and limits. Guest runtime hooks/device capture are still absent.
+No retail inputs, physical console results or performance measurements exist.
+Issue #4 still requires the seven inputs in TITLE_INPUTS.md before real tracing.

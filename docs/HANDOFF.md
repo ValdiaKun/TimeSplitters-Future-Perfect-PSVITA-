@@ -83,3 +83,15 @@ open: original inputs, generation and real trace remain unavailable. Managed-
 pool result roles, broader services and native graphics/hardware gates remain.
 Physical Vita/retail/gameplay/FPS are unverified. Issues #2/#3 have passed their
 bounded acceptance gates; do not reimplement them.
+
+
+## 2026-10-30: bounded diagnostic telemetry (issue #6, partial)
+
+Added caller-owned fixed256-sample elapsed-time recording, drop/rejection
+accounting, saturating typed counters and non-mutating nearest-rank summaries.
+The diagnostic can opt in via TSFP_DIAGNOSTIC_TELEMETRY (default OFF); reports
+include loop elapsed time and presentation submissions, never game/display FPS.
+See [TELEMETRY.md](TELEMETRY.md) for exact contracts, build/test commands,
+capture metadata and limits. Guest runtime hooks/device capture are still absent.
+No retail inputs, physical console results or performance measurements exist.
+Issue #4 still requires the seven inputs in TITLE_INPUTS.md before real tracing.

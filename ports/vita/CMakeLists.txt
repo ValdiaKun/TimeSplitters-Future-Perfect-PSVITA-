@@ -17,6 +17,12 @@ set(VITA_TITLEID "TFPV00001")
 set(VITA_VERSION "01.00")
 
 add_executable(tsfp_vita_bootstrap src/main.c src/input_map.c src/diagnostics.c)
+option(TSFP_DIAGNOSTIC_TELEMETRY "Record bounded diagnostic-loop elapsed times (not game FPS)" OFF)
+if(TSFP_DIAGNOSTIC_TELEMETRY)
+    target_sources(tsfp_vita_bootstrap PRIVATE ../../profiling/telemetry.c)
+    target_include_directories(tsfp_vita_bootstrap PRIVATE ../../profiling)
+    target_compile_definitions(tsfp_vita_bootstrap PRIVATE TSFP_DIAGNOSTIC_TELEMETRY)
+endif()
 target_compile_options(tsfp_vita_bootstrap PRIVATE -Wall -Wextra)
 target_link_libraries(tsfp_vita_bootstrap
     vita2d

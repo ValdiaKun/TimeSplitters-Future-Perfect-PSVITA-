@@ -956,3 +956,41 @@ trace_unavailable=true. Nothing proprietary was fetched or executed.
 Python compilation and whitespace checks pass. Native runtime source remains
 unchanged from the fully verified issue #3 commit. No physical/Vita3K test or
 retail trace is established. Metadata attestation is not proof of derivation.
+
+
+## 2026-10-30: bounded diagnostic telemetry (issue #6, partial)
+
+Added caller-owned fixed256-sample elapsed-time recording, drop/rejection
+accounting, saturating typed counters and non-mutating nearest-rank summaries.
+The diagnostic can opt in via TSFP_DIAGNOSTIC_TELEMETRY (default OFF); reports
+include loop elapsed time and presentation submissions, never game/display FPS.
+See [TELEMETRY.md](TELEMETRY.md) for exact contracts, build/test commands,
+capture metadata and limits. Guest runtime hooks/device capture are still absent.
+No retail inputs, physical console results or performance measurements exist.
+Issue #4 still requires the seven inputs in TITLE_INPUTS.md before real tracing.
+
+Local V5 results: the complete existing `tools/test_guest.py` PC/pristine,
+portable, ASan/UBSan and Cortex-A9 comparison passed, preserving127 translated
+fixtures,1518 string scenarios and294 atomic cases plus VM differential checks.
+`tools/test_telemetry.py` passed host, ASan/UBSan and ARMv7 QEMU; direct `-DNDEBUG`
+strict C11 compilation also passed with test assertions retained. Independent
+review corrected elapsed-time labeling and padding-sensitive test snapshots.
+`tools/test_graphics.py` passed all162 layout cases on host/sanitizers/ARM.
+The13 title-intake tests, strict controller build/run, Python compilation and
+whitespace checks passed. Live title intake still returns2/missing_inputs.
+
+Commands use the documented local ARM environment:
+
+```sh
+LD_LIBRARY_PATH=/workspace/toolchains/arm/usr/lib/x86_64-linux-gnu \
+PATH=/workspace/toolchains/arm/usr/bin:$PATH \
+python3 tools/test_telemetry.py \
+  --arm-cc '/workspace/toolchains/arm/usr/bin/arm-linux-gnueabihf-gcc --sysroot=/workspace/toolchains/arm' \
+  --qemu /workspace/toolchains/arm/usr/bin/qemu-arm
+```
+
+Use the same arguments for test_guest.py and test_graphics.py. Both diagnostic
+telemetry OFF and ON configurations cross-built with the existing hash-locked
+SDK, `cmake -S ports/vita -B build/vita-locked` and `cmake --build build/vita-locked`.
+Final commit/remote CI links are recorded in draft PR #1 after CI completion.
+No physical Vita, game boot, GPU execution or device-performance result exists.

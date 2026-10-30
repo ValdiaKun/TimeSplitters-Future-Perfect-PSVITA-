@@ -235,3 +235,15 @@ Authenticated intake preflight and negative tests are implemented. The next
 external gate is supported original XBE plus matching analysis/provenance, then
 actual generation and first entry/fault tracing. Keep issue #4 open until that
 evidence exists. No synthetic substitute may satisfy genuine title boot.
+
+
+## 2026-10-30: bounded diagnostic telemetry (issue #6, partial)
+
+Added caller-owned fixed256-sample elapsed-time recording, drop/rejection
+accounting, saturating typed counters and non-mutating nearest-rank summaries.
+The diagnostic can opt in via TSFP_DIAGNOSTIC_TELEMETRY (default OFF); reports
+include loop elapsed time and presentation submissions, never game/display FPS.
+See [TELEMETRY.md](TELEMETRY.md) for exact contracts, build/test commands,
+capture metadata and limits. Guest runtime hooks/device capture are still absent.
+No retail inputs, physical console results or performance measurements exist.
+Issue #4 still requires the seven inputs in TITLE_INPUTS.md before real tracing.

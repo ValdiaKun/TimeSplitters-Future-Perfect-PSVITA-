@@ -412,3 +412,15 @@ Live preflight reports missing XBE plus provenance and five analysis files.
 Issue #4 remains open: provenance is local attestation, not proof of analysis
 correctness; no generation, actual title entry or fault trace has occurred.
 See TITLE_INPUTS.md for exact ignored setup paths and required hashes.
+
+
+## 2026-10-30: bounded diagnostic telemetry (issue #6, partial)
+
+Added caller-owned fixed256-sample elapsed-time recording, drop/rejection
+accounting, saturating typed counters and non-mutating nearest-rank summaries.
+The diagnostic can opt in via TSFP_DIAGNOSTIC_TELEMETRY (default OFF); reports
+include loop elapsed time and presentation submissions, never game/display FPS.
+See [TELEMETRY.md](TELEMETRY.md) for exact contracts, build/test commands,
+capture metadata and limits. Guest runtime hooks/device capture are still absent.
+No retail inputs, physical console results or performance measurements exist.
+Issue #4 still requires the seven inputs in TITLE_INPUTS.md before real tracing.

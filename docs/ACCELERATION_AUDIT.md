@@ -68,3 +68,12 @@ not build authentication; local provenance binds all five actual recompiler
 analysis inputs to supported XBE/source hashes, with an explicit attestation
 limitation. No new parser, analysis binary, retail code or external dependency
 is copied. Actual generation and first-fault tracing require missing inputs.
+
+
+Issue #6 telemetry: REFERENCE Xita896d6512 runtime/xv_render_profile.c
+(single render-owner state, no per-frame logs and explicit elapsed-not-GPU warning);
+REFERENCE Halo79a3d1c port/vita/platform/vita_memory_watch.c (generation tracking,
+not a general memory-capacity probe). No code copied or new source pin introduced.
+The original GPL recorder adds bounded loss reporting, overflow-safe counters and
+synthetic-clock tests; it does not import Halo memory assumptions or Xita pump
+state. VitaDebugger/Vita3K are not installed or validated by this change.
