@@ -49,7 +49,7 @@ option(TSFP_BUILD_GXM_SMOKE "Build native GXM framebuffer diagnostic" OFF)
 if(TSFP_BUILD_GXM_SMOKE)
     add_executable(tsfp_gxm_smoke src/gxm_smoke.c)
     target_compile_options(tsfp_gxm_smoke PRIVATE -O2 -Wall -Wextra -Werror)
-    target_link_libraries(tsfp_gxm_smoke SceGxm_stub SceDisplay_stub SceKernel_stub)
+    target_link_libraries(tsfp_gxm_smoke SceGxm_stub SceDisplay_stub SceSysmem_stub SceKernelThreadMgr_stub)
     tsfp_create_self(gxm-smoke.bin tsfp_gxm_smoke)
     vita_create_vpk(tsfp-gxm-smoke.vpk "TFPV00003" gxm-smoke.bin
         VERSION ${VITA_VERSION} NAME "TSFP GXM Smoke")
