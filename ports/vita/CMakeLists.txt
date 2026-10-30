@@ -42,6 +42,19 @@ vita_create_vpk(tsfp-vita-bootstrap.vpk ${VITA_TITLEID} eboot.bin
     NAME "TSFP Vita Bootstrap"
 )
 
+# Isolated, asset-free native GXM memory/presentation experiment.
+# It CPU-paints diagnostic pixels and does NOT execute a shader or Xbox title.
+# Opt in to avoid changing the existing Vita diagnostic and guest VPK.
+option(TSFP_BUILD_GXM_SMOKE "Build native GXM framebuffer diagnostic" OFF)
+if(TSFP_BUILD_GXM_SMOKE)
+    add_executable(tsfp_gxm_smoke src/gxm_smoke.c)
+    target_compile_options(tsfp_gxm_smoke PRIVATE -O2 -Wall -Wextra -Werror)
+    target_link_libraries(tsfp_gxm_smoke SceGxm_stub SceDisplay_stub SceKernel_stub)
+    tsfp_create_self(gxm-smoke.bin tsfp_gxm_smoke)
+    vita_create_vpk(tsfp-gxm-smoke.vpk "TFPV00003" gxm-smoke.bin
+        VERSION ${VITA_VERSION} NAME "TSFP GXM Smoke")
+endif()
+
 # Asset-free guest ABI fixture VPK; deliberately separate from the diagnostic.
 option(TSFP_BUILD_GUEST_TESTS "Cross-build generated synthetic guest fixtures" OFF)
 if(TSFP_BUILD_GUEST_TESTS)
