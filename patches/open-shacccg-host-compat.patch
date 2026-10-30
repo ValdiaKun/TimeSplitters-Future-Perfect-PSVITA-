@@ -1,0 +1,20 @@
+--- a/src/backend/shader_profiles.cpp
++++ b/src/backend/shader_profiles.cpp
+@@ -6,0 +7 @@
++#include <array>
+--- a/src/spirv/spirv_cross_adapter.cpp
++++ b/src/spirv/spirv_cross_adapter.cpp
+@@ -17,0 +18,7 @@
++// Debian SPIRV-Cross 1.4.304 exposes ParsedIR as a protected member rather
++// than the newer get_ir accessor. No ownership or IR mutation is changed.
++class CompilerWithIr : public spirv_cross::Compiler {
++public:
++    using spirv_cross::Compiler::Compiler;
++    const spirv_cross::ParsedIR &get_ir() const { return ir; }
++};
+@@ -199 +206 @@
+-        spirv_cross::Compiler compiler(words);
++        CompilerWithIr compiler(words);
+@@ -2404 +2411 @@
+-        spirv_cross::Compiler compiler(words);
++        CompilerWithIr compiler(words);

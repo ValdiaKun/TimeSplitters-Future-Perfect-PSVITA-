@@ -2,14 +2,24 @@ name: Host input-mapping tests
 
 on:
   push:
-    branches: [main, vita-bootstrap]
+    branches: [main, vita-bootstrap, chatgpt-vita-development]
     paths:
       - "ports/vita/src/input_map.*"
+      - "ports/vita/src/usse_arena.*"
+      - "ports/vita/src/shaders/**"
+      - "tools/test_gxm_shaders.py"
+      - "tools/gxp_validate.py"
+      - "tests/test_gxp_validate.py"
       - "ports/vita/tests/**"
       - ".github/workflows/host-input-tests.yml"
   pull_request:
     paths:
       - "ports/vita/src/input_map.*"
+      - "ports/vita/src/usse_arena.*"
+      - "ports/vita/src/shaders/**"
+      - "tools/test_gxm_shaders.py"
+      - "tools/gxp_validate.py"
+      - "tests/test_gxp_validate.py"
       - "ports/vita/tests/**"
       - ".github/workflows/host-input-tests.yml"
 
@@ -27,3 +37,11 @@ jobs:
             -lm -o /tmp/tsfp-vita-input-test
       - name: Run mapping tests
         run: /tmp/tsfp-vita-input-test
+      - name: Build and run USSE arena tests (ASan/UBSan)
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined \
+            ports/vita/src/usse_arena.c ports/vita/tests/test_usse_arena.c \
+            -o /tmp/tsfp-usse-arena-test
+          /tmp/tsfp-usse-arena-test
+      - name: Check vendored GXM shader blobs
+        run: python3 tools/test_gxm_shaders.py

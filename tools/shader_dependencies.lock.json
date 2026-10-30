@@ -1,0 +1,46 @@
+{
+  "architecture": "amd64",
+  "prefix": "usr",
+  "packages": [
+    {
+      "name": "glslang-dev",
+      "version": "15.1.0+1.4.309.0-1",
+      "url": "https://snapshot.debian.org/archive/debian/20260925T181338Z/pool/main/g/glslang/glslang-dev_15.1.0+1.4.309.0-1_amd64.deb",
+      "sha256": "20e94fbc4d6817f6d6043271e022a3101a2568b21f43d76f40378ce5ed2ca9e7",
+      "size": 1346472,
+      "license_file": "usr/share/doc/glslang-dev/copyright"
+    },
+    {
+      "name": "glslang-tools",
+      "version": "15.1.0+1.4.309.0-1",
+      "url": "https://snapshot.debian.org/archive/debian/20260925T181338Z/pool/main/g/glslang/glslang-tools_15.1.0+1.4.309.0-1_amd64.deb",
+      "sha256": "c3025c4af63244296bc9d466746763c809d3f3f126408fc2c7b07070886a7759",
+      "size": 2329504,
+      "license_file": "usr/share/doc/glslang-tools/copyright"
+    },
+    {
+      "name": "spirv-tools",
+      "version": "2025.1~rc1-1",
+      "url": "https://snapshot.debian.org/archive/debian/20260925T181338Z/pool/main/s/spirv-tools/spirv-tools_2025.1~rc1-1_amd64.deb",
+      "sha256": "2cc272ef1340cf0b47de6c5fcccaf91574d7a8f4061abb718d6c639463e85aab",
+      "size": 4260164,
+      "license_file": "usr/share/doc/spirv-tools/copyright"
+    },
+    {
+      "name": "spirv-headers",
+      "version": "1.6.1+1.4.309.0-1",
+      "url": "https://snapshot.debian.org/archive/debian/20260925T181338Z/pool/main/s/spirv-headers/spirv-headers_1.6.1+1.4.309.0-1_all.deb",
+      "sha256": "dc18db866d63680351c40ac6b6bece34cb52da64a7799ce1cc4f16f6bff4d064",
+      "size": 151140,
+      "license_file": "usr/share/doc/spirv-headers/copyright"
+    },
+    {
+      "name": "libspirv-cross-c-shared-dev",
+      "version": "2021.01.15+1.4.304.1-2",
+      "url": "https://snapshot.debian.org/archive/debian/20260925T181338Z/pool/main/s/spirv-cross/libspirv-cross-c-shared-dev_2021.01.15+1.4.304.1-2_amd64.deb",
+      "sha256": "5417aa29b3d98b6bea68471a626e3f9c71f5ba136bfc0e7f8a7ce72d5bc538aa",
+      "size": 1080380,
+      "license_file": "usr/share/doc/libspirv-cross-c-shared-dev/copyright"
+    }
+  ]
+}

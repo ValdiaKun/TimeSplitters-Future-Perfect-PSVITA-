@@ -150,3 +150,23 @@ are pinned without moving PC/runtime/toolchain revisions. MIT xboxrecomp
 guest_vmem ownership/rounding and GPL Xita BC layout are adapted with attribution
 and bounded wrappers; original VM source is hash-checked for differential tests.
 No full Windows kernel, Halo runtime, game captures/shaders or binaries imported.
+
+## 2026-10-30: vitaGL precompiled clear shaders (ADAPT)
+
+| Item | Finding |
+| --- | --- |
+| Source | `Rinnegatamante/vitaGL` `3cb7872d6d5808fb1cddf4f643f29306cb53be4e`, `source/shaders/precompiled_clear_{v,f}.h`. |
+| License | `COPYING` (GPL-3.0) and `COPYING.LESSER` (LGPL-3.0). Compatible with this repository's GPL-3.0-only; notice kept in `NOTICE` and the file headers. |
+| Provenance | Each header carries the authored Cg source in a comment; the GXP blob is its compiled form. Blob SHA-256 values are pinned in `tools/test_gxm_shaders.py`. |
+| Use | `ports/vita/src/gxm_draw.c` registers them with the shader patcher for a GPU-executed, indexed, uniform-driven rectangle draw. |
+| Limits | Both vitaGL precompiled pairs (`clear`, `blit`) derive geometry from the vertex INDEX input and uniforms, so neither provides a vertex-attribute-stream test. vitaGL's fixed-function shaders are source text compiled at runtime by `libshacccg.suprx`, which this baseline does not use. The new experimental public-source offline Cg build provides a bounded position/UV profile; see docs/OFFLINE_SHADERS.md. Hardware acceptance and vertex COLOR remain unverified/unsupported respectively. |
+| Rejected | Hand-assembled GXP microcode (unverifiable without hardware); other collections of binary shaders of unreviewed provenance. |
+
+## 2026-10-30: open-shacccg (ADAPT)
+
+MIT source revision `26da8ebc44717147d002c60d4a80cd6604aace7f`; exact files and
+hashes in tools/shader_compiler.lock.json. Own strict driver, two host build
+compatibility patches, zero unsafe optimization flags and full byte/interface
+locks. Public Debian dependency notices remain in extracted copyright files.
+See ACCELERATION_AUDIT.md and OFFLINE_SHADERS.md for rejected alternatives and
+experimental limits. No firmware or upstream GXP binaries fetched.

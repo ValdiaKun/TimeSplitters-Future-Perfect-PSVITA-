@@ -29,6 +29,35 @@ def main():
         binary = out / name
         run(shlex.split(args.cc) + common + flags + ['-o', str(binary)])
         run([str(binary)])
+    mip_common = ['-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-pedantic',
+                  '-Igraphics', 'graphics/xbox_bc_layout.c',
+                  'graphics/xbox_bc_mips.c', 'tests/test_bc_mips.c']
+    for name, flags in [('mips-host', []), ('mips-sanitized',
+                          ['-fsanitize=address,undefined', '-fno-sanitize-recover=all'])]:
+        binary = out / name
+        run(shlex.split(args.cc) + mip_common + flags + ['-o', str(binary)])
+        run([str(binary)])
+    chain_common = ['-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-pedantic',
+                    '-Igraphics', 'graphics/xbox_bc_layout.c',
+                    'graphics/xbox_bc_mips.c', 'graphics/xbox_bc_chain.c',
+                    'tests/test_bc_chain.c']
+    for name, flags in [('chain-host', []), ('chain-sanitized',
+                          ['-fsanitize=address,undefined', '-fno-sanitize-recover=all'])]:
+        binary = out / name
+        run(shlex.split(args.cc) + chain_common + flags + ['-o', str(binary)])
+        run([str(binary)])
+    if args.arm_cc:
+        chain_binary = out / 'chain-arm'
+        arm_flags = ['-mcpu=cortex-a9', '-mfpu=vfpv3',
+                     '-mfloat-abi=hard', '-mno-unaligned-access', '-static']
+        run(shlex.split(args.arm_cc) + chain_common + arm_flags + ['-o', str(chain_binary)])
+        run(shlex.split(args.qemu) + ['-cpu', 'cortex-a9', str(chain_binary)])
+    if args.arm_cc:
+        mip_binary = out / 'mips-arm'
+        arm_flags = ['-mcpu=cortex-a9', '-mfpu=vfpv3',
+                     '-mfloat-abi=hard', '-mno-unaligned-access', '-static']
+        run(shlex.split(args.arm_cc) + mip_common + arm_flags + ['-o', str(mip_binary)])
+        run(shlex.split(args.qemu) + ['-cpu', 'cortex-a9', str(mip_binary)])
     if args.arm_cc:
         binary = out / 'arm'
         run(shlex.split(args.arm_cc) + common + ['-mcpu=cortex-a9', '-mfpu=vfpv3',

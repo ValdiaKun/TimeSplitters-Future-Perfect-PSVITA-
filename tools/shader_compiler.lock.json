@@ -1,0 +1,155 @@
+{
+  "revision": "26da8ebc44717147d002c60d4a80cd6604aace7f",
+  "url": "https://github.com/frangarcj/open-shacccg",
+  "license": "MIT",
+  "files": {
+    "CMakeLists.txt": {
+      "sha256": "f121b2a685fe4b19570db7a670159a6e572aafd20797db9c21462ae02c12cab0",
+      "size": 4887
+    },
+    "LICENSE": {
+      "sha256": "ea30eb52f49806833dd44184b32580405622f8ed6299cb1fbaaf2ae1008dd62d",
+      "size": 1082
+    },
+    "include/openshacccg/compiler.h": {
+      "sha256": "df9d3aa30f5cd4a86ce478789f00b54f98573a8bab88a02dbf400967602ba9b6",
+      "size": 1935
+    },
+    "include/openshacccg/shacccg_compat.h": {
+      "sha256": "a34c44314274ff28f85f69720e90e70ee52bf453af22554a380afe6efe325480",
+      "size": 4301
+    },
+    "src/abi/module_entry.c": {
+      "sha256": "fd405651e6e1964d4e18d1488775bc0ca438755b2a1bf2fb92771c2ce207d1dd",
+      "size": 482
+    },
+    "src/abi/sce_shacccg.cpp": {
+      "sha256": "aae2d2c8079cdac8d78bdee1419a0e2954c5bda225eaefdad57a60be089edf77",
+      "size": 7328
+    },
+    "src/backend/backend.cpp": {
+      "sha256": "deaf0d1011d5525a41a38629abdf267e0c4adbc961c363e3c10a35dea64d1420",
+      "size": 33659
+    },
+    "src/backend/machine_ir.cpp": {
+      "sha256": "49fd9d27d62d57ca61c37947e0c2b006abbf7b96a0d1e47214be4ecb64706f69",
+      "size": 94077
+    },
+    "src/backend/machine_ir.hpp": {
+      "sha256": "f35d3f5c874942456d1480d8d0fc8b56ac77e931448b583ac6e2a4b42625f148",
+      "size": 11032
+    },
+    "src/backend/machine_ops.inc": {
+      "sha256": "620fa1de6e1fff17f69d172189ff536f22e43664fa588c9d512addd88fa3e9df",
+      "size": 2729
+    },
+    "src/backend/program_builder.cpp": {
+      "sha256": "339933b69e931a15997245f0487d56e056e7e24909e1998d76ee8b5c11584cb6",
+      "size": 731
+    },
+    "src/backend/program_builder.hpp": {
+      "sha256": "b4d36c07c0b0a8004b8ab0948d9835acbe82c820a5bbb0a7f0a505f86da8aa90",
+      "size": 941
+    },
+    "src/backend/shader_profiles.cpp": {
+      "sha256": "a4732f027acdef0f650ea6e81be5f339ec1042ee43874fdd0fe68d0dbee7213f",
+      "size": 168992
+    },
+    "src/backend/shader_profiles.hpp": {
+      "sha256": "d380669fae9346c0501db462d55238555c4263c66aff7382dfa4d733c108f816",
+      "size": 13164
+    },
+    "src/backend/typed_ir.cpp": {
+      "sha256": "69b9cd9bfa0098457da7696a85ab9b3467fa2ca19649612a455eba5f4aae19b4",
+      "size": 235828
+    },
+    "src/backend/typed_ir.hpp": {
+      "sha256": "b8e8cf062f3eae9cf20662a296b9dc4a1eb940cfda383d1ec44adb9c8094ca7f",
+      "size": 7242
+    },
+    "src/backend/typed_ir_ops.inc": {
+      "sha256": "4eccfdb4472a48dd9021c75164acb21feff57f3a9034f0eac8de2b6b4cc86397",
+      "size": 2218
+    },
+    "src/core/allocator.cpp": {
+      "sha256": "2bb91ac31e21a141b06288c6b0d1a2c03ff55bb00e7d8f2d5311df261411aad9",
+      "size": 591
+    },
+    "src/core/compact_layout.hpp": {
+      "sha256": "af4d824f9ebcab6398bbab51946f572bd5d4206f6a5e7aa0de19598100b527b5",
+      "size": 1385
+    },
+    "src/core/compiler.cpp": {
+      "sha256": "8355a5e3b94c66b2f153f01ae672287edbc0d1e0916431f0778f57c8550b0578",
+      "size": 3629
+    },
+    "src/core/internal.hpp": {
+      "sha256": "07e0ad961716cb4b08d724f484b5e35026bbe19362c007d8345b91ad34b074d4",
+      "size": 1398
+    },
+    "src/frontend/cg_compat.cpp": {
+      "sha256": "3a8695167b8a436d359922f8150ddfe3088bccdb6004e59deb43e9be90b7ce0d",
+      "size": 24111
+    },
+    "src/gxp/gxp_reader.cpp": {
+      "sha256": "5c78214c7a280b7735a81cfacb3afd878eb9127f8f27d3e23c729e0035283ab8",
+      "size": 10722
+    },
+    "src/gxp/gxp_reader.hpp": {
+      "sha256": "fad77f308390645ffca0a6d084a4aaee0cd73f8a6b0b64cbbacc340333725961",
+      "size": 2607
+    },
+    "src/gxp/gxp_writer.cpp": {
+      "sha256": "680803f94115782a770a7be5d56b8bd5866d24cf6bb558d1cf3a128ca11c81a8",
+      "size": 21282
+    },
+    "src/gxp/gxp_writer.hpp": {
+      "sha256": "4d9e4a26978844c03d6a830225f874ea1223427dcf6972654e19aef45d603458",
+      "size": 5917
+    },
+    "src/gxp/header_fields.inc": {
+      "sha256": "6145a403004453cb5c43ff6999bb5a0aa0e5c7443cd6ac5fa162265b758095cf",
+      "size": 1740
+    },
+    "src/spirv/spirv_cross_adapter.cpp": {
+      "sha256": "0c3fd352d7829ab3a8190977911ac7b9324ba912da7938f0e0a26a02f2a02c51",
+      "size": 160490
+    },
+    "src/spirv/spirv_cross_adapter.hpp": {
+      "sha256": "3d3f49f9b8d7186e8628354b51ec9090628af37ad977c8fd429e9014c16c489e",
+      "size": 694
+    },
+    "src/spirv/spirv_pipeline.cpp": {
+      "sha256": "fcc768fc1e8e304da4d0756745d42ed80f7196b2945f97c799ea7b6ba5215518",
+      "size": 3767
+    },
+    "src/spirv/spirv_pipeline.hpp": {
+      "sha256": "15f7aafa67664714756041a3f7e4f839dd20637b9911d9bd86d8454db980bfa3",
+      "size": 439
+    },
+    "src/spirv/spirv_reader.cpp": {
+      "sha256": "042976e001ba53fdedbcbfecdffcb65c740e20969ebd35b4ab2c8d2e8523b13c",
+      "size": 3046
+    },
+    "src/usse/compact_encoding.hpp": {
+      "sha256": "6fea6d0bf7f64c81bbc2f26fa683df33a570a2ab3119b26afd3daa8cf270b203",
+      "size": 1995
+    },
+    "src/usse/raw_encodings.hpp": {
+      "sha256": "f65c072c4013aa62efb85e9336e2ca22b74e8621bb1a473c1a79b515a6ac9ef0",
+      "size": 10763
+    },
+    "src/usse/usse.cpp": {
+      "sha256": "ee2a20f190e2f60adb917790273df36604512675065df8a4f6df22522a283a00",
+      "size": 71009
+    },
+    "src/usse/usse.hpp": {
+      "sha256": "fca1c3511e614a9d6ae42db02ebe895910b98593f27d334c2512651810a26ca6",
+      "size": 38726
+    },
+    "tools/openshacccg_compile.cpp": {
+      "sha256": "c02df5bb3dcbaaa5c4071b96c56fbb634e375202cb1da62c66f3b74e25ca1b5e",
+      "size": 3082
+    }
+  }
+}

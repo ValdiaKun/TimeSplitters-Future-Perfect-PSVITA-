@@ -42,6 +42,63 @@ vita_create_vpk(tsfp-vita-bootstrap.vpk ${VITA_TITLEID} eboot.bin
     NAME "TSFP Vita Bootstrap"
 )
 
+# Isolated, asset-free native GXM memory/presentation experiment.
+# It CPU-paints diagnostic pixels and does NOT execute a shader or Xbox title.
+# Opt in to avoid changing the existing Vita diagnostic and guest VPK.
+option(TSFP_BUILD_GXM_SMOKE "Build native GXM framebuffer diagnostic" OFF)
+if(TSFP_BUILD_GXM_SMOKE)
+    add_executable(tsfp_gxm_smoke src/gxm_smoke.c)
+    target_compile_options(tsfp_gxm_smoke PRIVATE -O2 -Wall -Wextra -Werror)
+    target_link_libraries(tsfp_gxm_smoke SceGxm_stub SceDisplay_stub SceSysmem_stub SceKernelThreadMgr_stub)
+    tsfp_create_self(gxm-smoke.bin tsfp_gxm_smoke)
+    vita_create_vpk(tsfp-gxm-smoke.vpk "TFPV00003" gxm-smoke.bin
+        VERSION ${VITA_VERSION} NAME "TSFP GXM Smoke")
+
+    # Native GPU-executed, shader-driven indexed draw (precompiled vitaGL clear
+    # shaders, see src/shaders/). Cross-built only; physical Vita unverified.
+    add_executable(tsfp_gxm_draw src/gxm_draw.c src/usse_arena.c)
+    target_compile_options(tsfp_gxm_draw PRIVATE -O2 -Wall -Wextra -Werror)
+    target_link_libraries(tsfp_gxm_draw SceGxm_stub SceDisplay_stub SceSysmem_stub SceKernelThreadMgr_stub)
+    tsfp_create_self(gxm-draw.bin tsfp_gxm_draw)
+    vita_create_vpk(tsfp-gxm-draw.vpk "TFPV00004" gxm-draw.bin
+        VERSION ${VITA_VERSION} NAME "TSFP GXM Draw")
+endif()
+
+# Public-source experimental offline shader data; never fetch during configure.
+option(TSFP_BUILD_OFFLINE_SHADER_CONTRACT "Cross-compile validated authored GXP data" OFF)
+if(TSFP_BUILD_OFFLINE_SHADER_CONTRACT)
+    get_filename_component(TSFP_SHADER_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    execute_process(COMMAND "${Python3_EXECUTABLE}" "${TSFP_SHADER_ROOT}/tools/build_offline_shaders.py"
+        --verify-only RESULT_VARIABLE TSFP_SHADER_RESULT)
+    if(NOT TSFP_SHADER_RESULT EQUAL 0)
+        message(FATAL_ERROR "Run python3 tools/build_offline_shaders.py --fetch before enabling offline shaders")
+    endif()
+    add_custom_target(tsfp_offline_shader_verify
+        COMMAND "${Python3_EXECUTABLE}" "${TSFP_SHADER_ROOT}/tools/build_offline_shaders.py" --verify-only
+        VERBATIM)
+    add_library(tsfp_offline_programs OBJECT src/offline_programs.c)
+    target_include_directories(tsfp_offline_programs PRIVATE "${TSFP_SHADER_ROOT}/build/offline-shaders")
+    target_compile_options(tsfp_offline_programs PRIVATE -O2 -Wall -Wextra -Werror -pedantic)
+    add_dependencies(tsfp_offline_programs tsfp_offline_shader_verify)
+endif()
+
+# Experimental real vertex streams and texture/depth/blend readback fixture.
+option(TSFP_BUILD_GXM_STREAM "Build authored offline-shader GXM stream fixture" OFF)
+if(TSFP_BUILD_GXM_STREAM)
+    if(NOT TSFP_BUILD_OFFLINE_SHADER_CONTRACT)
+        message(FATAL_ERROR "GXM stream requires TSFP_BUILD_OFFLINE_SHADER_CONTRACT=ON")
+    endif()
+    add_executable(tsfp_gxm_stream src/gxm_stream.c src/usse_arena.c
+        $<TARGET_OBJECTS:tsfp_offline_programs>)
+    target_compile_options(tsfp_gxm_stream PRIVATE -O2 -Wall -Wextra -Werror)
+    target_link_libraries(tsfp_gxm_stream SceGxm_stub SceSysmem_stub SceKernelThreadMgr_stub m)
+    add_dependencies(tsfp_gxm_stream tsfp_offline_shader_verify)
+    tsfp_create_self(gxm-stream.bin tsfp_gxm_stream)
+    vita_create_vpk(tsfp-gxm-stream.vpk "TFPV00005" gxm-stream.bin
+        VERSION ${VITA_VERSION} NAME "TSFP GXM Stream")
+endif()
+
 # Asset-free guest ABI fixture VPK; deliberately separate from the diagnostic.
 option(TSFP_BUILD_GUEST_TESTS "Cross-build generated synthetic guest fixtures" OFF)
 if(TSFP_BUILD_GUEST_TESTS)

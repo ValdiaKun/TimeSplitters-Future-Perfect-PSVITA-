@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "quality": "experimental_structural_only_hardware_unverified",
+  "compiler_revision": "26da8ebc44717147d002c60d4a80cd6604aace7f",
+  "options": {
+    "optimization_level": 0,
+    "fast_math": 0,
+    "fast_precision": 0,
+    "fast_int": 0
+  },
+  "programs": {
+    "stream_texture_v": {
+      "source": "graphics/shaders/stream_texture_v.cg",
+      "source_sha256": "81aa4158629a903b7c3241a2242d39871214b0e21b4286a5d41070f3167840bc",
+      "stage": "vertex",
+      "gxp_sha256": "d637d101ca4c35cfc0b0e0638ae0430489ada195f2daa9ab6f1999dba321377d",
+      "gxp_size": 264,
+      "parameters": [
+        {
+          "name": "aPosition",
+          "category": "attribute",
+          "type": "f32",
+          "components": 4,
+          "array_size": 1,
+          "resource_index": 0,
+          "container_index": 0,
+          "semantic": 11,
+          "semantic_index": 0
+        },
+        {
+          "name": "aTexcoord",
+          "category": "attribute",
+          "type": "f32",
+          "components": 4,
+          "array_size": 1,
+          "resource_index": 4,
+          "container_index": 0,
+          "semantic": 14,
+          "semantic_index": 0
+        }
+      ]
+    },
+    "stream_texture_f": {
+      "source": "graphics/shaders/stream_texture_f.cg",
+      "source_sha256": "f65dd9e72110b9b57aae1d38a6bee55b8f6fe0f49222bee9c20e52637cde7ddb",
+      "stage": "fragment",
+      "gxp_sha256": "51d23e0fd9b29171df9a71441aa9ac86d7fc65991017e77c922c08c9c6c5b28b",
+      "gxp_size": 256,
+      "parameters": [
+        {
+          "name": "tex",
+          "category": "sampler",
+          "type": "f32",
+          "components": 4,
+          "array_size": 1,
+          "resource_index": 0,
+          "container_index": 0,
+          "semantic": 2,
+          "semantic_index": 0
+        }
+      ]
+    },
+    "stream_tint_f": {
+      "source": "graphics/shaders/stream_tint_f.cg",
+      "source_sha256": "c419bab76ee6601f2246e4167e4fb7b8c27c9b06b6079cf58ca026cc8126983a",
+      "stage": "fragment",
+      "gxp_sha256": "68adc6812e55380da1b3ff314a2196bddd93397b39f13e4764b6cd632c85d2d3",
+      "gxp_size": 320,
+      "parameters": [
+        {
+          "name": "tint",
+          "category": "uniform",
+          "type": "f32",
+          "components": 4,
+          "array_size": 1,
+          "resource_index": 0,
+          "container_index": 14,
+          "semantic": 0,
+          "semantic_index": 0
+        },
+        {
+          "name": "tex",
+          "category": "sampler",
+          "type": "f32",
+          "components": 4,
+          "array_size": 1,
+          "resource_index": 0,
+          "container_index": 0,
+          "semantic": 1,
+          "semantic_index": 0
+        }
+      ]
+    }
+  },
+  "negative_controls": {
+    "invalid": {
+      "source": "graphics/shaders/invalid.cg",
+      "source_sha256": "b1129b2b948d348896887b8dd52575631ca38b58631cb7e5f52e771d48a9aea3",
+      "stage": "fragment"
+    },
+    "unsupported_color_v": {
+      "source": "graphics/shaders/unsupported_color_v.cg",
+      "source_sha256": "e395389b4c1445d2a8d9046646a5bb3caa7ec1bb209165c184ef62c357188b20",
+      "stage": "vertex"
+    }
+  }
+}
