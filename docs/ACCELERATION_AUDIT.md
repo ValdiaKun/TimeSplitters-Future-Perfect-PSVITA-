@@ -106,3 +106,52 @@ Xita's previously audited elapsed-not-GPU distinction remains applicable. Native
 clock acquisition is injected outside recovery/resource ownership; failed timing
 is explicit and never replaces real execution. Host/Vita timing is not inferred
 from deterministic fake clock values or QEMU.
+
+## Same-game comparison — 2026-10-30
+
+Only repository metadata, licenses and bounded authored source were inspected;
+no executable, retail-derived translation, game shader, analysis database or
+asset was acquired. Executable identities below are **source statements**, not
+newly authenticated files. Existing PC/runtime/toolchain pins are unchanged.
+
+| Project / exact revision | License / identity | Startup, import and discovery observations | Graphics/audio / decision |
+| --- | --- | --- | --- |
+| Pinned PC `759f7a0ecebc2341cdcedf638fcea68c4a7fbf4e`, prepared `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` | Existing GPL/MIT/LGPL notices; approved US SHA-256 in TITLE_INPUTS.md | Existing authoritative parser, compiler/ABI metadata and kernel bridge. Vita adapts bounded image ownership and checked services; genuine dispatch/layout still needs original inputs | Existing title-specific RHI/HLE is authoritative; no production Vita backend selected. **REUSE** contracts/pipeline |
+| NeilSeligmann/tsfp-recomp `dd3f062cdd7f6b7a35e15185dd14ee1b046ae64f` | Root GPL-3.0; inspected authored kernel files GPL-3.0-or-later. README states NTSC-U SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc` | `docs/ARCHITECTURE.md`: xdvdfs -> XBE -> vendored xboxrecomp lifting -> authored loader/kernel -> stop report. `src/xbox/kernel_{call,thread,event,sync,memory}.c` separates guest argument marshaling/services. Thread source also tests full BOOLEAN words: **not** an independent oracle for that behavior | Linux-oriented Vulkan and DirectSound host. Useful title-specific comparisons; do not link incompatible host/runtime or assume all services work. **REFERENCE** |
+| lmplied/TSFPRecomp `06640ec503e0b18e808087c7f5f365551739dcf7` | Root GPL-3.0; NOTICE explicitly identifies MIT xboxrecomp fork and component exceptions. README states USA/NTSC SHA-1 `daf0bcc57b6e93a7ebf5498074c8a9e7dc90381e`; cannot equate to approved SHA-256 without the same actual file | `titles/futureperfect/src/main.c`: memory -> kernel -> paths -> bridge -> APU -> dispatch/binary-search fallback -> entry. README requires XbSymbolDatabase/xdk_symbols before generation to recover imports; entry constant `0x38024d` is reference data, not an instruction to bypass authenticated entry. `src/kernel/kernel.h` is byte-identical to the pinned prepared header: shared ancestry, **not independent agreement** | D3D8-to-D3D11, DirectSound/software mixer/waveOut and xemu APU/NV2A components; Windows pointers/mappings do not fit Vita. **REFERENCE**, **REJECT** whole runtime or legacy parser replacement |
+| phobos665/Split-Again-Recomp `217bb24e37d9688a70a6449c967dda853a321121` | No root LICENSE/NOTICE found; component licenses separate. This is **TimeSplitters 2**, title `4553000A`, not Future Perfect; no supported XBE hash established | README documents symbols and `--seeds` for indirect-pointer-only functions. xboxrecomp gitlink `af7bef370b392357ff1293b0e8c2cc378fb942ad`; main follows a shared startup template with different entry `0x1cf3c9`. No offsets, seeds or analysis imported | Methods **REFERENCE** only; **REJECT** copying root code absent license or transplanting title assumptions |
+
+### Focused kernel compatibility matrix
+
+This compares inspected contracts, not complete service coverage or successful
+retail execution. Native desktop implementations are not automatically correct.
+
+| Contract | Comparative evidence | Vita result / missing behavior |
+| --- | --- | --- |
+| 255 thread creation, 40 argument bytes | Pinned formal BOOLEAN CreateSuspended/DebugStack and lmplied's identical declaration; Neil's full-word implementation shares the observed risk | Low-byte decoding corrected; true suspend/debug modes still NOT_SUPPORTED; DWORD ThreadExtraSize remains full width; native ownership/RPC architecture retained |
+| 233 single-object wait | Pinned BOOLEAN and bridge cast; newer same-game implementations are useful comparisons, not substitute hardware evidence | Existing low-byte/non-alertable wait profile retained; positive absolute/alertable modes still unsupported |
+| 189/225/186 events | Pinned bridge + Neil authored event/sync separation | Existing retained manual/auto-reset handles and timeout profile retained; names/multi-object modes remain incomplete |
+| 184/199 virtual memory | Desktop native allocation/reservation policies are host-dependent | Existing bounded owned arena, transactional outputs and independent xboxrecomp trace retained; no desktop pointer/clamp or fake commit copied |
+| Indirect calls / import discovery | lmplied's symbol pass and binary-search fallback; TS2 seed method | Full trusted retail dispatch requires matching approved metadata. Do not merge title/build datasets or infer guessed targets |
+
+### Implemented finding and provenance
+
+Two independently isolated translated-call reproductions with `0x100` in
+CreateSuspended or DebugStack failed the prior success assertion. The pinned
+`src/platform/xbox_winnt.h` defines BOOLEAN as uint8_t and
+`src/kernel/kernel.h` declares both parameters that way. The fix reuses the
+already-established wait/event low-byte marshaling convention. It adds no
+suspension feature, scheduler, foreign code or new source pin. Real translated
+creation/wait/close, native failure rollback, output faults, true-low-byte
+rejections and concurrent callers exercise the change. No title behavior is
+inferred from these authored tests.
+
+Audited source fingerprints: Neil LICENSE SHA-256
+`3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986`,
+architecture `465756b17d5153b09100d38239eac64e020933825c9071dd8431fbbb8ef3bf6a`;
+lmplied kernel.h `bd50ed42f1d17f6fbbc18b1b63c040ec222d3f2be6f9a8bdca194701c2fe1cef`
+(matches pinned), title main
+`cb75b540e03b828f12ce34872f6c3e2c9e142e4d5792c5c690c7fa19ff441280`;
+TS2 README `6dbb988a223813179c1affbcaa6b1bd3e6d7cfbdf0cf24689aff15bffa376c72`.
+All source locations are at the exact revisions above. No additional reference
+is an authorization to distribute retail content or a proven Vita performance gain.

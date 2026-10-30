@@ -61,12 +61,50 @@ static void canaries(void) {
 static void preserved(void) {
     assert(tsfp_guest_load_u32(0x90084)==0x12345678 && tsfp_guest_load_u32(0x90088)==0xabcdef01);
 }
+static void test_create_booleans(void) {
+    TsfpImageFunction fn=fixture_service_call;TsfpFault fault;
+    for (unsigned variant=0;variant<6;++variant) {
+        uint32_t stack=frame(0x90084,0x90088,0x13200);
+        uint32_t bits=variant&1 ? UINT32_C(0xffffff00) : UINT32_C(0x100);
+        if (variant<2 || variant>=4) tsfp_guest_store_u32(stack+28,bits);
+        if (variant>=2) tsfp_guest_store_u32(stack+32,bits);
+        assert(tsfp_guest_run(invoke,&fn,&fault)==0 && g_eax==0 && g_esp==stack+44);
+        uint32_t child=tsfp_guest_load_u32(0x90084);assert(child && tsfp_guest_load_u32(0x90088));
+        uint32_t wait[]={child,0,0,0};g_esi=0x900a4;g_esp=stack;
+        tsfp_guest_write(stack,wait,sizeof wait);
+        assert(tsfp_guest_run(invoke,&fn,&fault)==0 && !g_eax && g_esp==stack+16);
+        uint32_t close[]={child,0};g_esi=0x900a8;g_esp=stack;
+        tsfp_guest_write(stack,close,sizeof close);
+        assert(tsfp_guest_run(invoke,&fn,&fault)==0 && !g_eax && g_esp==stack+8);
+    }
+    for (unsigned slot=0;slot<2;++slot) {
+        for (unsigned low=1;low<256;++low) {
+            canaries();uint32_t stack=frame(0x90084,0x90088,0x13200);
+            tsfp_guest_store_u32(stack+28+slot*4,UINT32_C(0xffffff00)|low);
+            assert(tsfp_guest_run(invoke,&fn,&fault)==0 && g_eax==TSFP_STATUS_NOT_SUPPORTED && g_esp==stack+44);
+            preserved();
+        }
+        /* True mode rejection precedes probing invalid output pointers. */
+        uint32_t stack=frame(0xfd000000,0xfd000004,0x13200);
+        tsfp_guest_store_u32(stack+28+slot*4,0x101);
+        assert(tsfp_guest_run(invoke,&fn,&fault)==0 && g_eax==TSFP_STATUS_NOT_SUPPORTED && g_esp==stack+44);
+        /* A high-byte-only FALSE follows normal checked output fault ordering. */
+        stack=frame(0xfd000000,0x90088,0x13200);
+        tsfp_guest_store_u32(stack+28+slot*4,0x100);
+        assert(tsfp_guest_run(invoke,&fn,&fault)==1 && fault.kind==TSFP_FAULT_MEMORY && fault.address==0xfd000000);
+        assert(fault.access==TSFP_ACCESS_WRITE && g_eax==77 && g_esp==stack-4);
+    }
+    canaries();uint32_t stack=frame(0x90084,0x90088,0x13200);
+    tsfp_guest_store_u32(stack+4,0x100); /* ULONG ThreadExtraSize must NOT truncate. */
+    assert(tsfp_guest_run(invoke,&fn,&fault)==0 && g_eax==TSFP_STATUS_NOT_SUPPORTED && g_esp==stack+44);preserved();
+    cancellation_restored();
+}
 static unsigned char before[0x3c00],after[0x3c00];
 typedef struct Parent { uint32_t id,tib,stack,object,out,owner,child; int leave_open; uint32_t id_out; } Parent;
 static void *parent(void *context) {
     Parent *p=context;
     assert(tsfp_guest_thread_enter(p->id,p->stack,0x800,p->tib,164));
-    uint32_t words[]={p->out,0,0,0,p->id_out ? p->id_out : p->out+4,p->id,2,0,0,0x13200,0};
+    uint32_t words[]={p->out,0,0,0,p->id_out ? p->id_out : p->out+4,p->id,2,0x100,0xffffff00u,0x13200,0};
     g_esi=0x900a0; g_esp=p->stack+0x800-64;
     tsfp_guest_write(g_esp,words,sizeof(words));
     TsfpImageFunction fn=fixture_service_call; TsfpFault fault;
@@ -171,6 +209,7 @@ void test_thread_service(void) {
     assert(tsfp_guest_load_u32(0x900b8)==tsfp_guest_load_u32(0x90088) && g_fs_base==0x89000);
     assert(tsfp_thread_handle_poll(tsfp_guest_load_u32(0x90084))==TSFP_STATUS_INVALID_HANDLE);
     fn=fixture_service_call;
+    test_create_booleans();
     /* Full frame before service acquisition, then guarded output-probe faults. */
     g_esi=0x900a0; g_esp=0x8dffc; g_eax=77;
     assert(tsfp_guest_run(invoke,&fn,&fault)==1 && fault.kind==TSFP_FAULT_MEMORY);
@@ -201,6 +240,7 @@ void test_thread_service(void) {
     canaries(); frame(0x90400,0x90088,0x139a0); uint32_t word=tsfp_guest_load_u32(0x90400);
     assert(tsfp_guest_run(invoke,&fn,&fault)==0 && g_eax==TSFP_STATUS_INVALID_PARAMETER && tsfp_guest_load_u32(0x90400)==word);
     tsfp_guest_read(0x90400,before,sizeof(before)); canaries(); frame(0x90084,0x90088,0x139a0);
+    tsfp_guest_store_u32(g_esp+28,0x100);tsfp_guest_store_u32(g_esp+32,0xffffff00u);
     test_fail_any_native_create();
     assert(tsfp_guest_run(invoke,&fn,&fault)==0 && g_eax==TSFP_STATUS_INSUFFICIENT_RESOURCES); preserved();
     tsfp_guest_read(0x90400,after,sizeof(after)); assert(!memcmp(before,after,sizeof(before)));
@@ -255,5 +295,5 @@ void test_thread_service(void) {
     /* Restore original import ordinal meanings, without patching read-only IAT. */
     const uint32_t imports[]={0x80000068,0x80000140,0x80000102,0x800000bb};
     tsfp_guest_write(0x900a0,imports,sizeof(imports)); assert(tsfp_kernel_imports_prepare(0x900a0,4));
-    puts("thread-service-v1: create=pass args=11,22 wait-close=pass faults=pass rollback=pass clients=2 repeats=8 shutdown=pass heap-outputs=pass pin-races=pass");
+    puts("thread-service-v1: boolean-width=pass create=pass args=11,22 wait-close=pass faults=pass rollback=pass clients=2 repeats=8 shutdown=pass heap-outputs=pass pin-races=pass");
 }

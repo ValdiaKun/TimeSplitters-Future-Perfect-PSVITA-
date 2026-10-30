@@ -1062,3 +1062,24 @@ Deterministic clock values are not measurements. No title input, hardware timing
 GPU/audio behavior, game boot or FPS evidence is available. Existing generator,
 source/toolchain pins and default guest_run behavior remain unchanged. Final
 commit/remote push and PR CI results are recorded in draft PR #1 after completion.
+
+## Same-game audit / thread BOOLEAN regression — 2026-10-30
+
+Starting HEAD e29a2e9. Scratch-only independent translated parent reproductions
+with0x100 in either CreateSuspended/DebugStack failed the old success assertion.
+New tracked tests also failed host-pristine before the runtime fix. Low-byte
+casts then passed the full PC/pristine, portable, ASan/UBSan and Cortex-A9 QEMU
+matrix with all127 functions and retained string/atomic/ownership tests. Six
+high-byte FALSE combinations create, wait and close through real imports;
+510 nonzero low-byte modes reject without touching outputs. Probe ordering,
+full-width ThreadExtraSize, EAGAIN rollback and concurrent heap callers are checked.
+
+Each host mode passed three additional complete runs. Formal source-contract
+checks, telemetry/layout host+sanitizer+ARM tests,10 offline fault-mapping cases,
+13 title-intake cases, strict input/Python/whitespace checks and the locked SDK
+native diagnostic/guest VPK cross-build passed. Independent review found no ABI,
+CallGuard, lifetime or fault-ordering defect. Exact standard local toolchain
+commands above apply unchanged; remote commit/run links follow in draft PR #1.
+No new source pin or foreign code; comparative reference revisions/licenses and
+non-independent ancestry are recorded in ACCELERATION_AUDIT.md. No authenticated
+retail inputs, game execution or physical Vita/FPS measurements are available.

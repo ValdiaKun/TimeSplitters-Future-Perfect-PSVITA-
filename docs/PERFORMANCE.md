@@ -192,3 +192,8 @@ recording uses the caller's existing bounded trace. CLOCK_FAILURE extends the
 counter array by one uint64 slot. Existing guest_run calls are unchanged. Durations
 include waits/capture/cleanup and cannot be called CPU execution time. Test clock
 values are synthetic; real overhead, hardware timing and FPS remain unmeasured.
+
+
+Thread BOOLEAN correction changes argument-width decoding only. No wait/scheduling
+optimization or hardware measurement is claimed. Same-game desktop results do not
+predict Vita compatibility, memory fit or FPS.

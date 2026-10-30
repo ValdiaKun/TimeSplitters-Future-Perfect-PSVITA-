@@ -134,3 +134,16 @@ clock values; they establish semantics, not CPU usage or Vita performance.
 See TELEMETRY.md. No default guest-run behavior, title inputs or source pin
 changed. Next critical gate remains authenticated title input/dispatch/first-entry
 tracing, then actual per-service/hardware instrumentation as evidence permits.
+
+
+## Same-game audit and thread BOOLEAN correction — 2026-10-30
+
+Compared pinned PC, NeilSeligmann/tsfp-recomp, lmplied/TSFPRecomp and TS2
+Split-Again at exact revisions/licenses in ACCELERATION_AUDIT.md. Shared ancestry
+and source-stated build identity are explicit; no retail code or maps acquired.
+A reproduced PsCreateSystemThreadEx ABI mismatch now decodes suspended/debug
+from their low-byte BOOLEAN values. True modes remain rejected; ULONG extra
+bytes do not truncate. Existing translated creation/wait/close, heap publication,
+rollback and two concurrent callers remain the execution path, not new stubs.
+The approved executable/hash, source pins and seven-file intake blocker remain
+unchanged. This is a narrow ABI fix, not retail boot or gameplay evidence.

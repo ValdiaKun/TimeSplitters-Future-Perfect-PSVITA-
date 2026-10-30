@@ -143,7 +143,7 @@ static void dispatch(uint32_t ordinal) {
     uint32_t stack=g_esp, frame[11];
     tsfp_guest_read(stack,frame,(arguments+1)*4); /* all args before side effects */
     if (ordinal==255) {
-        if (frame[2] || frame[8] || frame[9] || !tsfp_thread_service_call_enter()) {
+        if (frame[2] || (uint8_t)frame[8] || (uint8_t)frame[9] || !tsfp_thread_service_call_enter()) {
             g_eax=TSFP_STATUS_NOT_SUPPORTED; g_esp=stack+44; return;
         }
         g_eax=create_thread(frame); g_esp=stack+44;
