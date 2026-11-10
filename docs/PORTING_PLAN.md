@@ -326,3 +326,19 @@ inputs remain missing; `check_title_inputs.py` correctly returns missing_inputs
 (exit 2). Next gate: install the opt-in stream fixture on a legitimate Vita/PS TV,
 record GXP acceptance, five readback samples and cleanup results before expanding
 D3D8 semantics. Authentic supported game files/analysis remain a separate blocker.
+
+## 2026-11-11: selective reference integration
+
+Reuse path: xboxrecomp's documented 2D NV2A Morton mapping informed the
+new original CPU-only graphics/xbox_swizzle.c implementation and its asset-free
+tests. Maintain the already tested Xita-derived BC/DXT block adapter separately.
+Do not make format decisions from pixel width alone; the eventual title-facing
+D3D8 adapter must distinguish swizzled, LIN_* and block-compressed Xbox formats,
+validate guest memory ownership and conversion lifetime, and send pitched
+linear texels to a hardware-tested GXM texture path.
+
+Stop at this CPU-only asset-free gate until a Vita/PS TV verifies GXM stream
+shader acceptance/pixel readback. The project-critical path remains validated
+user-owned US title inputs, real translated entry dispatch, first fault trace
+and title-specific kernel service gaps. Do not spend further cycles tuning
+swizzle speed absent measured device texture-upload bottlenecks.

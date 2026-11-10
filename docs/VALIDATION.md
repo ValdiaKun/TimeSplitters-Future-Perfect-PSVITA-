@@ -1150,3 +1150,19 @@ mapping tests passed. Independent read-only correctness review found no blocking
 issue; it required documenting partial publication and hardware limits, now done.
 CI evidence is recorded after the pushed commit is observed; local results alone
 are not a claim that push/PR checks completed.
+
+## 2026-11-11: Xbox Morton/Z-order layout (asset-free)
+
+On Debian x86_64 GCC 14.2.0, the new graphics/xbox_swizzle.c and
+tests/test_xbox_swizzle.c were compiled with -std=c11 -O2 -Wall -Wextra
+-Werror -pedantic, and in a separate run with -fsanitize=address,undefined
+-fno-sanitize-recover=all. Both local executables passed with this line:
+
+    xbox-swizzle: asset-free layouts=204 rectangular=pass noncolliding=pass rollback=pass
+
+After this commit, run python3 tools/test_graphics.py to reproduce host and
+sanitizer gates, or pass --arm-cc arm-linux-gnueabihf-gcc for an additional
+Cortex-A9 QEMU check. The Vita CI job compiles xbox_swizzle.c with the
+pinned SDK and -Werror. Local ARM cross compiler, VitaSDK and a physical Vita
+were not available. No ARM, Vita GPU, throughput, FPS or retail execution
+can be inferred from the local x86 results. Existing source pins unchanged.

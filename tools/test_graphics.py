@@ -46,6 +46,23 @@ def main():
         binary = out / name
         run(shlex.split(args.cc) + chain_common + flags + ['-o', str(binary)])
         run([str(binary)])
+    swizzle_common = ['-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-pedantic',
+                      '-Igraphics', 'graphics/xbox_swizzle.c',
+                      'tests/test_xbox_swizzle.c']
+    for name, flags in [('swizzle-host', []),
+                        ('swizzle-sanitized', ['-fsanitize=address,undefined',
+                                               '-fno-sanitize-recover=all'])]:
+        binary = out / name
+        run(shlex.split(args.cc) + swizzle_common + flags + ['-o', str(binary)])
+        run([str(binary)])
+    if args.arm_cc:
+        swizzle_arm = out / 'swizzle-arm'
+        arm_flags = ['-mcpu=cortex-a9', '-mfpu=vfpv3', '-mfloat-abi=hard',
+                     '-mno-unaligned-access', '-static']
+        run(shlex.split(args.arm_cc) + swizzle_common + arm_flags +
+            ['-o', str(swizzle_arm)])
+        run(shlex.split(args.qemu) + ['-cpu', 'cortex-a9', str(swizzle_arm)])
+
     if args.arm_cc:
         chain_binary = out / 'chain-arm'
         arm_flags = ['-mcpu=cortex-a9', '-mfpu=vfpv3',

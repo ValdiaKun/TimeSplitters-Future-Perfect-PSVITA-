@@ -521,3 +521,22 @@ inputs remain missing; `check_title_inputs.py` correctly returns missing_inputs
 (exit 2). Next gate: install the opt-in stream fixture on a legitimate Vita/PS TV,
 record GXP acceptance, five readback samples and cleanup results before expanding
 D3D8 semantics. Authentic supported game files/analysis remain a separate blocker.
+
+## 2026-11-11: bounded Xbox uncompressed swizzle conversion
+
+The independent chatgpt-vita-development branch adds original GPL-3.0-only
+graphics/xbox_swizzle.{h,c}, an asset-free NV2A Morton/Z-order adapter,
+and tests/test_xbox_swizzle.c. It produces pitched linear 2D texels from
+uncompressed Xbox textures (1, 2, or 4 bytes/texel, power-of-two dimensions
+1..4096). Its bulk path uses masked coordinate increments, no heap allocation
+and no unaligned C integer access. Source, destination and pitch are checked
+before writes; overlap, truncation and invalid layouts fail closed.
+Existing BC/DXT layout handling is unchanged.
+
+On Debian x86_64 GCC 14.2.0, local ordinary and ASan/UBSan runs passed all
+204 deterministic shapes, including rectangular extremes, independent bit-column
+oracle checks and failure-transactionality cases. CI adds the same host,
+sanitized and ARM Cortex-A9 QEMU tests plus VitaSDK object compilation; remote
+results must be checked separately. No device, game texture, throughput,
+renderer integration or FPS was tested. The authenticated real-title first
+entry/fault and physical GXM validation remain primary blockers.

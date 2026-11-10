@@ -79,4 +79,5 @@ jobs:
           cmake -S ports/vita -B build/vita -DTSFP_DIAGNOSTIC_TELEMETRY=ON -DTSFP_BUILD_GXM_SMOKE=ON -DTSFP_BUILD_OFFLINE_SHADER_CONTRACT=ON -DTSFP_BUILD_GXM_STREAM=ON
           cmake --build build/vita
           "$VITASDK/bin/arm-vita-eabi-gcc" -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Igraphics -c graphics/xbox_bc_layout.c -o build/vita/bc-layout.o
+          "$VITASDK/bin/arm-vita-eabi-gcc" -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Igraphics -c graphics/xbox_swizzle.c -o build/vita/xbox-swizzle.o
       # No VPK publication: the guest test needs dependency notices/source when distributed.
