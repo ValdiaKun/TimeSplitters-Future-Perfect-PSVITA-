@@ -299,3 +299,46 @@ bytes do not truncate. Existing translated creation/wait/close, heap publication
 rollback and two concurrent callers remain the execution path, not new stubs.
 The approved executable/hash, source pins and seven-file intake blocker remain
 unchanged. This is a narrow ABI fix, not retail boot or gameplay evidence.
+
+## 2026-10-30: recovered offline shader/vertex-stream milestone
+
+Independent branch `chatgpt-vita-development`, starting HEAD
+`171a8ecc6c8146e7b8c1d55cc98d4319b08843dc`. Recovered source changes were backed
+up before editing. Original `vita-bootstrap` and `main` remain untouched.
+
+Implemented public-source, MIT open-shacccg offline compilation with locked
+source/dependency hashes, strict warning rejection/zero fast flags, deterministic
+GXP bytes and reflected interface checks. Added a real position/UV vertex-stream,
+texture/depth/blend offscreen GXM fixture, default OFF. See
+[OFFLINE_SHADERS.md](OFFLINE_SHADERS.md) for commands, provenance and exact limits.
+Vertex COLOR is explicitly rejected; UV uses a reflected padded float4 slot.
+
+Local validation: fresh offline shader source rebuild (each positive twice),
+bundle verification, nine GXP validator tests, shader corruption/stale-source
+controls, 55 Python unit tests, strict input mapping, full PC/portable/ASan/UBSan/
+ARMv7 Cortex-A9 guest runner, host graphics and telemetry suites, and pinned
+VitaSDK Release cross-build passed. All five VPKs contain eboot.bin and distinct
+expected title IDs TFPV00001..5. Generated GXP/build outputs are ignored.
+
+Physical Vita execution, shader acceptance/pixels, memory capacity and performance
+are NOT measured. No retail boot or gameplay claim. All seven authenticated title
+inputs remain missing; `check_title_inputs.py` correctly returns missing_inputs
+(exit 2). Next gate: install the opt-in stream fixture on a legitimate Vita/PS TV,
+record GXP acceptance, five readback samples and cleanup results before expanding
+D3D8 semantics. Authentic supported game files/analysis remain a separate blocker.
+
+## 2026-11-11: selective reference integration
+
+Reuse path: xboxrecomp's documented 2D NV2A Morton mapping informed the
+new original CPU-only graphics/xbox_swizzle.c implementation and its asset-free
+tests. Maintain the already tested Xita-derived BC/DXT block adapter separately.
+Do not make format decisions from pixel width alone; the eventual title-facing
+D3D8 adapter must distinguish swizzled, LIN_* and block-compressed Xbox formats,
+validate guest memory ownership and conversion lifetime, and send pitched
+linear texels to a hardware-tested GXM texture path.
+
+Stop at this CPU-only asset-free gate until a Vita/PS TV verifies GXM stream
+shader acceptance/pixel readback. The project-critical path remains validated
+user-owned US title inputs, real translated entry dispatch, first fault trace
+and title-specific kernel service gaps. Do not spend further cycles tuning
+swizzle speed absent measured device texture-upload bottlenecks.

@@ -186,7 +186,7 @@ Honor `.gitignore` and verify the staged file list before committing. Do not sto
 
 ## Git workflow, PRs and destructive-action policy
 
-- **Current development work:** continue the existing `vita-bootstrap` branch and **draft PR #1** for changes that belong to its bootstrap/ARM compatibility scope. Re-check their status before writing. A new focused branch/PR is appropriate only for independent future work.
+- **Current independent development work:** use `chatgpt-vita-development` and **draft PR #8**. Preserve `vita-bootstrap`, `main` and PR #1; do not push, merge or update their work without explicit authorization. Re-check live branch/HEAD and PR #8 before writing. New source/shader work stays isolated for review.
 - Never merge into `main`, mark a PR ready, release or publish VPKs, force-push, reset shared branches, rewrite history, delete branches/files, remove other developers' changes or alter GitHub permissions without explicit user authorization.
 - Keep commits small, descriptive and reviewable. Preserve other devices' work; avoid changing the pinned upstream submodule as a side effect. Do not commit transient logs, benchmark captures, downloads or locally generated binaries.
 - If updating `external/pc` or toolchain pins intentionally, change `sources.lock.json`, submodule SHA, verification hashes and compatibility tests together. Report why and validate clean reconstruction. Preserve root and upstream license notices.
